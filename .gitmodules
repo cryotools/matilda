@@ -1,0 +1,3 @@
+[submodule "pypdd"]
+	path = pypdd
+	url = https://github.com/juseg/pypdd
