@@ -1,0 +1,101 @@
+---
+title: "NC_Read"
+author: "Ana-LenaTappe"
+date: "6 4 2020"
+output: html_document
+---
+```{r}
+options(scipen = 999)   
+library(ncdf4)
+library(PCICt)
+library(tidyverse)
+library(raster)
+library(lubridate)
+
+home <- "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/"
+```
+
+```{r}
+files <- list.files(paste0(home, "ERA5"), pattern="evap-run", full.names = TRUE)
+
+era_2011_18 <- data.frame(Longitude=numeric(),
+                  Latitude=numeric(),
+                  Time=numeric(),
+                  Pev=numeric(),
+                  Runoff=numeric())
+
+for( i in 1:length(files)){
+ 
+nc <- nc_open(files[i])
+
+lon <- ncvar_get(nc ,"longitude")
+lat <- ncvar_get(nc,"latitude")
+time <- ncvar_get(nc, "time")
+fillvalue <- ncatt_get(nc, "pev", "_FillValue")
+
+lonIdx <- which.min(abs(lon-86.75))
+latIdx <- which.min(abs(lat-43.00))
+pev <- ncvar_get(nc, "pev")[lonIdx, latIdx, 1:length(time)]
+runoff <- ncvar_get(nc, "ro")[lonIdx, latIdx, 1:length(time)]
+
+nc_close(nc)
+
+indices <- expand.grid(lon[lonIdx], lat[latIdx], time)
+#era<- cbind(indices, as.vector(pev))
+era_2011_18 <- rbind(era_2011_18, cbind(indices, as.vector(pev), as.vector(runoff)))
+  
+}
+
+colnames(era_2011_18) <- c("Longitude", "Latitude", "Date", "PE", "Runoff")
+era_2011_18$Date <- as.POSIXct(era_2011_18$Date*3600, origin = "1900-01-01")
+
+# Downscaling of PE
+era_2011_18$PE <- era_2011_18$PE*-1 #sign conversion
+
+lapse_rate <- -4.940427734314652e-07
+grid_elevation <- 3394.16
+height_diff <- 4025-grid_elevation
+
+era_2011_18$PE_scaled <- era_2011_18$PE + height_diff*lapse_rate
+era_2011_18$PE_scaled <- ifelse(era_2011_18$PE_scaled < 0, 0,  era_2011_18$PE_scaled)
+era_2011_18$PE <- ifelse(era_2011_18$PE < 0, 0,  era_2011_18$PE)
+
+# Unit conversion from m to mm
+era_2011_18$PE <- era_2011_18$PE *1000
+era_2011_18$PE_scaled <- era_2011_18$PE_scaled *1000
+era_2011_18$Runoff <- era_2011_18$Runoff*1000
+
+#write_csv(era_2011_18, paste0(home, "input/20200405_Umrumqi_ERA5_2011_2018.csv"))
+```
+
+```{r}
+nc_2000_19 <- nc_open(paste0(home, "ERA5/No1_Urumqi_ERA5_2000_201907.nc"))          
+lon = ncvar_get(nc_2000_19,"lon") 
+lat = ncvar_get(nc_2000_19,"lat")
+time = ncvar_get(nc_2000_19, "time")
+fillvalue_t2m <- ncatt_get(nc_2000_19, "t2m", "_FillValue")
+fillvalue_tp <- ncatt_get(nc_2000_19, "tp", "_FillValue")
+lonIdx <- which.min(abs(lon-86.75))
+latIdx <- which.min(abs(lat-43.00))
+t2m<- ncvar_get(nc_2000_19, "t2m")[lonIdx, latIdx,1:length(time)]
+tp<- ncvar_get(nc_2000_19, "tp")[lonIdx, latIdx,1:length(time)]
+nc_close(nc_2000_19)
+
+indices <- expand.grid(lon[lonIdx], lat[latIdx], time)
+era_2000_19 <- data.frame(cbind(indices, as.vector(tp), as.vector(t2m)))
+colnames(era_2000_19) <- c("Longitude", "Latitude", "Date","tp", "t2m")
+era_2000_19$Date <- as.POSIXct(era_2000_19$Date, origin = "1970-01-01")
+
+# Downscaling temperature
+lapse_rate_temp <- -0.006             # K/m  temperature lapse rate
+grid_elevation <- 3394.16
+height_diff <- 4025-grid_elevation
+
+era_2000_19$t2m <- era_2000_19$t2m+ height_diff*lapse_rate_temp
+
+#Unit conversion from m to mm
+era_2000_19$tp <- era_2000_19$tp*1000 # now mm
+
+#write_csv(era_2000_19, paste0(home, "input/No1_Urumqi_ERA5_2000_201907.csv"))
+
+```
