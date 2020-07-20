@@ -25,7 +25,7 @@ temp = DS.T2.values - 273.15
 temp_yearly = DS['T2'].resample(time="Y").mean(dim="time") - 273.15
 
 DS = DS.assign(T2_C= DS.T2-273.15) # temp in degree celsius
-std = DS['T2_C'].resample(time="Y").std(dim="time") # temp std for every year and every cell
+stdv = DS['T2'].resample(time="Y").std(dim="time") # temp std for every year and every cell, needs to be in Kelvin
 
 prec_yearly = DS['RRR'].resample(time="Y").sum(dim="time") # yearly sum for every cell
 prec_yearly_mean = prec_yearly.mean() # mean of all the yearly sums
@@ -39,8 +39,8 @@ std = np.where(mask==1, std, np.nan)
 ##
 from pypdd import PDDModel
 pdd = PDDModel()
-pdd_out = pdd(temp_yearly, prec_yearly, std)
-pdd_out2 = pdd(temp_yearly, prec_yearly_mean, std)
+pdd_out = pdd(temp_yearly, prec_yearly, stdv)
+pdd_out2 = pdd(temp_yearly, prec_yearly_mean, stdv)
 ##
 hbv_light = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/HBV_Light/HBV-light_data/Glacier_No.1/Python/Glacier_Run/Results/Results.txt", sep="\t")
 hbv_light_noglac = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/HBV_Light/HBV-light_data/Glacier_No.1/Python/Noglacier_Run/Results/Results.txt", sep="\t")
