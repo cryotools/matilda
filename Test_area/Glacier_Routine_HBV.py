@@ -4,16 +4,17 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 ## Files + Input
-working_directory = "/Seafile/Ana-Lena_Phillip/data/scripts/HBV_Light/HBV-light_data/Glacier_No.1/"
-input = home + working_directory + "Glacier_Routine_Data/GlacierProfile.txt"
+working_directory = "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/"
+input= home + working_directory + "Glacier_Routine_Data/GlacierProfile.txt"
 output = home + working_directory + "Glacier_Routine_Data/Lookup_Table.txt"
 
 glacier_profile = pd.read_csv(input, sep="\t", header=1) # Glacier Profile
 area = pd.read_csv(input, sep="\t", nrows=1, header=None) # Area of catchment and glacier proportion
 elevation_zones = glacier_profile["Elevation"].values.tolist()
+
 ## Pre-simulation
 # 1. calculate total glacier mass in mm water equivalent: M = sum(ai * hi)
-m = sum(glacier_profile["Area"]*glacier_profile["WE"])                  # Wieso wird die Gesamtgletschermasse pro Elevation-Zone nochmal mit der Fläche multipliziert, um die Gesamtgesamtmasse zu bekommen?
+m = sum(glacier_profile["Area"]*glacier_profile["WE"])
 
 # 2. Normalize glacier elevations: Einorm = (Emax-Ei)/(Emax-Emin)
 glacier_profile["norm_elevation"] = (glacier_profile["Elevation"].max() - glacier_profile["Elevation"]) / \
@@ -121,12 +122,6 @@ elezones_inital = lookup_table_elezones.iloc[0]
 
 lookup_table_elezones = lookup_table_elezones / elezones_inital
 lookup_table_elezones = round(lookup_table_elezones, 4)
-
-#####################
-
-# Dies ist ein Testsatz
-
-#####################
 
 lookup_table_elezones.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
 
