@@ -80,22 +80,54 @@ PARAMETERS = {
 
 def calculate_glaciermelt(df):
     # typical DDM
-    ice_melt = PARAMETERS['pdd_factor_ice'] * df["PDD"]
-    snow_melt = PARAMETERS['pdd_factor_snow'] * df["PDD"]
-    total_melt = snow_melt + ice_melt
+    #ice_melt = PARAMETERS['pdd_factor_ice'] * df["PDD"]
+    #snow_melt = PARAMETERS['pdd_factor_snow'] * df["PDD"]
+
+    temp = degreedays_df["temp_avg"]
+    prec = degreedays_df["prec"]
+    pdd = degreedays_df["PDD"]
+    time = degreedays_df.index
+
     # pypdd line 311
-    reduced_temp = (PARAMETERS["temp_rain"] - df["temp_avg"]) / (PARAMETERS["temp_rain"] - PARAMETERS["temp_snow"])
+    reduced_temp = (PARAMETERS["temp_rain"] - temp) / (PARAMETERS["temp_rain"] - PARAMETERS["temp_snow"])
     snowfrac = np.clip(reduced_temp, 0, 1)
-    accu_rate = snowfrac * df["prec"]
+    accu_rate = snowfrac * prec
+
+    # initialize snow depth and melt rates
+    snow_depth = np.zeros_like(temp)
+    snow_melt_rate = np.zeros_like(temp)
+    ice_melt_rate = np.zeros_like(temp)
+
+    # pypdd
+    def melt_rates(snow, pdd):
+    # compute a potential snow melt
+        pot_snow_melt = PARAMETERS['pdd_factor_snow'] * pdd
+    # effective snow melt can't exceed amount of snow
+        snow_melt = np.minimum(snow, pot_snow_melt)
+    # ice melt is proportional to excess snow melt
+        ice_melt = (pot_snow_melt - snow_melt) * PARAMETERS['pdd_factor_ice'] / PARAMETERS['pdd_factor_snow']
+    # return melt rates
+        return (snow_melt, ice_melt)
+
     # pypdd line 219
-    runoff_rate = total_melt - PARAMETERS["refreeze_snow"] * snow_melt \
-                  - PARAMETERS["refreeze_ice"] * ice_melt
+    for i in range(len(temp)):
+        if i > 0:
+            snow_depth[i] = snow_depth[i - 1]
+        snow_depth[i] += accu_rate[i]
+        snow_melt_rate[i], ice_melt_rate[i] = melt_rates(snow_depth[i], pdd[i])
+        snow_depth[i] -= snow_melt_rate[i]
+    snow_melt_rate = pd.Series(snow_melt_rate, index=time)
+    ice_melt_rate = pd.Series(ice_melt_rate, index=time)
+    total_melt = snow_melt_rate + ice_melt_rate
+    runoff_rate = total_melt - PARAMETERS["refreeze_snow"] * snow_melt_rate \
+                  - PARAMETERS["refreeze_ice"] * ice_melt_rate
     inst_smb = accu_rate - runoff_rate
+
     # making the final df
-    glacier_melt = pd.concat([accu_rate, ice_melt, snow_melt, total_melt, inst_smb, runoff_rate], axis=1)
+    glacier_melt = pd.concat([accu_rate, ice_melt_rate, snow_melt_rate, total_melt, inst_smb, runoff_rate], axis=1)
     glacier_melt.columns = ["accumulation_rate", "ice_melt", "snow_melt", "total_melt", "smb", "runoff"]
     glacier_melt["hydrological_year"] = df["hydrological_year"]
     return glacier_melt
 
 glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
-glacier_melt_yearly = 
+glacier_melt_yearly = glacier_melt.groupby("hydrological_year").sum()
