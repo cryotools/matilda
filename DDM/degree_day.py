@@ -71,8 +71,8 @@ degreedays_df =calculate_PDD(DS)
 # how to calculate KI and KS?
 
 PARAMETERS = {
-    'pdd_factor_snow':  3, # mm per day per Celsius
-    'pdd_factor_ice':   8, # mm per day per Celsius
+    'pdd_factor_snow':  5.7, # mm per day per Celsius, from Hock 2003
+    'pdd_factor_ice':   7.4, # mm per day per Celsius
     'temp_snow':        0.0,
     'temp_rain':        2.0,
     'refreeze_snow': 0.0,
@@ -98,3 +98,4 @@ def calculate_glaciermelt(df):
     return glacier_melt
 
 glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
+glacier_melt_yearly = 
