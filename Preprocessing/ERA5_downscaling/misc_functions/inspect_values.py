@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np; import sys
 from scipy.stats import linregress
 from statsmodels.tools.eval_measures import rmse
 
@@ -80,18 +80,28 @@ def calculate_r2_and_rmse(var1, var2, var):
     tot = var2 - np.nanmean(var2)
     R_squared = 1 -  res.dot(res)/tot.dot(tot)
     root_mean = rmse(var1,var2)
-    print('\n var: ', var, ' R2: ', R_squared.values, ' RMSE: ', root_mean, ' p-value: ', round(p,10), ' p-value: ', p)
-
+    if R_squared >= 0.1:
+        print('\n var: ', var, ' R2: ', R_squared.values, ' RMSE: ', root_mean, ' p-value: ', round(p,10), ' p-value: ', p)
     return R_squared, root_mean, p
 
 ### check if data greater or lower than max min
 def check_reasonable(array,max,min):
     if np.nanmax(array) > max or np.nanmin(array) < min:
-        print("CHECK your input DATA, the are out of a reasonbale range!!!! ", str.capitalize(array.name)," MAX IS: ", np.nanmax(array), " AND MIN IS: ", np.nanmin(array))
+        print("CHECK your input DATA, the are out of a reasonable range!!!! ", str.capitalize(array.name)," MAX IS: ", np.nanmax(array), " AND MIN IS: ", np.nanmin(array))
     else:
         print(array.name, " max: ", np.nanmax(array), ", min: ", np.nanmin(array), " and mean: ", np.nanmean(array), )
 
 def check(field, name, max, min):
     '''Check the validity of the input data '''
     if np.nanmax(field) > max or np.nanmin(field) < min:
-        print('WARNING! Please check the data, its seems they are out of a reasonalbe range %s MAX: %.2f MIN: %.2f \n' % (str.capitalize(name), np.nanmax(field), np.nanmin(field)))
+        print('WARNING! Please check the data, its seems they are out of a reasonable range %s MAX: %.2f MIN: %.2f \n' % (str.capitalize(name), np.nanmax(field), np.nanmin(field)))
+
+def check_for_nans_dataframe(dataframe):
+    for col in dataframe.columns:
+        if dataframe[col].isna().any():
+            print('ERROR!!!!!!!!!!!: ', col, ' contains NaNs')
+            sys.exit()
+
+def check_for_nans_array(da):
+    if np.isnan(da).any():
+        print('ERRRRROR!!!: ', da.name, ' contains NaNs')
