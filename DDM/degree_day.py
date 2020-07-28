@@ -2,12 +2,16 @@
 from pandas_degreedays import calculate_dd
 import pandas as pd
 import numpy as np
+import xarray as xr
 from pathlib import Path; home = str(Path.home())      ### Zieht sich home vom system
 working_directory = home + '/Seafile/Ana-Lena_Phillip/data/scripts/pypdd'
 input_path = home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/'
 
 input_file = '20200625_Umrumqi_ERA5_2011_2018_cosipy.csv'
+input_file_nc = '20200625_Umrumqi_ERA5_2011_2018_cosipy.nc'
+
 input = input_path + input_file
+input_nc = input_path + input_file_nc
 
 #Time slice:
 time_start = '2011-01-01T00:00'
@@ -17,6 +21,8 @@ DS = pd.read_csv(input)
 DS = DS.set_index('TIMESTAMP') # set Time as index
 DS.index = pd.to_datetime(DS.index)
 DS = DS.assign(temp= DS.T2-273.15) # temp in degree celsius
+
+era5 = xr.open_dataset(input_nc)
 
 ## test pandas.degreedays
 filename = '/home/ana/Downloads/temperature_sample.xls' # example from github to test
@@ -131,3 +137,38 @@ def calculate_glaciermelt(df):
 
 glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
 glacier_melt_yearly = glacier_melt.groupby("hydrological_year").sum()
+
+## DDM for array
+def calculate_PDD(ds):
+    temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
+    temp_max = era5['T2'].resample(time="D").max(dim="time") - 273.15
+    temp_mean = era5['T2'].resample(time="D").mean(dim="time") - 273.15
+    prec = era5['RRR'].resample(time="D").sum(dim="time")
+
+    ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
+                   xr.DataArray(temp_max, name="temp_max"), prec])
+
+    # calculate the hydrological year
+    def calc_hydrological_year(ds):
+        water_year = []
+        for i in time:
+            if 10 <= i["time.month"] <= 12:
+                water_year = i["time.year"] + 1
+            else:
+                water_year = i["time.year"]
+        return water_year
+
+    ds['hydrological_year'] = calc_hydrological_year(ds)
+
+    # calculate the positive degree days
+    def degree_days(ds):
+        if ds["temp_avg"] > 0:
+            return ds["temp_avg"]
+        else:
+            return 0
+
+    degreedays_df["PDD"] = degreedays_df.apply(degree_days, axis=1)
+    degreedays_df["PDD_cum"] = degreedays_df["PDD"].cumsum()
+    degreedays_df["PDD_cum_yearly"] = degreedays_df.groupby("hydrological_year")["PDD"].cumsum()
+
+    return (degreedays_df)
