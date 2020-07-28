@@ -1,23 +1,23 @@
 ##
 from pathlib import Path; home = str(Path.home())      ### Zieht sich home vom system
-import sys; sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/')
+import sys; sys.path.append(home + '/Seafile/Phillip_Anselm/scripts/')
 import pandas as pd; import xarray as xr; import salem; import numpy as np
 from misc_functions.inspect_values import *	# * importiert alle Funktionen in dem Anselms selbstgebauten Funktionsskript. Funktionsnname würde nur die importieren
 from fundamental_physical_constants import *
 import matplotlib.pyplot as plt
 
-era5_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/ERA5/global/ERA5_global_z.nc'
+era5_static_file = home + '/Seafile/Phillip_Anselm/input_output/ERA5/ERA5_global_z.nc'
 
 # Define working directory, input ERA5 file and output csv file
-working_directory = '/Seafile/Ana-Lena_Phillip/data/input_output/'
+working_directory = '/Seafile/Phillip_Anselm/input_output/'
 shape = home  + working_directory + 'static/Shapefiles/rgi_glacierno1.shp'
-era5_file = home + working_directory + 'ERA5/No1_Urumqi_ERA5_2011_2018.nc'
+era5_file = home + working_directory + 'ERA5/No1_Urumqi_ERA5_2000_201907.nc'
 #Time slice:
-time_start = '2011-01-01T00:00'
+time_start = '2016-01-01T00:00'
 time_end = '2018-12-31T23:00'
-output = home + working_directory + 'input/20200625_Umrumqi_ERA5_' + time_start.split('-')[0] + '_' + time_end.split('-')[0]   # Heisst input, weil es zwar hier der Output ist aber der COSIPY-Input.
+output = home + working_directory + 'input/20200129_Umrumqi_ERA5_' + time_start.split('-')[0] + '_' + time_end.split('-')[0]   # Heisst input, weil es zwar hier der Output ist aber der COSIPY-Input.
 output_cosipy = output + '_cosipy.csv'
-# output_pypdd = output + '_pypdd.csv'
+output_pypdd = output + '_pypdd.csv'
 scaling_wind = 2                    # ERA5-Wind ist tendenziell zu schwach. Scaling mit 2 passt am Urumqi
 latitude = 43.00; longitude = 86.75                         ### Urumqi
 target_altitude = 4025                                      # m a.s.l Urumqi
@@ -182,10 +182,12 @@ df = pd.DataFrame(raw_data_cosipy, columns = ['TIMESTAMP', 'T2', 'PRES', 'N', 'U
 df.to_csv(output_cosipy,index=False)
 
     # PYPDD
-# raw_data_pypdd = {'TIMESTAMP': time_local,
-#             'temp': temperature,
-#             'prec': total_precipitation,
-#             }
-# df = pd.DataFrame(raw_data_pypdd, columns = ['TIMESTAMP', 'temp', 'prec'])
-#
-# df.to_csv(output_pypdd,index=False)
+raw_data_pypdd = {'TIMESTAMP': time_local,
+            'temp': temperature,
+            'prec': total_precipitation,
+            }
+df = pd.DataFrame(raw_data_pypdd, columns = ['TIMESTAMP', 'temp', 'prec'])
+
+# Needed: two arrays ``temp`` and ``prec`` of shape ``(t, x, y)``
+
+df.to_csv(output_pypdd,index=False)

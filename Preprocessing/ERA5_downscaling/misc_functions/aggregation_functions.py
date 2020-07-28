@@ -15,10 +15,12 @@ def var_sum_time_total(var):
     return var
 
 def var_mean_space(var):
-    var = var.mean(dim=['lat','lon'],keep_attrs=True)
+    #var = var.mean(dim=['south_north','west_east'],keep_attrs=True)
+    var = var.mean(dim=['lat', 'lon'],keep_attrs=True)
     return var
 
 def dataset_space_mean_save(dataset,path):
+    #dataset_mean=dataset.mean(dim=['south_north','west_east'],keep_attrs=True)
     dataset_mean=dataset.mean(dim=['lat','lon'],keep_attrs=True)
     dataset_mean.to_netcdf(path)
 
