@@ -138,7 +138,7 @@ def calculate_glaciermelt(df):
 glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
 glacier_melt_yearly = glacier_melt.groupby("hydrological_year").sum()
 
-## DDM for array
+## DDM for arrays
 def calculate_PDD(ds):
     temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
     temp_max = era5['T2'].resample(time="D").max(dim="time") - 273.15
@@ -161,13 +161,15 @@ def calculate_PDD(ds):
     ds['hydrological_year'] = calc_hydrological_year(ds)
 
     # calculate the positive degree days
-    def degree_days(ds):
-        if ds["temp_avg"] > 0:
-            return ds["temp_avg"]
+    def degree_days(temp_mean):
+        pdd = []
+        if temp_mean > 0:
+            pdd = temp_mean
         else:
-            return 0
+            pdd = 0
+        return pdd
 
-    degreedays_df["PDD"] = degreedays_df.apply(degree_days, axis=1)
+    ds["PDD"] = degree_days(temp_mean)
     degreedays_df["PDD_cum"] = degreedays_df["PDD"].cumsum()
     degreedays_df["PDD_cum_yearly"] = degreedays_df.groupby("hydrological_year")["PDD"].cumsum()
 
