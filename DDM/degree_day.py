@@ -25,12 +25,12 @@ DS = DS.assign(temp= DS.T2-273.15) # temp in degree celsius
 era5 = xr.open_dataset(input_nc)
 
 ## test pandas.degreedays
-filename = '/home/ana/Downloads/temperature_sample.xls' # example from github to test
-df_temp = pd.read_excel(filename)
-df_temp = df_temp.set_index('datetime')
-df_degreedays = calculate_dd(ts_temp2)
-
-df_degreedays = calculate_dd(ts_temp)
+# filename = '/home/ana/Downloads/temperature_sample.xls' # example from github to test
+# df_temp = pd.read_excel(filename)
+# df_temp = df_temp.set_index('datetime')
+# df_degreedays = calculate_dd(ts_temp2)
+#
+# df_degreedays = calculate_dd(ts_temp)
 # does not work and I don't know why. even the example df from github doesn't work
 
 ## selfmade degree days: input is a dataframe with time as index and temp in Celsius
@@ -138,7 +138,49 @@ def calculate_glaciermelt(df):
 glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
 glacier_melt_yearly = glacier_melt.groupby("hydrological_year").sum()
 
+<<<<<<< HEAD
 ## DDM for arrays
+=======
+## PHILLIPs Test area:
+
+temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
+temp_max = era5['T2'].resample(time="D").max(dim="time") - 273.15
+temp_mean = era5['T2'].resample(time="D").mean(dim="time") - 273.15
+prec = era5['RRR'].resample(time="D").sum(dim="time")
+
+ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
+               xr.DataArray(temp_max, name="temp_max"), prec])
+
+# calculate the hydrological year
+
+water_year = []
+for i in np.arange(len(ds.time)):
+    if 10 <= ds.isel(time=i)["time.month"] <= 12:
+        water_year.append(ds.isel(time=i)["time.year"].values + 1)
+    else:
+        water_year.append(ds.isel(time=i)["time.year"].values)
+
+
+## ANSELMS water year approach
+
+def calculate_water_year(data, method):
+    year_list = []
+    yearly_values = []
+    for year in data.resample(time='y').sum().time.dt.year.values:
+        time_start = str(year -1) + '-10-01'
+        time_end = str(year) + '-09-30'
+        if (time_start >= str(data.time[0].values)) and (time_end <= str(data.time[-1].values)):
+            year_value = data.sel(time=slice(time_start, time_end))
+            year_list.append(year)
+            if method == 'sum':
+                yearly_values.append(np.sum(year_value.values))
+            elif method == 'mean':
+                yearly_values.append(np.mean(year_value.values))
+    return np.array(year_list), np.array(yearly_values)
+
+
+## DDM for array
+>>>>>>> f7b95f6114631e26e1eb68afeadea31c0e02a858
 def calculate_PDD(ds):
     temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
     temp_max = era5['T2'].resample(time="D").max(dim="time") - 273.15
