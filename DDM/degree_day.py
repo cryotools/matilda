@@ -138,9 +138,51 @@ def calculate_glaciermelt(df):
 glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
 glacier_melt_yearly = glacier_melt.groupby("hydrological_year").sum()
 
-<<<<<<< HEAD
 ## DDM for arrays
-=======
+def calculate_PDD(ds):
+    temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
+    temp_max = era5['T2'].resample(time="D").max(dim="time") - 273.15
+    temp_mean = era5['T2'].resample(time="D").mean(dim="time") - 273.15
+    prec = era5['RRR'].resample(time="D").sum(dim="time")
+    time = temp_mean["time"]
+
+    ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
+                   xr.DataArray(temp_max, name="temp_max"), prec])
+
+    # calculate the hydrological year
+    def calc_hydrological_year(ds, dims="time"):
+        water_year = []
+        for i in time:
+            if 10 <= i["time.month"] <= 12:
+                water_year.append(i["time.year"] + 1)
+            else:
+                water_year.append(i["time.year"])
+        return np.asarray(water_year)
+
+    water_year = calc_hydrological_year(time)
+    ds = ds.assign_coords(water_year = water_year)
+
+    # calculate the positive degree days
+    pdd = []
+    for i in ds["temp_mean"].values:
+        pdd = np.where(i > 0, i, 0)
+
+    def degree_days(temp_mean):
+        pdd = []
+        for i in temp_mean.values:
+            if i > 0:
+                pdd[i] = temp_mean.values
+            else:
+                pdd[i] = 0
+            return pdd
+
+    ds["PDD"] = degree_days(temp_mean)
+    degreedays_df["PDD_cum"] = degreedays_df["PDD"].cumsum()
+    degreedays_df["PDD_cum_yearly"] = degreedays_df.groupby("hydrological_year")["PDD"].cumsum()
+
+    return (degreedays_df)
+
+
 ## PHILLIPs Test area:
 
 temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
@@ -177,42 +219,3 @@ def calculate_water_year(data, method):
             elif method == 'mean':
                 yearly_values.append(np.mean(year_value.values))
     return np.array(year_list), np.array(yearly_values)
-
-
-## DDM for array
->>>>>>> f7b95f6114631e26e1eb68afeadea31c0e02a858
-def calculate_PDD(ds):
-    temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
-    temp_max = era5['T2'].resample(time="D").max(dim="time") - 273.15
-    temp_mean = era5['T2'].resample(time="D").mean(dim="time") - 273.15
-    prec = era5['RRR'].resample(time="D").sum(dim="time")
-
-    ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
-                   xr.DataArray(temp_max, name="temp_max"), prec])
-
-    # calculate the hydrological year
-    def calc_hydrological_year(ds):
-        water_year = []
-        for i in time:
-            if 10 <= i["time.month"] <= 12:
-                water_year = i["time.year"] + 1
-            else:
-                water_year = i["time.year"]
-        return water_year
-
-    ds['hydrological_year'] = calc_hydrological_year(ds)
-
-    # calculate the positive degree days
-    def degree_days(temp_mean):
-        pdd = []
-        if temp_mean > 0:
-            pdd = temp_mean
-        else:
-            pdd = 0
-        return pdd
-
-    ds["PDD"] = degree_days(temp_mean)
-    degreedays_df["PDD_cum"] = degreedays_df["PDD"].cumsum()
-    degreedays_df["PDD_cum_yearly"] = degreedays_df.groupby("hydrological_year")["PDD"].cumsum()
-
-    return (degreedays_df)
