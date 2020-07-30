@@ -17,25 +17,16 @@ input_nc = input_path + input_file_nc
 time_start = '2011-01-01T00:00'
 time_end = '2018-12-31T23:00'
 
-DS = pd.read_csv(input)
-DS = DS.set_index('TIMESTAMP') # set Time as index
-DS.index = pd.to_datetime(DS.index)
-DS = DS.assign(temp= DS.T2-273.15) # temp in degree celsius
+cosipy_df = pd.read_csv(input)
+cosipy_df = cosipy_df.set_index('TIMESTAMP') # set Time as index
+cosipy_df.index = pd.to_datetime(cosipy_df.index)
+cosipy_df = cosipy_df.assign(temp= cosipy_df.T2-273.15) # temp in degree celsius
 
 era5 = xr.open_dataset(input_nc)
+## selfmade DDM: Part I - PDD
+# input is a dataframe with time as index and temp in Celsius
 
-## test pandas.degreedays
-# filename = '/home/ana/Downloads/temperature_sample.xls' # example from github to test
-# df_temp = pd.read_excel(filename)
-# df_temp = df_temp.set_index('datetime')
-# df_degreedays = calculate_dd(ts_temp2)
-#
-# df_degreedays = calculate_dd(ts_temp)
-# does not work and I don't know why. even the example df from github doesn't work
-
-## selfmade degree days: input is a dataframe with time as index and temp in Celsius
-
-def calculate_PDD(df):
+def calculate_PDD_from_df(df):
     df.index = pd.to_datetime(df.index) # make sure it is datetime format
     # make sure temp unit is celsius
     temp_min = df.temp.resample('D').min()
@@ -71,11 +62,12 @@ def calculate_PDD(df):
 
     return (degreedays_df)
 
-degreedays_df =calculate_PDD(DS)
+degreedays_df =calculate_PDD_from_df(cosipy_df)
 
-## glacier melt: M = KI*PDD + KS*PDD
-# how to calculate KI and KS?
+## selfmade DDM: Part II - calculating glacier melt etc. with formulas from pypdd
+# for dataframes
 
+#>>>> next task
 PARAMETERS = {
     'pdd_factor_snow':  5.7, # mm per day per Celsius, from Hock 2003
     'pdd_factor_ice':   7.4, # mm per day per Celsius
@@ -85,10 +77,6 @@ PARAMETERS = {
     'refreeze_ice': 0.0}
 
 def calculate_glaciermelt(df):
-    # typical DDM
-    #ice_melt = PARAMETERS['pdd_factor_ice'] * df["PDD"]
-    #snow_melt = PARAMETERS['pdd_factor_snow'] * df["PDD"]
-
     temp = degreedays_df["temp_avg"]
     prec = degreedays_df["prec"]
     pdd = degreedays_df["PDD"]
@@ -138,19 +126,20 @@ def calculate_glaciermelt(df):
 glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
 glacier_melt_yearly = glacier_melt.groupby("hydrological_year").sum()
 
-## DDM for arrays
+## selfmade DDM: Part I - PDD
+# input is a dataset
 def calculate_PDD(ds):
-    temp_min = era5['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
-    temp_max = era5['T2'].resample(time="D").max(dim="time") - 273.15
-    temp_mean = era5['T2'].resample(time="D").mean(dim="time") - 273.15
-    prec = era5['RRR'].resample(time="D").sum(dim="time")
+    temp_min = ds['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
+    temp_max = ds['T2'].resample(time="D").max(dim="time") - 273.15
+    temp_mean = ds['T2'].resample(time="D").mean(dim="time") - 273.15
+    prec = ds['RRR'].resample(time="D").sum(dim="time")
     time = temp_mean["time"]
 
     ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
                    xr.DataArray(temp_max, name="temp_max"), prec])
 
     # calculate the hydrological year
-    def calc_hydrological_year(ds, dims="time"):
+    def calc_hydrological_year(time):
         water_year = []
         for i in time:
             if 10 <= i["time.month"] <= 12:
@@ -163,24 +152,71 @@ def calculate_PDD(ds):
     ds = ds.assign_coords(water_year = water_year)
 
     # calculate the positive degree days
-    pdd = []
-    for i in ds["temp_mean"].values:
-        pdd = np.where(i > 0, i, 0)
+    ds["pdd"] = xr.where(temp_mean > 0, temp_mean, 0)
 
-    def degree_days(temp_mean):
-        pdd = []
-        for i in temp_mean.values:
-            if i > 0:
-                pdd[i] = temp_mean.values
-            else:
-                pdd[i] = 0
-            return pdd
+    return ds
 
-    ds["PDD"] = degree_days(temp_mean)
-    degreedays_df["PDD_cum"] = degreedays_df["PDD"].cumsum()
-    degreedays_df["PDD_cum_yearly"] = degreedays_df.groupby("hydrological_year")["PDD"].cumsum()
+degreedays_ds = calculate_PDD(era5)
+## selfmade DDM: Part II - calculating glacier melt etc. with formulas from pypdd
+# for datasets
 
-    return (degreedays_df)
+PARAMETERS = {
+    'pdd_factor_snow':  5.7, # mm per day per Celsius, from Hock 2003
+    'pdd_factor_ice':   7.4, # mm per day per Celsius
+    'temp_snow':        0.0,
+    'temp_rain':        2.0,
+    'refreeze_snow': 0.0,
+    'refreeze_ice': 0.0}
+
+def calculate_glaciermelt(ds):
+    temp = degreedays_df["temp_avg"]
+    prec = degreedays_df["prec"]
+    pdd = degreedays_df["PDD"]
+    time = degreedays_df.index
+
+    # pypdd line 311
+    reduced_temp = (PARAMETERS["temp_rain"] - temp) / (PARAMETERS["temp_rain"] - PARAMETERS["temp_snow"])
+    snowfrac = np.clip(reduced_temp, 0, 1)
+    accu_rate = snowfrac * prec
+
+    # initialize snow depth and melt rates
+    snow_depth = np.zeros_like(temp)
+    snow_melt_rate = np.zeros_like(temp)
+    ice_melt_rate = np.zeros_like(temp)
+
+    # pypdd
+    def melt_rates(snow, pdd):
+    # compute a potential snow melt
+        pot_snow_melt = PARAMETERS['pdd_factor_snow'] * pdd
+    # effective snow melt can't exceed amount of snow
+        snow_melt = np.minimum(snow, pot_snow_melt)
+    # ice melt is proportional to excess snow melt
+        ice_melt = (pot_snow_melt - snow_melt) * PARAMETERS['pdd_factor_ice'] / PARAMETERS['pdd_factor_snow']
+    # return melt rates
+        return (snow_melt, ice_melt)
+
+    # pypdd line 219
+    for i in range(len(temp)):
+        if i > 0:
+            snow_depth[i] = snow_depth[i - 1]
+        snow_depth[i] += accu_rate[i]
+        snow_melt_rate[i], ice_melt_rate[i] = melt_rates(snow_depth[i], pdd[i])
+        snow_depth[i] -= snow_melt_rate[i]
+    snow_melt_rate = pd.Series(snow_melt_rate, index=time)
+    ice_melt_rate = pd.Series(ice_melt_rate, index=time)
+    total_melt = snow_melt_rate + ice_melt_rate
+    runoff_rate = total_melt - PARAMETERS["refreeze_snow"] * snow_melt_rate \
+                  - PARAMETERS["refreeze_ice"] * ice_melt_rate
+    inst_smb = accu_rate - runoff_rate
+
+    # making the final df
+    glacier_melt = pd.concat([accu_rate, ice_melt_rate, snow_melt_rate, total_melt, inst_smb, runoff_rate], axis=1)
+    glacier_melt.columns = ["accumulation_rate", "ice_melt", "snow_melt", "total_melt", "smb", "runoff"]
+    glacier_melt["hydrological_year"] = df["hydrological_year"]
+    return glacier_melt
+
+glacier_melt = calculate_glaciermelt(degreedays_df) # output in mm
+glacier_melt_yearly = glacier_melt.groupby("hydrological_year").sum()
 
 
 ## PHILLIPs Test area:
