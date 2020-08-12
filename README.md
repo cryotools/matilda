@@ -60,6 +60,7 @@ This project is licensed under the HU Berlin License - see the [LICENSE.md](LICE
 
 For COSIPY:
 	•	Sauter, T. & Arndt, A (2020). COSIPY – An open-source coupled snowpack and ice surface energy and mass balance model. https://doi.org/10.5194/gmd-2020-21
+
 For PyPDD:
 	•	Seguinot, J. (2019). PyPDD: a positive degree day model for glacier surface mass balance (Version v0.3.1). Zenodo. http://doi.org/10.5281/zenodo.3467639
 
