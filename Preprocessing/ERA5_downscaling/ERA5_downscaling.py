@@ -6,16 +6,16 @@ from misc_functions.inspect_values import *	# * importiert alle Funktionen in de
 from fundamental_physical_constants import *
 import matplotlib.pyplot as plt
 
-era5_static_file = home + '/Seafile/Phillip_Anselm/input_output/ERA5/ERA5_global_z.nc'
+era5_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/ERA5/global/ERA5_global_z.nc'
 
 # Define working directory, input ERA5 file and output csv file
-working_directory = '/Seafile/Phillip_Anselm/input_output/'
-shape = home  + working_directory + 'static/Shapefiles/rgi_glacierno1.shp'
-era5_file = home + working_directory + 'ERA5/No1_Urumqi_ERA5_2000_201907.nc'
+working_directory = '/Seafile/Ana-Lena_Phillip/data/'
+shape = home + working_directory + 'input_output/static/Shapefiles/rgi_glacierno1.shp'
+era5_file = home + working_directory + 'input_output/ERA5/No1_Urumqi_ERA5_2000_201907.nc'
 #Time slice:
-time_start = '2016-01-01T00:00'
+time_start = '2011-01-01T00:00'
 time_end = '2018-12-31T23:00'
-output = home + working_directory + 'input/20200129_Umrumqi_ERA5_' + time_start.split('-')[0] + '_' + time_end.split('-')[0]   # Heisst input, weil es zwar hier der Output ist aber der COSIPY-Input.
+output = home + working_directory + 'input_output/input/202000810_Umrumqi_ERA5_' + time_start.split('-')[0] + '_' + time_end.split('-')[0]   # Heisst input, weil es zwar hier der Output ist aber der COSIPY-Input.
 output_cosipy = output + '_cosipy.csv'
 output_pypdd = output + '_pypdd.csv'
 scaling_wind = 2                    # ERA5-Wind ist tendenziell zu schwach. Scaling mit 2 passt am Urumqi
@@ -36,7 +36,7 @@ teten_a3 = 17.502                           # ice: 22.587
 teten_a4 = 32.19                            # K; ice: 0.7
 
 ds = salem.open_xr_dataset(era5_static_file)
-shape_grid = salem.read_shapefile_to_grid(shape,grid=salem.grid_from_dataset(ds))
+shape_grid = salem.read_shapefile_to_grid(shape, grid=salem.grid_from_dataset(ds))
 margin = 0.2        # abstand vom center des shapefiles
 lon_ll = shape_grid.CenLon.values - margin      # ll = lower left
 lat_ll = shape_grid.CenLat.values - margin
