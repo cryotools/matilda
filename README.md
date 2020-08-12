@@ -14,10 +14,11 @@ Clone this repo to your local machine using https://scm.cms.hu-berlin.de/sneidec
 
 The tool should run with any Python3 version on any computer operating system. It was developed on Python 3.6.9 on Ubuntu 18.04.
 It requires the following Python3 libraries:
-	⁃	xarray
-	⁃	numpy
-	⁃	pandas
-	⁃	matplotlib  
+- 	xarray
+- 	numpy
+- 	pandas
+- 	matplotlib  
+
 
 ### Data
 
@@ -53,7 +54,7 @@ See also the list of [contributors](https://scm.cms.hu-berlin.de/sneidecy/centra
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the HU Berlin License - see the [LICENSE.md](LICENSE.md) file for details
 
 ### References
 
