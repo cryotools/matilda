@@ -7,14 +7,14 @@ from misc_functions.inspect_values import mmm_nan, mmm_nan_name, check, check_fo
 from fundamental_physical_constants import g, M, R, teten_a1, teten_a3, teten_a4, zero_temperature
 from misc_functions.calculate_parameters import calculate_ew; import matplotlib.pyplot as plt
 
-working_directory = home + '/Seafile/Phillip_Anselm/data/Katabak/'
-shape_file = working_directory + '/static/Shapefiles/kb_outline_rgi_4326.shp'
-era5_land_static_file = home + '/Seafile/Phillip_Anselm/data/Katabak/ERA5_land_Z_geopotential.nc'
+working_directory = home + '/Seafile/Ana-Lena_Phillip/data/'
+shape_file = working_directory + 'input_output/static/Shapefiles/rgi_glacierno1.shp'
+era5_land_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/ERA5/global/ERA5_global_z.nc'
 
-era5_land_file = working_directory + '/ERA5/20200717_Issyk_Kul_ERA5L_1982_1989.nc'
-output_csv = working_directory + 'input/20200728_Katabak_ERA5_land_1982_1989.csv'
+era5_land_file = working_directory + 'input_output/ERA5/No1_Urumqi_ERA5_2000_201907.nc'
+output_csv = working_directory + 'input_output/input/20200810_Urumqi_ERA5_2000_2019.csv'
 
-target_altitude = 3800
+target_altitude = 4025
 timezone_difference_to_UTC = 6
 margin = 0.2
 z0 = 0.00212                                # (m) mean between roughness firn 4 mm and fresh snow 0.24 mm
@@ -33,8 +33,8 @@ era5_land_static = era5_land_static.salem.subset(corners=((lon_ll,lat_ll), (lon_
 # plt.show()
 
 ## Select closest gridpoint
-lon_distances_gp = np.abs(era5_land_static.lon.values-shape_grid.CenLon.values)
-lat_distances_gp = np.abs(era5_land_static.lat.values-shape_grid.CenLat.values)
+lon_distances_gp = np.abs(era5_land_static.lon.values-shape_grid.CenLon.values[0])
+lat_distances_gp = np.abs(era5_land_static.lat.values-shape_grid.CenLat.values[0])
 idx_lon = np.where(lon_distances_gp == np.nanmin(lon_distances_gp))
 idx_lat = np.where(lat_distances_gp == np.nanmin(lat_distances_gp))
 latitude = float(era5_land_static.lat[idx_lat].values)
@@ -89,13 +89,13 @@ relative_humidity[relative_humidity < 0] = 0.0
 ### delete first value because of problem with accumualted variables
 time_local = era5_land['time'].to_index() + pd.Timedelta(hours=timezone_difference_to_UTC)
 time_local = time_local[1:]
-temperature = temperature[1:] 
-air_pressure = air_pressure[1:] 
-U2 = U2[1:] 
-relative_humidity = relative_humidity[1:] 
-total_precipitation = total_precipitation[1:] 
-shortwave_in = shortwave_in[1:] 
-longwave_in = longwave_in[1:] 
+temperature = temperature[1:]
+air_pressure = air_pressure[1:]
+U2 = U2[1:]
+relative_humidity = relative_humidity[1:]
+total_precipitation = total_precipitation[1:]
+shortwave_in = shortwave_in[1:]
+longwave_in = longwave_in[1:]
 
 print('T2'); mmm_nan(temperature); mmm_nan(era5_land['t2m'].values)
 print('PRES'); mmm_nan(air_pressure); mmm_nan(era5_land['sp'].values)

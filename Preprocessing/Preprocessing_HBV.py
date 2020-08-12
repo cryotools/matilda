@@ -87,7 +87,7 @@ data_runoff.set_index('Date', inplace=True)
 data_runoff = data_runoff.drop(columns=["index"])
 data_runoff = data_runoff.rename(columns={"Q":"Qobs"})
 
-#data_runoff.to_csv(output_hbv_py + "urumqi_observations.csv")
+data_runoff.to_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/daily_observations_2011-18.csv")
 
 
 ## Preparation for HBV Lite Model
