@@ -1,5 +1,6 @@
+# -*- coding: UTF-8 -*-
 """
-The model is a combination between a degree day model and the HBV model (Bergström 1976) to compute runoff from the
+The model is a combination between a degree day model and the HBV model (Bergstöm 1976) to compute runoff from the
 glaciers and the catchment.
 This file uses the input files created by COSIPY (aws2cosipy) as input files to run the model as well as additional
 observation runoff data to validate it.
@@ -16,7 +17,9 @@ from ConfigFile import *
 # Observation data should be given in form of a csv with a date column and daily observations
 ds = xr.open_dataset(cosipy_nc)
 df = pd.read_csv(cosipy_csv)
-obs = pd.read_csv(observation_data)
+obs = pd.read_csv(observation_data, names=["Date", "Qobs"])
+if evap_data_available == True:
+    evap = pd.read_csv(evap_data, names=["Date", "PE"])
 
 # adjust time
 ds = ds.sel(time=slice(time_start, time_end))
@@ -26,6 +29,10 @@ df = df[time_start: time_end]
 obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
 obs = obs[time_start: time_end]
+if evap_data_available == True:
+    evap.set_index("Date", inplace=True)
+    evap.index = pd.to_datetime(evap.index)
+    evap = evap[time_start: time_end]
 
 ## DDM
 """
@@ -150,7 +157,12 @@ in the unit mm / day.
 
 def simulation(df, parameters_HBV):
     # 1. new temporary dataframe from input with daily values
-    df_hbv = df.resample("D").agg({"T2":'mean',"RRR":'sum'})
+    df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
+
+    if evap_data_available == True:
+        evap = evap.resample("D").agg({"PE": 'sum'})
+        df_hbv = evap["PE"]
+
     Temp = df_hbv['T2']
     if temp_unit == True:
         Temp = Temp - 273.15
@@ -168,12 +180,12 @@ def simulation(df, parameters_HBV):
     extra_rad = 27.086217947590317
     latent_heat_flux = 2.45
     water_density = 1000
-    if evap_data = False:
+    if evap_data_available == False:
         df_hbv["PE"] = np.where((df_hbv["T2"] - 273.15) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
                                                               ((df_hbv["T2"] - 273.15) +5)/100)*1000, 0)
         Evap = df_hbv["PE"]
     else:
-        Evap = df_hbv["PE_name"]
+        Evap = df_hbv["PE"]
 
     # 2. set the parameters for the HBV
     parBETA, parCET, parFC, parK0, parK1, parK2, parLP, parMAXBAS,\

@@ -1,0 +1,3 @@
+#!/bin/bash
+python3 Scripts/Model.py
+python3 Scripts/Def_Plots.py
