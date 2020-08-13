@@ -34,9 +34,14 @@ Model input rewritten and adjusted to our needs from the pypdd function (github.
 - # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)
 """
 def calculate_PDD(ds):
-    temp_min = ds['T2'].resample(time="D").min(dim="time") - 273.15 # now °C
-    temp_max = ds['T2'].resample(time="D").max(dim="time") - 273.15
-    temp_mean = ds['T2'].resample(time="D").mean(dim="time") - 273.15
+    temp_min = ds['T2'].resample(time="D").min(dim="time") # now °C
+    temp_max = ds['T2'].resample(time="D").max(dim="time")
+    temp_mean = ds['T2'].resample(time="D").mean(dim="time")
+    if temp_unit:
+        temp_max, temp_mean, temp_min = temp_max - 273.15, temp_mean - 273.15, temp_min - 273.15
+    else:
+        temp_max, temp_mean, temp_min = temp_max, temp_mean, temp_min
+
     prec = ds['RRR'].resample(time="D").sum(dim="time")
     time = temp_mean["time"]
     # masking the dataset to only get the glacier area
@@ -146,18 +151,29 @@ in the unit mm / day.
 def simulation(df, parameters_HBV):
     # 1. new temporary dataframe from input with daily values
     df_hbv = df.resample("D").agg({"T2":'mean',"RRR":'sum'})
-    Temp = df_hbv['T2'] - 273.15 # K to °C
+    Temp = df_hbv['T2']
+    if temp_unit == True:
+        Temp = Temp - 273.15
+    else:
+        Temp = Temp
+
     Prec = df_hbv['RRR']
+    if prec_unit == False:
+        Prec = Prec / prec_conversion
+    else:
+        Prec = Prec
 
     # Calculation of PE with Oudin et al. 2005
     solar_constant = (1376 * 1000000) / 86400  # from 1376 J/m2s to MJm2d
     extra_rad = 27.086217947590317
     latent_heat_flux = 2.45
     water_density = 1000
-
-    df_hbv["PE"] = np.where((df_hbv["T2"] - 273.15) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
+    if evap_data = False:
+        df_hbv["PE"] = np.where((df_hbv["T2"] - 273.15) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
                                                               ((df_hbv["T2"] - 273.15) +5)/100)*1000, 0)
-    Evap = df_hbv["PE"]
+        Evap = df_hbv["PE"]
+    else:
+        Evap = df_hbv["PE_name"]
 
     # 2. set the parameters for the HBV
     parBETA, parCET, parFC, parK0, parK1, parK2, parLP, parMAXBAS,\

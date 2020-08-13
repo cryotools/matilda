@@ -11,7 +11,7 @@ input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/observations/gl
 
 output_path = working_directory + "Output/"
 
-cosipy_nc = input_path_cosipy + "20200810_Urumqi_ERA5_2011_2018_cosipy.nc"
+cosipy_nc = input_path_cosipy + "20200810_Umrumqi_ERA5_2011_2018_cosipy.nc"
 cosipy_csv = input_path_cosipy + "20200810_Urumqi_ERA5_2011_2018_cosipy.csv"
 observation_data = input_path_observations + "daily_observations_2011-18.csv"
 
@@ -20,6 +20,14 @@ time_start = '2011-01-01 00:00:00'
 time_end = '2018-12-31 23:00:00'
 
 # variable names
+# Temperature
+temp_unit = True # Temperature unit is Kelvin
+# Precipitation
+prec_unit = True # Precipitation unit is in mm
+prec_conversion = 1000 # Conversion factor through division
+# Evapotranspiration
+evap_data = True # ET data is available, else it will be calculated by the formula by Oudin et al. (2005)
+# Runoff observation
 
 # Parameters for the DDM
 """
