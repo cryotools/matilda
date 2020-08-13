@@ -1,16 +1,17 @@
+# -*- coding: UTF-8 -*-
 ##
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from Scripts.Model import output, glacier_melt
 from ConfigFile import output_path, time_start, time_end
+
+output_csv = output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv")
+output = pd.read_csv(output_csv)
 
 output_monthly = output.resample("M").agg({"T2":"mean", "RRR":"sum", "PE":"sum", "Q_HBV":"sum", "Qobs":"sum", "Q_DDM":"sum", \
                                            "Q_Total":"sum"})
 output_yearly = output.resample("Y").agg({"T2":"mean", "RRR":"sum", "PE":"sum", "Q_HBV":"sum", "Qobs":"sum", "Q_DDM":"sum", \
                                           "Q_Total":"sum"})
-
-glacier_melt_yearly = glacier_melt.sum(dim=["lat", "lon"])
-glacier_melt_yearly = glacier_melt_yearly.resample(time='Y').sum(dim='time')
 
 ##
 # Plot meteorological parameters
@@ -24,8 +25,8 @@ ax1.set_title("Monthly mean Temperature", fontsize=9)
 ax2.set_title("Monthly Precipitation sum", fontsize=9)
 ax3.set_title("Monthly Evapotranspiration sum", fontsize=9)
 ax1.set_ylabel("[°C]", fontsize=9)
-ax2.set_ylabel("[°mm]", fontsize=9)
-ax3.set_ylabel("[°mm]", fontsize=9)
+ax2.set_ylabel("[mm]", fontsize=9)
+ax3.set_ylabel("[mm]", fontsize=9)
 fig.suptitle("Meteorological input parameters in " +str(time_start[:4])+"-"+str(time_end[:4]), size=14)
 #plt.show()
 plt.savefig(output_path + "meteorological_data_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
@@ -56,6 +57,6 @@ ax3.plot(output.index.to_pydatetime(), output["Q_DDM"], "r", alpha=0.8, label="D
 ax1.legend(), ax2.legend(), ax3.legend(),
 ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
 ax1.set_title("Daily runoff comparison of the model and observations in "+ str(time_start[:4])+"-"+str(time_end[:4]), size=14)
-plt.show()
-#plt.savefig(output_path + "model_runoff2_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
+#plt.show()
+plt.savefig(output_path + "model_runoff_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
 

@@ -8,26 +8,30 @@ working_directory = home + "/Seafile/SHK/Scripts/centralasiawaterresources/Final
 
 input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/"
+input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
 cosipy_nc = input_path_cosipy + "20200810_Umrumqi_ERA5_2011_2018_cosipy.nc"
 cosipy_csv = input_path_cosipy + "20200810_Urumqi_ERA5_2011_2018_cosipy.csv"
+# dataframe with two columns, date and observations
 observation_data = input_path_observations + "daily_observations_2011-18.csv"
+# Optional evapotranspiration dataframe, two columns with date and data
+evap_data = input_path_data + " "
 
 # time period
 time_start = '2011-01-01 00:00:00'
 time_end = '2018-12-31 23:00:00'
 
-# variable names
+# Variables
 # Temperature
 temp_unit = True # Temperature unit is Kelvin
 # Precipitation
 prec_unit = True # Precipitation unit is in mm
 prec_conversion = 1000 # Conversion factor through division
-# Evapotranspiration
-evap_data = True # ET data is available, else it will be calculated by the formula by Oudin et al. (2005)
-# Runoff observation
+# Evapotranspiration: unit is mm / day
+evap_data_available = False # ET data is available, else it will be calculated by the formula by Oudin et al. (2005)
+# Runoff observation: unit is mm / day
 
 # Parameters for the DDM
 """
