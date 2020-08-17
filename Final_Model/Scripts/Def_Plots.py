@@ -1,12 +1,13 @@
 # -*- coding: UTF-8 -*-
 ##
-import pandas as pd
+import sys
+sys.path.extend(['/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Final_Model'])
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from ConfigFile import output_path, time_start, time_end
-
-output_csv = output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv")
-output = pd.read_csv(output_csv)
+from Scripts.Model import output
 
 output_monthly = output.resample("M").agg({"T2":"mean", "RRR":"sum", "PE":"sum", "Q_HBV":"sum", "Qobs":"sum", "Q_DDM":"sum", \
                                            "Q_Total":"sum"})
@@ -59,4 +60,6 @@ ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_
 ax1.set_title("Daily runoff comparison of the model and observations in "+ str(time_start[:4])+"-"+str(time_end[:4]), size=14)
 #plt.show()
 plt.savefig(output_path + "model_runoff_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
-
+print('Saved plots of meteorological and runoff data to disc')
+print("End of model run")
+print('---')

@@ -12,12 +12,12 @@ input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
-cosipy_nc = input_path_cosipy + "20200810_Umrumqi_ERA5_2011_2018_cosipy.nc"
-cosipy_csv = input_path_cosipy + "20200810_Urumqi_ERA5_2011_2018_cosipy.csv"
+cosipy_nc =  "20200810_Umrumqi_ERA5_2011_2018_cosipy.nc"
+cosipy_csv = "20200810_Urumqi_ERA5_2011_2018_cosipy.csv"
 # dataframe with two columns, date and observations
-observation_data = input_path_observations + "daily_observations_2011-18.csv"
+observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
-evap_data = input_path_data + " "
+evap_data = " "
 
 # time period
 time_start = '2011-01-01 00:00:00'
