@@ -6,6 +6,10 @@ This file uses the input files created by COSIPY (aws2cosipy) as input files to 
 observation runoff data to validate it.
 """
 ##
+import sys
+sys.path.extend(['/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Final_Model'])
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import scipy.signal as ss
 import pandas as pd
@@ -13,13 +17,20 @@ import xarray as xr
 
 from ConfigFile import *
 
+print('---')
+print('Read input netcdf file %s' % (cosipy_nc))
+print('Read input csv file %s' % (cosipy_csv))
+print('Read observation data %s' % (observation_data))
+
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
 # Observation data should be given in form of a csv with a date column and daily observations
-ds = xr.open_dataset(cosipy_nc)
-df = pd.read_csv(cosipy_csv)
-obs = pd.read_csv(observation_data, names=["Date", "Qobs"])
+ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
+df = pd.read_csv(input_path_cosipy + cosipy_csv)
+obs = pd.read_csv(input_path_observations + observation_data)
 if evap_data_available == True:
-    evap = pd.read_csv(evap_data, names=["Date", "PE"])
+    evap = pd.read_csv(input_path_data + evap_data)
+
+print("Adjust time period: " + str(time_start) + " until "  + str(time_end))
 
 # adjust time
 ds = ds.sel(time=slice(time_start, time_end))
@@ -40,6 +51,8 @@ Degree Day Model to calculate the accumulation, snow and ice melt and runoff rat
 Model input rewritten and adjusted to our needs from the pypdd function (github.com/juseg/pypdd 
 - # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)
 """
+print("Running the degree day model")
+
 def calculate_PDD(ds):
     temp_min = ds['T2'].resample(time="D").min(dim="time") # now °C
     temp_max = ds['T2'].resample(time="D").max(dim="time")
@@ -154,6 +167,7 @@ Ayzel Georgy. (2016). LHMP: lumped hydrological modelling playground. Zenodo. do
 For the HBV model, evapotranspiration values are needed. These are calculated with the formula by Oudin et al. (2005) 
 in the unit mm / day.
 """
+print("Running the HBV model")
 
 def simulation(df, parameters_HBV):
     # 1. new temporary dataframe from input with daily values
@@ -340,6 +354,7 @@ output_hbv = simulation(df, parameters_HBV)
 
 ## output dataframe
 output = pd.concat([output_hbv, obs], axis=1)
+
 Q_DDM = glacier_melt["runoff_rate"].sum(dim=["lat", "lon"])
 Q_DDM = pd.array(Q_DDM)
 output["Q_DDM"] = Q_DDM / 50
@@ -347,4 +362,5 @@ output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-#output.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv"))
+output.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv"))
+print('Writing the output csv to disc %s' % (output_csv))
