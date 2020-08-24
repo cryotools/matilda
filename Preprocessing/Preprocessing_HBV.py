@@ -8,7 +8,6 @@ import datetime
 # File organization
 working_directory = '/Seafile/Ana-Lena_Phillip/data/'
 output = home + working_directory + "HBV-Light/HBV-light_data/Glacier_No.1/Python/Data/"
-output_hbv_py = home + "/Seafile/Ana-Lena_Phillip/data/scripts/LHMP/data/"
 
 era5_file = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
 runoff_observations = home + working_directory + "observations/glacierno1/hydro/dailyrunoff_2011-18_glacierno1.xls"
@@ -71,15 +70,14 @@ def calculate_pe(df):
         else:
             return 0
 
-era5_daily["Pev_calculated"] = era5_daily.apply(calculate_pe, axis=1)
+era5_daily["PE"] = era5_daily.apply(calculate_pe, axis=1)
 
 ## Preparation for HBV Python Model
-data = era5_daily[["T2", "RRR", "Pev_calculated"]]
-data = data.rename(columns={"T2":"Temp", "RRR":"Prec", "Pev_calculated":"Evap"})
+data = era5_daily.copy()
+data = data.rename(columns={"T2":"Temp", "RRR":"Prec", "PE":"Evap"})
 data.index.names = ['Date']
 
-#data.to_csv(output_hbv_py + "data_urumqi.csv")
-
+#export runoff to normal csv
 data_runoff = runoff.copy()
 data_runoff = data_runoff.reset_index()
 data_runoff.set_index('Date', inplace=True)
@@ -87,11 +85,6 @@ data_runoff = data_runoff.drop(columns=["index"])
 data_runoff = data_runoff.rename(columns={"Q":"Qobs"})
 
 data_runoff.to_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/daily_observations_2011-18.csv")
-
-runoff = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/daily_observations_2011-18.csv")
-runoff["Date"] = pd.to_datetime(runoff["Date"])
-runoff = runoff.rename(columns={"Qobs":"Q"})
-
 
 ## Preparation for HBV Lite Model
 ptq = era5_daily[["RRR", "T2"]]
@@ -105,7 +98,7 @@ ptq["Q"][np.isnan(ptq["Q"])] = int(-9999)
 
 ptq.to_csv(output + "ptq.txt", sep="\t", index=None)
 
-evap_calc = era5_daily["Pev_calculated"]
+evap_calc = era5_daily["PE"]
 #evap_calc = evap_calc.groupby([(evap_calc.index.month), (evap_calc.index.day)]).mean()
 #evap_calc = evap_calc.drop((2, 29))
 evap_calc.to_csv(output + "evap.txt", index=None, header=False)
