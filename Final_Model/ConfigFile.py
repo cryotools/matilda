@@ -12,8 +12,8 @@ input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
-cosipy_nc =  "20200810_Umrumqi_ERA5_2011_2018_cosipy.nc"
-cosipy_csv = "20200810_Urumqi_ERA5_2011_2018_cosipy.csv"
+cosipy_nc = "20200810_Umrumqi_ERA5_2000_2019_cosipy.nc"
+cosipy_csv = "20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
@@ -107,8 +107,8 @@ List of 16 HBV model parameters
     simulated river runoff (daily timesteps)
 """
 
-parameters_HBV=[1.0,   0.15,     250,   0.055, 0.055,   0.04,     0.7,     3.0,\
-        1.5,    120,     1.0,     0.0,  5.7,    0.7,     0.05,    0.1]
+parameters_HBV=[ 1.0,   0.15,     250,   0.055, 0.055,   0.04,     0.7,     3.0,\
+        1.5,    120,     1.0,     0.0, 5.0,    0.7,     0.05,    0.1]
 
 parBETA, parCET, parFC, parK0, parK1, parK2, parLP, parMAXBAS,\
     parPERC, parUZL, parPCORR, parTT, parCFMAX, parSFCF, parCFR, parCWH = parameters_HBV
