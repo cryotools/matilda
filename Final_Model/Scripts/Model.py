@@ -351,7 +351,6 @@ def simulation(df, parameters_HBV):
     return df_hbv
 
 output_hbv = simulation(df, parameters_HBV)
-
 ## output dataframe
 output = pd.concat([output_hbv, obs], axis=1)
 
@@ -362,5 +361,5 @@ output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-output.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv"))
-print('Writing the output csv to disc %s' % (output_csv))
+output_csv.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv"))
+print("Writing the output csv to disc")
