@@ -1,6 +1,6 @@
 import datetime; starttime = datetime.datetime.now().time(); print(starttime)
 from pathlib import Path ; home = str(Path.home())
-import sys; sys.path.append('/home/anz/Seafile/work/software/python_source_code/pre_and_postprocessing_COSIPY/Anselm/')
+import sys; sys.path.append('/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/')
 import numpy as np; import pandas as pd; import xarray as xr; import salem
 from misc_functions.xarray_functions import insert_var
 from misc_functions.inspect_values import mmm_nan, mmm_nan_name, check, check_for_nans_dataframe, calculate_r2_and_rmse
