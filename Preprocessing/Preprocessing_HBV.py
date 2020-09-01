@@ -7,10 +7,9 @@ import datetime
 
 # File organization
 working_directory = '/Seafile/Ana-Lena_Phillip/data/'
-output = home + working_directory + "scripts/HBV_Light/HBV-light_data/Glacier_No.1/Python/Data/"
-output_hbv_py = home + "/Seafile/Ana-Lena_Phillip/data/scripts/LHMP/data/"
+output = home + working_directory + "HBV-Light/HBV-light_data/Glacier_No.1/Python/Data/"
 
-era5_file = home + working_directory + "input_output/input/202004_Umrumqi_ERA5_2011_2018_HBV.csv"
+era5_file = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
 runoff_observations = home + working_directory + "observations/glacierno1/hydro/dailyrunoff_2011-18_glacierno1.xls"
 
 #Time slice
@@ -21,7 +20,6 @@ time_end = '2018-12-31 23:00:00'
 # Units: Temp in K, Pev, ERA Runoff und TP in mm, Obs Runoff in m3/s
 era5 = pd.read_csv(era5_file)
 era5["T2"] = era5["T2"] - 273.15 # now °C
-era5 = era5.reset_index()
 era5.set_index('TIMESTAMP', inplace=True)
 era5.index = pd.to_datetime(era5.index)
 era5 = era5["2011-01-01 00:00:00": "2018-12-31 23:00:00"]
@@ -58,7 +56,7 @@ runoff["Q"]= (runoff["Q"]*86400/3367000)*1000
 
 ##
 # Daily values
-era5_daily = era5.resample('D').agg({"T2":'mean',"RRR":'sum', "Runoff":"sum", "Pev":"sum"})
+era5_daily = era5.resample('D').agg({"T2":'mean',"RRR":'sum'})
 
 # Estimation PE through a formula by Oudin et al. -> unit is mm / day
 solar_constant = (1376 * 1000000) / 86400 # from 1376 J/m2s to MJm2d
@@ -72,15 +70,14 @@ def calculate_pe(df):
         else:
             return 0
 
-era5_daily["Pev_calculated"] = era5_daily.apply(calculate_pe, axis=1)
+era5_daily["PE"] = era5_daily.apply(calculate_pe, axis=1)
 
 ## Preparation for HBV Python Model
-data = era5_daily[["T2", "RRR", "Pev_calculated"]]
-data = data.rename(columns={"T2":"Temp", "RRR":"Prec", "Pev_calculated":"Evap"})
+data = era5_daily.copy()
+data = data.rename(columns={"T2":"Temp", "RRR":"Prec", "PE":"Evap"})
 data.index.names = ['Date']
 
-#data.to_csv(output_hbv_py + "data_urumqi.csv")
-
+#export runoff to normal csv
 data_runoff = runoff.copy()
 data_runoff = data_runoff.reset_index()
 data_runoff.set_index('Date', inplace=True)
@@ -88,7 +85,6 @@ data_runoff = data_runoff.drop(columns=["index"])
 data_runoff = data_runoff.rename(columns={"Q":"Qobs"})
 
 data_runoff.to_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/daily_observations_2011-18.csv")
-
 
 ## Preparation for HBV Lite Model
 ptq = era5_daily[["RRR", "T2"]]
@@ -100,9 +96,9 @@ ptq["Date"] = ptq["Date"].apply(lambda x: x.strftime('%Y%m%d'))
 ptq = ptq[["Date", "P", "T", "Q"]]
 ptq["Q"][np.isnan(ptq["Q"])] = int(-9999)
 
-ptq.to_csv(output + "ptq1.txt", sep="\t", index=None)
+ptq.to_csv(output + "ptq.txt", sep="\t", index=None)
 
-evap_calc = era5_daily["Pev_calculated"]
+evap_calc = era5_daily["PE"]
 #evap_calc = evap_calc.groupby([(evap_calc.index.month), (evap_calc.index.day)]).mean()
 #evap_calc = evap_calc.drop((2, 29))
 evap_calc.to_csv(output + "evap.txt", index=None, header=False)
