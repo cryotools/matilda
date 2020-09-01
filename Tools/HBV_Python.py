@@ -6,22 +6,35 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # File organization
-working_directory = '/Seafile/Ana-Lena_Phillip/data/scripts/LHMP/'
+working_directory = '/Seafile/Ana-Lena_Phillip/data/'
 
 # functions for later use
 def NS(Qobs, Qsim):
     return 1 - np.sum((Qobs-Qsim)**2) / (np.sum((Qobs-Qobs.mean())**2))
 
 ## Data and parameters
-data_urumqi = home + working_directory + "data/data_urumqi.csv"
+data_urumqi = home + working_directory + "input_output/input/20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
 data = pd.read_csv(data_urumqi)
 
-obs = pd.read_csv(home + working_directory + "data/urumqi_observations.csv")
+obs = pd.read_csv(home + working_directory + "observations/glacierno1/hydro/daily_observations_2011-18.csv")
 obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
 
-data.set_index('Date', inplace=True)
+time_start = '2011-01-01 00:00:00'
+time_end = '2018-12-31 23:00:00'
+data.set_index('TIMESTAMP', inplace=True)
 data.index = pd.to_datetime(data.index)
+data = data[time_start: time_end]
+
+df_hbv = data.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
+df_hbv["T2"] = df_hbv["T2"] - 273.15
+
+solar_constant = (1376 * 1000000) / 86400  # from 1376 J/m2s to MJm2d
+extra_rad = 27.086217947590317
+latent_heat_flux = 2.45
+water_density = 1000
+df_hbv["PE"] = df_hbv["PE"] = np.where(df_hbv["T2"] + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
+                            (df_hbv["T2"] +5)/100)*1000, 0)
 
 params=[ 1.0,   0.15,     250,   0.055, 0.055,   0.04,     0.7,     3.0,\
         1.5,    120,     1.0,     0.0, 5.0,    0.7,     0.05,    0.1]
@@ -95,9 +108,9 @@ def simulation(data, params=[ 1.0,   0.15,     250,   0.055,\
     simulated river runoff (daily timesteps)
     '''
     # 1. read input data
-    Temp = data['Temp']
-    Prec = data['Prec']
-    Evap = data['Evap']
+    Temp = data['T2']
+    Prec = data['RRR']
+    Evap = data['PE']
 
     # 2. set the parameters
     parBETA, parCET, parFC, parK0, parK1, parK2, parLP, parMAXBAS,\
@@ -249,7 +262,7 @@ def simulation(data, params=[ 1.0,   0.15,     250,   0.055,\
     return Qsim
 
 ## Running the Model
-data["Qsim"] = simulation(data, params)
+df_hbv["Qsim"] = simulation(df_hbv, params)
 
 # concatenate data
 data = pd.concat([data, obs], axis=1)
