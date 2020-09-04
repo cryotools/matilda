@@ -13,12 +13,14 @@ def NS(Qobs, Qsim):
     return 1 - np.sum((Qobs-Qsim)**2) / (np.sum((Qobs-Qobs.mean())**2))
 
 ## Data and parameters
-data_urumqi = home + working_directory + "input_output/input/20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
+data_urumqi = home + working_directory + "input_output/best_cosipyrun_no1_2011-18/best_cosipy_input_no1_2011-18.csv"
 data = pd.read_csv(data_urumqi)
 
 obs = pd.read_csv(home + working_directory + "observations/glacierno1/hydro/daily_observations_2011-18.csv")
 obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
+
+output_hbv = home + working_directory + "input_output/best_cosipyrun_no1_2011-18/best_cosipyrun_no1_hbv-output.csv"
 
 time_start = '2011-01-01 00:00:00'
 time_end = '2018-12-31 23:00:00'
@@ -264,18 +266,24 @@ def simulation(data, params=[ 1.0,   0.15,     250,   0.055,\
 ## Running the Model
 df_hbv["Qsim"] = simulation(df_hbv, params)
 
+# Returning output dataframe
+output = pd.concat([df_hbv, obs], axis=1)
+
 # concatenate data
-data = pd.concat([data, obs], axis=1)
+# data = pd.concat([data, obs], axis=1)
 
 # calculate efficiency criterion
 # slice data only for observational period and drop NA values
-data_for_obs = data.loc[obs.index, ['Qsim', 'Qobs']].dropna()
-eff = NS(data_for_obs['Qobs'], data_for_obs['Qsim'])
+# data_for_obs = data.loc[obs.index, ['Qsim', 'Qobs']].dropna()
+# eff = NS(data_for_obs['Qobs'], data_for_obs['Qsim'])
+#
+# ## Plot
+# ax = data.loc[obs.index, ['Qsim', 'Qobs']].plot(figsize=(10, 7), style=['b-', 'k-'])
+# ax.set_title("Urumqi" + ' daily runoff modelling, ' + 'Nash-Sutcliffe efficiency: {}'.format(np.round(eff, 2)))
+# plt.show()
 
-## Plot
-ax = data.loc[obs.index, ['Qsim', 'Qobs']].plot(figsize=(10, 7), style=['b-', 'k-'])
-ax.set_title("Urumqi" + ' daily runoff modelling, ' + 'Nash-Sutcliffe efficiency: {}'.format(np.round(eff, 2)))
+ax = output.loc[obs.index, ['Qsim', 'Qobs']].plot(figsize=(10, 7), style=['b-', 'k-'])
+ax.set_title("Urumqi" + ' daily runoff modelling - best COSIPY run ')
 plt.show()
-
 ## Output
-data.to_csv(home + working_directory + "output.csv")
+output.to_csv(output_hbv)
