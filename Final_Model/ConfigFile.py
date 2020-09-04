@@ -3,8 +3,8 @@ This if the configuration file for the model. Adjust the paths, variables and pa
 """
 from pathlib import Path; home = str(Path.home())
 
-# Directories
-working_directory = home + "/Seafile/SHK/Scripts/centralasiawaterresources/Final_Model/"
+# Directories		# Defining home could be misleading. Better full paths?
+working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model"
 
 input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/"
@@ -12,7 +12,7 @@ input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
-cosipy_nc = "20200810_Umrumqi_ERA5_2000_2019_cosipy.nc"
+cosipy_nc = "20200810_Umrumqi_ERA5_2000_2019_cosipy.nc"		# Why do we need both?
 cosipy_csv = "20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
