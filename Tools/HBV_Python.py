@@ -20,6 +20,10 @@ obs = pd.read_csv(home + working_directory + "observations/glacierno1/hydro/dail
 obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
 
+# valdidation: comparison between here and df in HBV Lite
+data_hbv_lite = home + working_directory + "HBV-Light/HBV-light_data/Glacier_No.1/Python/Noglacier_Run/Data/evap.txt"
+df_hbv_lite = pd.read_csv(data_hbv_lite, sep="\t")
+
 time_start = '2011-01-01 00:00:00'
 time_end = '2018-12-31 23:00:00'
 data.set_index('TIMESTAMP', inplace=True)
@@ -259,13 +263,19 @@ def simulation(data, params=[ 1.0,   0.15,     250,   0.055,\
 
     Qsim = Qsim_smoothed
 
-    return Qsim
+    hbv_results = pd.DataFrame({"Qsim": Qsim, "snowpack":SNOWPACK, "soil_moisture":SM, "AET":ETact, "upper_gw":SUZ, \
+                                "lower_gw":SLZ}, index=df_hbv.index)
+
+    return hbv_results
 
 ## Running the Model
-df_hbv["Qsim"] = simulation(df_hbv, params)
+hbv_results = simulation(df_hbv, params)
+df_hbv["Qsim"] = hbv_results["Qsim"]
 
 # concatenate data
-data = pd.concat([data, obs], axis=1)
+data = pd.concat([df_hbv, obs], axis=1)
+data = pd.concat([data, hbv_results], axis=1)
+data["Date"] = data.index
 
 # calculate efficiency criterion
 # slice data only for observational period and drop NA values
@@ -278,4 +288,4 @@ ax.set_title("Urumqi" + ' daily runoff modelling, ' + 'Nash-Sutcliffe efficiency
 plt.show()
 
 ## Output
-data.to_csv(home + working_directory + "output.csv")
+data.to_csv(home + working_directory + "input_output/LHMP/output_2011-2018.csv")
