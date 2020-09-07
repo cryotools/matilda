@@ -4,7 +4,7 @@ This if the configuration file for the model. Adjust the paths, variables and pa
 from pathlib import Path; home = str(Path.home())
 
 # Directories		# Defining home could be misleading. Better full paths?
-working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model"
+working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
 
 input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/best_cosipyrun_no1_2011-18/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/"
