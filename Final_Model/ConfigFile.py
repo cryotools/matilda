@@ -12,8 +12,8 @@ input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
-cosipy_nc = "best_cosipy_input_no1_2011.nc"
-cosipy_csv = "best_cosipy_input_no1_2011.csv"        # What about running HBV with .nc?
+cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
+cosipy_csv = "best_cosipy_input_no1_2011-18.csv"        # What about running HBV with .nc?
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
@@ -21,7 +21,7 @@ evap_data = " "
 
 # time period
 time_start = '2011-01-01 00:00:00'
-time_end = '2011-12-31 23:00:00'
+time_end = '2018-12-31 23:00:00'
 
 # Variables
 # Temperature
