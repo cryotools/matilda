@@ -9,7 +9,7 @@ import datetime
 working_directory = '/Seafile/Ana-Lena_Phillip/data/'
 output = home + working_directory + "HBV-Light/HBV-light_data/Glacier_No.1/Python/Data/"
 
-era5_file = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
+era5_file = home + "/Seafile/Ana-Lena_Phillip/data/input_output/best_cosipyrun_no1_2011-18/best_cosipy_input_no1_2011-18.csv"
 runoff_observations = home + working_directory + "observations/glacierno1/hydro/dailyrunoff_2011-18_glacierno1.xls"
 
 #Time slice
@@ -78,13 +78,13 @@ data = data.rename(columns={"T2":"Temp", "RRR":"Prec", "PE":"Evap"})
 data.index.names = ['Date']
 
 #export runoff to normal csv
-data_runoff = runoff.copy()
+data_runoff = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/daily_observations_2011-18.csv")
 data_runoff = data_runoff.reset_index()
 data_runoff.set_index('Date', inplace=True)
 data_runoff = data_runoff.drop(columns=["index"])
 data_runoff = data_runoff.rename(columns={"Q":"Qobs"})
 
-data_runoff.to_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/daily_observations_2011-18.csv")
+#data_runoff.to_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/daily_observations_2011-18.csv")
 
 ## Preparation for HBV Lite Model
 ptq = era5_daily[["RRR", "T2"]]
