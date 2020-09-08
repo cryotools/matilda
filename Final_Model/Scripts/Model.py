@@ -86,8 +86,8 @@ def calculate_PDD(ds):
                 water_year.append(i["time.year"])
         return np.asarray(water_year)
 
-    water_year = calc_hydrological_year(time)
-    pdd_ds = pdd_ds.assign_coords(water_year = water_year)
+    #water_year = calc_hydrological_year(time)
+    #pdd_ds = pdd_ds.assign_coords(water_year = water_year)
 
     # calculate the positive degree days
     pdd_ds["pdd"] = xr.where(temp_mean > 0, temp_mean, 0)
@@ -154,7 +154,7 @@ def calculate_glaciermelt(ds):
                             name="ice_melt_rate"), xr.DataArray(snow_melt_rate, name="snow_melt_rate"), \
                              xr.DataArray(total_melt, name="total_melt"), xr.DataArray(runoff_rate, name="runoff_rate"), \
                              xr.DataArray(inst_smb, name="smb")])
-    glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
+    #glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
 
     return glacier_melt
 
@@ -351,8 +351,10 @@ def simulation(df, parameters_HBV):
     Qsim_smoothed = np.where(Qsim_smoothed > 0, Qsim_smoothed, 0)
 
     Qsim = Qsim_smoothed
-    df_hbv["Q_HBV"] = Qsim
-    return df_hbv
+    hbv_results = pd.DataFrame({"Q_HBV": Qsim, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
+                                "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ}, index=df_hbv.index)
+    hbv_results = pd.concat([df_hbv, hbv_results], axis=1)
+    return hbv_results
 
 output_hbv = simulation(df, parameters_HBV)
 ## output dataframe
@@ -365,5 +367,5 @@ output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(time_start[:10])+"-"+str(time_end[:10]+".csv"))
+output_csv.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv"))
 print("Writing the output csv to disc")

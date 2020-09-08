@@ -20,10 +20,6 @@ obs = pd.read_csv(home + working_directory + "observations/glacierno1/hydro/dail
 obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
 
-# valdidation: comparison between here and df in HBV Lite
-data_hbv_lite = home + working_directory + "HBV-Light/HBV-light_data/Glacier_No.1/Python/Noglacier_Run/Data/evap.txt"
-df_hbv_lite = pd.read_csv(data_hbv_lite, sep="\t")
-
 output_hbv = home + working_directory + "input_output/best_cosipyrun_no1_2011-18/best_cosipyrun_no1_hbv-output.csv"
 
 time_start = '2011-01-01 00:00:00'
@@ -272,16 +268,11 @@ def simulation(data, params=[ 1.0,   0.15,     250,   0.055,\
 
 ## Running the Model
 hbv_results = simulation(df_hbv, params)
-df_hbv["Qsim"] = hbv_results["Qsim"]
 
 # Returning output dataframe
 output = pd.concat([df_hbv, obs], axis=1)
-
-# concatenate data
-data = pd.concat([df_hbv, obs], axis=1)
-data = pd.concat([data, hbv_results], axis=1)
-data["Date"] = data.index
-# data = pd.concat([data, obs], axis=1)
+output = pd.concat([output, hbv_results], axis=1)
+output["Date"] = output.index
 
 # calculate efficiency criterion
 # slice data only for observational period and drop NA values
@@ -297,5 +288,5 @@ ax = output.loc[obs.index, ['Qsim', 'Qobs']].plot(figsize=(10, 7), style=['b-', 
 ax.set_title("Urumqi" + ' daily runoff modelling - best COSIPY run ')
 plt.show()
 ## Output
-data.to_csv(home + working_directory + "input_output/LHMP/output_2011-2018.csv")
+output.to_csv(home + working_directory + "input_output/LHMP/output_2011-2018.csv")
 output.to_csv(output_hbv)
