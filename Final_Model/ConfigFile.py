@@ -4,16 +4,16 @@ This if the configuration file for the model. Adjust the paths, variables and pa
 from pathlib import Path; home = str(Path.home())
 
 # Directories		# Defining home could be misleading. Better full paths?
-working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model"
+working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
 
-input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/"
+input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/best_cosipyrun_no1_2011-18/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/"
 input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
-cosipy_nc = "20200810_Umrumqi_ERA5_2000_2019_cosipy.nc"		# Why do we need both?
-cosipy_csv = "20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
+cosipy_nc = "best_cosipy_input_no1_2011.nc"
+cosipy_csv = "best_cosipy_input_no1_2011.csv"        # What about running HBV with .nc?
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
@@ -21,7 +21,7 @@ evap_data = " "
 
 # time period
 time_start = '2011-01-01 00:00:00'
-time_end = '2018-12-31 23:00:00'
+time_end = '2011-12-31 23:00:00'
 
 # Variables
 # Temperature
@@ -30,7 +30,7 @@ temp_unit = True # Temperature unit is Kelvin
 prec_unit = True # Precipitation unit is in mm
 prec_conversion = 1000 # Conversion factor through division
 # Evapotranspiration: unit is mm / day
-evap_data_available = False # ET data is available, else it will be calculated by the formula by Oudin et al. (2005)
+evap_data_available = False # ET data is available, else it will be calculated using the formula by Oudin et al. (2005)
 # Runoff observation: unit is mm / day
 
 # Parameters for the DDM

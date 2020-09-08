@@ -39,6 +39,7 @@ df.index = pd.to_datetime(df.index)
 df = df[time_start: time_end]
 obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
+# obs = obs.sort_index()
 obs = obs[time_start: time_end]
 if evap_data_available == True:
     evap.set_index("Date", inplace=True)
@@ -158,6 +159,9 @@ def calculate_glaciermelt(ds):
     return glacier_melt
 
 glacier_melt = calculate_glaciermelt(degreedays_ds) # output in mm
+
+# glacier_melt.total_melt.mean()
+# glacier_melt.runoff_rate.mean()
 
 ## HBV
 """
@@ -354,12 +358,12 @@ output_hbv = simulation(df, parameters_HBV)
 ## output dataframe
 output = pd.concat([output_hbv, obs], axis=1)
 
-Q_DDM = glacier_melt["runoff_rate"].sum(dim=["lat", "lon"])
+Q_DDM = glacier_melt["runoff_rate"].mean(dim=["lat", "lon"])
 Q_DDM = pd.array(Q_DDM)
-output["Q_DDM"] = Q_DDM / 50
+output["Q_DDM"] = Q_DDM
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+".csv"))
+output_csv.to_csv(output_path + "model_output_" +str(time_start[:10])+"-"+str(time_end[:10]+".csv"))
 print("Writing the output csv to disc")
