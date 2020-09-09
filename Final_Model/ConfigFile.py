@@ -7,26 +7,20 @@ from pathlib import Path; home = str(Path.home())
 
 working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
 
-input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/"
+input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 	# Cirrus directories
-<<<<<<< HEAD
 #working_directory = "/data/projects/ebaca/data/scripts/centralasianwaterresources/Final_Model/"
 #input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 #input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
-=======
-working_directory = "/data/projects/ebaca/data/scripts/centralasiawaterresources/Final_Model/"
-input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
-input_path_observations = "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
->>>>>>> 5f35e46ff8083307a53a464905a01ea031c7020e
 
 input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
-cosipy_nc = "20200810_Urumqi_ERA5_2000_2019_cosipy.nc"
-cosipy_csv = "20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
+cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
+cosipy_csv = "best_cosipy_input_no1_2011-18.csv"
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
