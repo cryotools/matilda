@@ -55,27 +55,25 @@ Model input rewritten and adjusted to our needs from the pypdd function (github.
 print("Running the degree day model")
 
 def calculate_PDD(ds):
-    temp_min = ds['T2'].resample(time="D").min(dim="time")
-    temp_max = ds['T2'].resample(time="D").max(dim="time")
-    temp_mean = ds['T2'].resample(time="D").mean(dim="time")
+    # masking the dataset to only get the glacier area
+    mask = ds.MASK.values
+    temp = xr.where(mask==1, ds["T2"], np.nan)
+    temp = temp.mean(dim=["lat", "lon"])
+    temp_min = temp.resample(time="D").min(dim="time")
+    temp_max = temp.resample(time="D").max(dim="time")
+    temp_mean = temp.resample(time="D").mean(dim="time")
     if temp_unit:
         temp_max, temp_mean, temp_min = temp_max - 273.15, temp_mean - 273.15, temp_min - 273.15
     else:
         temp_max, temp_mean, temp_min = temp_max, temp_mean, temp_min
 
-    prec = ds['RRR'].resample(time="D").sum(dim="time")
+    prec = xr.where(mask==1, ds["RRR"], np.nan)
+    prec = prec.mean(dim=["lat", "lon"])
+    prec = prec.resample(time="D").sum(dim="time")
     time = temp_mean["time"]
-    # masking the dataset to only get the glacier area
-    mask = ds.MASK.values
-    temp_min = xr.where(mask==1, temp_min, np.nan)
-    temp_max = xr.where(mask==1, temp_max, np.nan)
-    temp_mean = xr.where(mask==1, temp_mean, np.nan)
-    prec = xr.where(mask==1, prec, np.nan)
-
 
     pdd_ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
                    xr.DataArray(temp_max, name="temp_max"), prec])
-    #pdd_ds = pdd_ds.mean(dim=["lat", "lon"])
 
     # calculate the hydrological year
     def calc_hydrological_year(time):
@@ -156,7 +154,6 @@ def calculate_glaciermelt(ds):
     #glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
 
     # making the final df
-    glacier_melt = glacier_melt.mean(dim=["lat", "lon"])
     DDM_results = glacier_melt.to_dataframe()
 
 
