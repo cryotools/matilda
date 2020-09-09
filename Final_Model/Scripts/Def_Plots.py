@@ -1,7 +1,8 @@
 # -*- coding: UTF-8 -*-
 ##
 import sys
-sys.path.extend(['/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model'])
+# sys.path.extend(['/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model'])
+sys.path.extend(['/data/projects/ebaca/data/scripts/centralasiawaterresources/Final_Model'])
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import matplotlib.pyplot as plt
