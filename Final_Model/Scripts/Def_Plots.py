@@ -29,8 +29,8 @@ ax1.set_ylabel("[°C]", fontsize=9)
 ax2.set_ylabel("[mm]", fontsize=9)
 ax3.set_ylabel("[mm]", fontsize=9)
 fig.suptitle("Meteorological input parameters in " +str(time_start[:4])+"-"+str(time_end[:4]), size=14)
-plt.show()
-#plt.savefig(output_path + "meteorological_data_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
+# plt.show()
+plt.savefig(output_path + "meteorological_data_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
 
 # Plot runoff
 fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(10,6))
@@ -45,8 +45,8 @@ ax3.plot(output.index.to_pydatetime(), output["Q_DDM"], "r", alpha=0.8, label="D
 ax1.legend(), ax2.legend(), ax3.legend(),
 ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
 ax1.set_title("Daily runoff comparison of the model and observations in "+ str(time_start[:4])+"-"+str(time_end[:4]), size=14)
-plt.show()
-#plt.savefig(output_path + "model_runoff_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
+# plt.show()
+plt.savefig(output_path + "model_runoff_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
 
 # Plot extra parameters, output of the HBV
 fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, sharex=True, figsize=(10,6))
@@ -63,7 +63,8 @@ ax5.set_title("Lower groundwater box", fontsize=9)
 plt.xlabel("Date", fontsize=9)
 plt.legend(loc='upper center', bbox_to_anchor=(0.8, -0.21),
           fancybox=True, shadow=True, ncol=5)
-plt.show()
+plt.savefig(output_path + "xtra_param+hbv_output"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
+# plt.show()
 
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
