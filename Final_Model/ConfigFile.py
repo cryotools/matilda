@@ -11,9 +11,9 @@ from pathlib import Path; home = str(Path.home())
 # input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 	# Cirrus directories
-working_directory = "/data/projects/ebaca/data/scripts/centralasianwaterresources/Final_Model/"
+working_directory = "/data/projects/ebaca/data/scripts/centralasiawaterresources/Final_Model/"
 input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
-input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
+input_path_observations = "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
 
 input_path_data = home + ""
 
