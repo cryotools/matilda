@@ -55,7 +55,7 @@ Model input rewritten and adjusted to our needs from the pypdd function (github.
 print("Running the degree day model")
 
 def calculate_PDD(ds):
-    temp_min = ds['T2'].resample(time="D").min(dim="time") # now °C
+    temp_min = ds['T2'].resample(time="D").min(dim="time")
     temp_max = ds['T2'].resample(time="D").max(dim="time")
     temp_mean = ds['T2'].resample(time="D").mean(dim="time")
     if temp_unit:
@@ -75,6 +75,7 @@ def calculate_PDD(ds):
 
     pdd_ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
                    xr.DataArray(temp_max, name="temp_max"), prec])
+    #pdd_ds = pdd_ds.mean(dim=["lat", "lon"])
 
     # calculate the hydrological year
     def calc_hydrological_year(time):
@@ -149,19 +150,19 @@ def calculate_glaciermelt(ds):
                   - parameters_DDM["refreeze_ice"] * ice_melt_rate
     inst_smb = accu_rate - runoff_rate
 
-    # making the final ds
-    glacier_melt = xr.merge([xr.DataArray(accu_rate, name="accumulation_rate"), xr.DataArray(ice_melt_rate, \
-                            name="ice_melt_rate"), xr.DataArray(snow_melt_rate, name="snow_melt_rate"), \
-                             xr.DataArray(total_melt, name="total_melt"), xr.DataArray(runoff_rate, name="runoff_rate"), \
-                             xr.DataArray(inst_smb, name="smb")])
+    glacier_melt = xr.merge([xr.DataArray(inst_smb, name="DDM_smb"), xr.DataArray(accu_rate, name="DDM_accumulation_rate"), \
+                            xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"), xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"), \
+                            xr.DataArray(total_melt, name="DDM_total_melt"), xr.DataArray(runoff_rate, name="Q_DDM")])
     #glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
 
-    return glacier_melt
+    # making the final df
+    glacier_melt = glacier_melt.mean(dim=["lat", "lon"])
+    DDM_results = glacier_melt.to_dataframe()
 
-glacier_melt = calculate_glaciermelt(degreedays_ds) # output in mm
 
-# glacier_melt.total_melt.mean()
-# glacier_melt.runoff_rate.mean()
+    return DDM_results
+
+output_DDM = calculate_glaciermelt(degreedays_ds) # output in mm
 
 ## HBV
 """
@@ -351,21 +352,18 @@ def simulation(df, parameters_HBV):
     Qsim_smoothed = np.where(Qsim_smoothed > 0, Qsim_smoothed, 0)
 
     Qsim = Qsim_smoothed
-    hbv_results = pd.DataFrame({"Q_HBV": Qsim, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
-                                "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ}, index=df_hbv.index)
+    hbv_results = pd.DataFrame({"HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
+                                "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=df_hbv.index)
     hbv_results = pd.concat([df_hbv, hbv_results], axis=1)
     return hbv_results
 
 output_hbv = simulation(df, parameters_HBV)
 ## output dataframe
-output = pd.concat([output_hbv, obs], axis=1)
-
-Q_DDM = glacier_melt["runoff_rate"].mean(dim=["lat", "lon"])
-Q_DDM = pd.array(Q_DDM)
-output["Q_DDM"] = Q_DDM
+output = pd.concat([output_hbv, output_DDM], axis=1)
+output = pd.concat([output, obs], axis=1)
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output.csv")
+output_csv.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+"_test.csv"))
 print("Writing the output csv to disc")

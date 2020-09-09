@@ -5,30 +5,38 @@ from pathlib import Path; home = str(Path.home())
 
 # Directories		# Defining home could be misleading. Better full paths?
 
-# working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
+working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
 
-# input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
-# input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
+input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/"
+input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 	# Cirrus directories
-working_directory = "/data/projects/ebaca/data/scripts/centralasianwaterresources/Final_Model/"
-input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
-input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
+#working_directory = "/data/projects/ebaca/data/scripts/centralasianwaterresources/Final_Model/"
+#input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+#input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
 
 input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
-cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
-cosipy_csv = "best_cosipy_input_no1_2011-18.csv"
+cosipy_nc = "20200810_Urumqi_ERA5_2000_2019_cosipy.nc"
+cosipy_csv = "20200810_Urumqi_ERA5_2000_2019_cosipy.csv"
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
 evap_data = " "
 
-# time period
+# Model configuration
+# Time period of the data
 time_start = '2011-01-01 00:00:00'
 time_end = '2018-12-31 23:00:00'
+# Calibration period to calibrate initial parameters
+cal_period_start = '2011-01-01 00:00:00' # one year is recommended
+cal_period_end = '2011-12-31 23:00:00'
+cal_exclude = False # Excluding calibration period from statistics and plots
+# Plot output
+plot_frequency = "monthly" # Plot uses daily or monthly variables
+
 
 # Variables
 # Temperature
@@ -71,10 +79,6 @@ List of 16 HBV model parameters
     parPERC,  parUZL,  parPCORR, parTT,
     parCFMAX, parSFCF, parCFR,   parCWH]
 
-    init_params = [ 1.0,   0.15,    250,   0.055,
-                    0.055, 0.04,    0.7,   3.0,
-                    1.5,   120,     1.0,   0.0,
-                    5.0,   0.7,     0.05,  0.1]
     # 16 PARAMETERS_HBV
     # BETA   - parameter that determines the relative contribution to runoff from rain or snowmelt
     #          [1, 6]
