@@ -50,20 +50,20 @@ plt.show()
 
 # Plot extra parameters, output of the HBV
 fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, sharex=True, figsize=(10,6))
-ax1.plot(output.index.to_pydatetime(), output["HBV_AET"])
-ax2.plot(output.index.to_pydatetime(), output["HBV_soil_moisture"])
-ax3.plot(output.index.to_pydatetime(), output["HBV_snowpack"])
-ax4.plot(output.index.to_pydatetime(), output["HBV_upper_gw"])
-ax5.plot(output.index.to_pydatetime(), output["HBV_lower_gw"])
+ax1.plot(output.index.to_pydatetime(), output["HBV_AET"], "k")
+ax2.plot(output.index.to_pydatetime(), output["HBV_soil_moisture"], "k")
+ax3.plot(output.index.to_pydatetime(), output["HBV_snowpack"], "k")
+ax4.plot(output.index.to_pydatetime(), output["HBV_upper_gw"], "k")
+ax5.plot(output.index.to_pydatetime(), output["HBV_lower_gw"], "k")
 ax1.set_title("Actual evapotranspiration", fontsize=9)
 ax2.set_title("Soil moisture", fontsize=9)
 ax3.set_title("Water in snowpack", fontsize=9)
 ax4.set_title("Upper groundwater box", fontsize=9)
 ax5.set_title("Lower groundwater box", fontsize=9)
 plt.xlabel("Date", fontsize=9)
-plt.legend(loc='upper center', bbox_to_anchor=(0.8, -0.21),
-          fancybox=True, shadow=True, ncol=5)
 plt.show()
+#plt.savefig(output_path + "HBV_output_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
+
 
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
