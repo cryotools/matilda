@@ -4,16 +4,23 @@ This if the configuration file for the model. Adjust the paths, variables and pa
 from pathlib import Path; home = str(Path.home())
 
 # Directories		# Defining home could be misleading. Better full paths?
-working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
 
-input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/best_cosipyrun_no1_2011-18/"
-input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/observations/glacierno1/hydro/"
+# working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
+
+# input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+# input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
+
+	# Cirrus directories
+working_directory = "/data/projects/ebaca/data/scripts/centralasianwaterresources/Final_Model/"
+input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
+
 input_path_data = home + ""
 
 output_path = working_directory + "Output/"
 
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
-cosipy_csv = "best_cosipy_input_no1_2011-18.csv"        # What about running HBV with .nc?
+cosipy_csv = "best_cosipy_input_no1_2011-18.csv"
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
