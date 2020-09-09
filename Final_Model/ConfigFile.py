@@ -11,9 +11,15 @@ input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 	# Cirrus directories
+<<<<<<< HEAD
 #working_directory = "/data/projects/ebaca/data/scripts/centralasianwaterresources/Final_Model/"
 #input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 #input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
+=======
+working_directory = "/data/projects/ebaca/data/scripts/centralasiawaterresources/Final_Model/"
+input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+input_path_observations = "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
+>>>>>>> 5f35e46ff8083307a53a464905a01ea031c7020e
 
 input_path_data = home + ""
 
