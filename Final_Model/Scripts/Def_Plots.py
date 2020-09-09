@@ -79,6 +79,7 @@ ax3.set_title("Water in snowpack", fontsize=9)
 ax4.set_title("Upper groundwater box", fontsize=9)
 ax5.set_title("Lower groundwater box", fontsize=9)
 plt.xlabel("Date", fontsize=9)
+ax1.set_title("Output from the HBV model in the period "+ str(time_start[:4])+"-"+str(time_end[:4]), size=14)
 plt.show()
 #plt.savefig(output_path + "HBV_output_"+str(time_start[:4])+"-"+str(time_end[:4]+".png"))
 
