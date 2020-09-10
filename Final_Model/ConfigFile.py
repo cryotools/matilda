@@ -36,7 +36,7 @@ cal_period_end = '2011-12-31 23:00:00'
 cal_exclude = False # Excluding calibration period from statistics and plots
 # Plot output
 plot_frequency = "monthly" # Plot uses daily or monthly variables
-
+plot_save = True # Plots are saved in the directory instead of being displayed only
 
 # Variables
 # Temperature
