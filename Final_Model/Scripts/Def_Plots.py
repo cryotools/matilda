@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from ConfigFile import output_path, time_start, time_end, cal_exclude, plot_frequency, plot_save
+from ConfigFile import output_path, time_start, time_end, cal_exclude, cal_period_end, plot_frequency, plot_save
 from Scripts.Model import output
 
 #output_yearly = output.resample("Y").agg({"T2":"mean", "RRR":"sum", "PE":"sum", "Q_HBV":"sum", "Qobs":"sum", "Q_DDM":"sum", \
