@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 """
-The model is a combination between a degree day model and the HBV model (Bergstöm 1976) to compute runoff from the
-glaciers and the catchment.
-This file uses the input files created by COSIPY (aws2cosipy) as input files to run the model as well as additional
+The model is a combination of a degree day model and the HBV model (Bergstöm 1976) to compute total runoff of the
+glacierized catchments.
+This file uses the input files created by the COSIPY-utility "aws2cosipy" as forcing data and additional
 observation runoff data to validate it.
 """
 ##

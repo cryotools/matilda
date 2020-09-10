@@ -1,7 +1,9 @@
 """
-This if the configuration file for the model. Adjust the paths, variables and parameters here
+This if the configuration file for the model framework. Adjust the paths, settings and parameters here
 """
 from pathlib import Path; home = str(Path.home())
+import os
+from datetime import datetime
 
 # Directories		# Defining home could be misleading. Better full paths?
 
@@ -16,11 +18,13 @@ input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/in
 #input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
 
 input_path_data = home + ""
-
-output_path = working_directory + "Output/"
-
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
 cosipy_csv = "best_cosipy_input_no1_2011-18.csv"
+
+output_path = working_directory + "Output/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
+# output_path = working_directory + "Output/"
+os.mkdir(output_path)
+
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
 # Optional evapotranspiration dataframe, two columns with date and data
