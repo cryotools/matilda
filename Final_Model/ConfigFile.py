@@ -33,7 +33,7 @@ time_end = '2018-12-31 23:00:00'
 # Calibration period to calibrate initial parameters
 cal_period_start = '2011-01-01 00:00:00' # one year is recommended
 cal_period_end = '2011-12-31 23:00:00'
-cal_exclude = False # Excluding calibration period from statistics and plots
+cal_exclude = True # Excluding calibration period from statistics and plots
 # Plot output
 plot_frequency = "monthly" # Plot uses daily or monthly variables
 plot_save = True # Plots are saved in the directory instead of being displayed only
