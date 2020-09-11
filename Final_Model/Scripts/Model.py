@@ -30,21 +30,21 @@ obs = pd.read_csv(input_path_observations + observation_data)
 if evap_data_available == True:
     evap = pd.read_csv(input_path_data + evap_data)
 
-print("Adjust time period: " + str(time_start) + " until "  + str(time_end))
+print("Adjust time period: " + str(sim_period_start) + " until "  + str(sim_period_end))
 
 # adjust time
-ds = ds.sel(time=slice(time_start, time_end))
+ds = ds.sel(time=slice(cal_period_start, sim_period_end))
 df.set_index('TIMESTAMP', inplace=True)
 df.index = pd.to_datetime(df.index)
-df = df[time_start: time_end]
+df = df[cal_period_start: sim_period_end]
 obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
 # obs = obs.sort_index()
-obs = obs[time_start: time_end]
+obs = obs[cal_period_start: sim_period_end]
 if evap_data_available == True:
     evap.set_index("Date", inplace=True)
     evap.index = pd.to_datetime(evap.index)
-    evap = evap[time_start: time_end]
+    evap = evap[cal_period_start: sim_period_end]
 
 ## DDM
 """
@@ -362,5 +362,5 @@ output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(time_start[:4])+"-"+str(time_end[:4]+"_test.csv"))
+output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+"_test.csv"))
 print("Writing the output csv to disc")
