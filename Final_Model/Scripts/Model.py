@@ -7,6 +7,9 @@ observation runoff data to validate it.
 """
 ##
 import sys
+
+from Final_Model.ConfigFile import cosipy_nc
+
 sys.path.extend(['/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Final_Model'])
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -30,7 +33,8 @@ obs = pd.read_csv(input_path_observations + observation_data)
 if evap_data_available == True:
     evap = pd.read_csv(input_path_data + evap_data)
 
-print("Adjust time period: " + str(sim_period_start) + " until "  + str(sim_period_end))
+print("Calibration period between" + str(cal_period_start) + " and "  + str(cal_period_end))
+print("Simulation period between: " + str(sim_period_start) + " and "  + str(sim_period_end))
 
 # adjust time
 ds = ds.sel(time=slice(cal_period_start, sim_period_end))
@@ -207,30 +211,105 @@ def simulation(df, parameters_HBV):
     parBETA, parCET, parFC, parK0, parK1, parK2, parLP, parMAXBAS,\
     parPERC, parUZL, parPCORR, parTT, parCFMAX, parSFCF, parCFR, parCWH = parameters_HBV
 
-    # 3. initialize boxes and initial conditions
-    # snowpack box
-    SNOWPACK = np.zeros(len(Prec))
-    SNOWPACK[0] = 0.0001
-    # meltwater box
-    MELTWATER = np.zeros(len(Prec))
-    MELTWATER[0] = 0.0001
-    # soil moisture box
-    SM = np.zeros(len(Prec))
-    SM[0] = 0.0001
-    # soil upper zone box
-    SUZ = np.zeros(len(Prec))
-    SUZ[0] = 0.0001
-    # soil lower zone box
-    SLZ = np.zeros(len(Prec))
-    SLZ[0] = 0.0001
-    # actual evaporation
-    ETact = np.zeros(len(Prec))
-    ETact[0] = 0.0001
-    # simulated runoff box
-    Qsim = np.zeros(len(Prec))
-    Qsim[0] = 0.0001
+    # 3. Calibration period:
+    # 3.1 meteorological forcing preprocessing
+    Temp_cal = Temp[cal_period_start:cal_period_end]
+    Prec_cal = Prec[cal_period_start:cal_period_end]
+    Evap_cal = Evap[cal_period_start:cal_period_end]
+    # overall correction factor
+    Prec_cal = parPCORR * Prec_cal
+    # precipitation separation
+    # if T < parTT: SNOW, else RAIN
+    RAIN_cal = np.where(Temp_cal  > parTT, Prec_cal, 0)
+    SNOW_cal = np.where(Temp_cal <= parTT, Prec_cal, 0)
+    # snow correction factor
+    SNOW_cal = parSFCF * SNOW_cal
+    # evaporation correction
+    # a. calculate long-term averages of daily temperature
+    Temp_mean_cal = np.array([Temp_cal.loc[Temp_cal.index.dayofyear == x].mean()\
+                          for x in range(1, 367)])
+    # b. correction of Evaporation daily values
+    Evap_cal = Evap_cal.index.map(lambda x: (1+parCET*(Temp_cal[x] - Temp_mean_cal[x.dayofyear - 1]))*Evap_cal[x])
+    # c. control Evaporation
+    Evap_cal = np.where(Evap_cal > 0, Evap_cal, 0)
 
-    # 4. meteorological forcing preprocessing
+    # 3.2 Initial parameter calibration
+    # snowpack box
+    SNOWPACK_cal = np.zeros(len(Prec_cal))
+    SNOWPACK_cal[0] = 0.0001
+    # meltwater box
+    MELTWATER_cal = np.zeros(len(Prec_cal))
+    MELTWATER_cal[0] = 0.0001
+    # soil moisture box
+    SM_cal = np.zeros(len(Prec_cal))
+    SM_cal[0] = 0.0001
+    # actual evaporation
+    ETact_cal = np.zeros(len(Prec_cal))
+    ETact_cal[0] = 0.0001
+
+    # 3.3 Running model for calibration period
+    for t in range(1, len(Prec_cal)):
+
+        # 3.3.1 Snow routine
+        # how snowpack forms
+        SNOWPACK_cal[t] = SNOWPACK_cal[t-1] + SNOW_cal[t]
+        # how snowpack melts
+        # day-degree simple melting
+        melt = parCFMAX * (Temp_cal[t] - parTT)
+        # control melting
+        if melt<0: melt = 0
+        melt = min(melt, SNOWPACK_cal[t])
+        # how meltwater box forms
+        MELTWATER_cal[t] = MELTWATER_cal[t-1] + melt
+        # snowpack after melting
+        SNOWPACK_cal[t] = SNOWPACK_cal[t] - melt
+        # refreezing accounting
+        refreezing = parCFR * parCFMAX * (parTT - Temp_cal[t])
+        # control refreezing
+        if refreezing < 0: refreezing = 0
+        refreezing = min(refreezing, MELTWATER_cal[t])
+        # snowpack after refreezing
+        SNOWPACK_cal[t] = SNOWPACK_cal[t] + refreezing
+        # meltwater after refreezing
+        MELTWATER_cal[t] = MELTWATER_cal[t] - refreezing
+        # recharge to soil
+        tosoil = MELTWATER_cal[t] - (parCWH * SNOWPACK_cal[t]);
+        # control recharge to soil
+        if tosoil < 0: tosoil = 0
+        # meltwater after recharge to soil
+        MELTWATER_cal[t] = MELTWATER_cal[t] - tosoil
+
+        # 3.3.1 Soil and evaporation routine
+        # soil wetness calculation
+        soil_wetness = (SM_cal[t-1] / parFC)**parBETA
+        # control soil wetness (should be in [0, 1])
+        if soil_wetness < 0: soil_wetness = 0
+        if soil_wetness > 1: soil_wetness = 1
+        # soil recharge
+        recharge = (RAIN_cal[t] + tosoil) * soil_wetness
+        # soil moisture update
+        SM_cal[t] = SM_cal[t-1] + RAIN_cal[t] + tosoil - recharge
+        # excess of water calculation
+        excess = SM_cal[t] - parFC
+        # control excess
+        if excess < 0: excess = 0
+        # soil moisture update
+        SM_cal[t] = SM_cal[t] - excess
+
+        # evaporation accounting
+        evapfactor = SM_cal[t] / (parLP * parFC)
+        # control evapfactor in range [0, 1]
+        if evapfactor < 0: evapfactor = 0
+        if evapfactor > 1: evapfactor = 1
+        # calculate actual evaporation
+        ETact_cal[t] = Evap_cal[t] * evapfactor
+        # control actual evaporation
+        ETact_cal[t] = min(SM_cal[t], ETact_cal[t])
+
+        # last soil moisture updating
+        SM_cal[t] = SM_cal[t] - ETact_cal[t]
+
+    # 4. meteorological forcing preprocessing for simulation
     # overall correction factor
     Prec = parPCORR * Prec
     # precipitation separation
@@ -248,11 +327,33 @@ def simulation(df, parameters_HBV):
     # c. control Evaporation
     Evap = np.where(Evap > 0, Evap, 0)
 
+    # 5. initialize boxes and initial conditions after calibration
+    # snowpack box
+    SNOWPACK = np.zeros(len(Prec))
+    SNOWPACK[0] = SNOWPACK_cal[-1]
+    # meltwater box
+    MELTWATER = np.zeros(len(Prec))
+    MELTWATER[0] = 0.0001
+    # soil moisture box
+    SM = np.zeros(len(Prec))
+    SM[0] = SM_cal[-1]
+    # soil upper zone box
+    SUZ = np.zeros(len(Prec))
+    SUZ[0] = 0.0001
+    # soil lower zone box
+    SLZ = np.zeros(len(Prec))
+    SLZ[0] = 0.0001
+    # actual evaporation
+    ETact = np.zeros(len(Prec))
+    ETact[0] = 0.0001
+    # simulated runoff box
+    Qsim = np.zeros(len(Prec))
+    Qsim[0] = 0.0001
 
-    # 5. The main cycle of calculations
+    # 6. The main cycle of calculations
     for t in range(1, len(Qsim)):
 
-        # 5.1 Snow routine
+        # 6.1 Snow routine
         # how snowpack forms
         SNOWPACK[t] = SNOWPACK[t-1] + SNOW[t]
         # how snowpack melts
@@ -281,7 +382,7 @@ def simulation(df, parameters_HBV):
         # meltwater after recharge to soil
         MELTWATER[t] = MELTWATER[t] - tosoil
 
-        # 5.2 Soil and evaporation routine
+        # 6.2 Soil and evaporation routine
         # soil wetness calculation
         soil_wetness = (SM[t-1] / parFC)**parBETA
         # control soil wetness (should be in [0, 1])
@@ -311,7 +412,7 @@ def simulation(df, parameters_HBV):
         # last soil moisture updating
         SM[t] = SM[t] - ETact[t]
 
-        # 5.3 Groundwater routine
+        # 6.3 Groundwater routine
         # upper groudwater box
         SUZ[t] = SUZ[t-1] + recharge + excess
         # percolation control
@@ -336,7 +437,7 @@ def simulation(df, parameters_HBV):
         # Total runoff calculation
         Qsim[t] = Q0 + Q1 + Q2
 
-    # 6. Scale effect accounting
+    # 7. Scale effect accounting
     # delay and smoothing simulated hydrograph
     # (Beck et al.,2016) used triangular transformation based on moving window
     # here are my method with simple forward filter based on Butterworht filter design
