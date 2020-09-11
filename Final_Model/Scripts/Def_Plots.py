@@ -98,8 +98,6 @@ else:
 # 	plt.show()
 # else:
 # 	plt.savefig(output_path + "xtra_param+hbv_output"+str(sim_period_start[:4])+"-"+str(time_end[:4]+".png"))
-
-plt.show()
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
 print('---')

@@ -40,7 +40,7 @@ sim_period_end = '2018-12-31 23:00:00'
 cal_exclude = True # Excluding calibration period from statistics and plots
 # Plot output
 plot_frequency = "monthly" # Plot uses daily or monthly variables
-plot_save = False # Plots are saved in the directory instead of being displayed only
+plot_save = True # Plots are saved in the directory instead of being displayed only
 
 # Variables
 # Temperature
@@ -68,8 +68,8 @@ evap_data_available = False # ET data is available, else it will be calculated u
         Temperature at which all precipitation falls as rain.
 """
 parameters_DDM = {
-    'pdd_factor_snow':  5.7, # mm per day per Celsius, from Hock 2003
-    'pdd_factor_ice':   7.4, # mm per day per Celsius
+    'pdd_factor_snow':  2.8, # according to Huintjes et al. 2010  [5.7 mm per day per Celsius according to Hock 2003]
+    'pdd_factor_ice':   5.6, # according to Huintjes et al. 2010 [7.4 mm per day per Celsius according to Hock 2003]
     'temp_snow':        0.0,
     'temp_rain':        2.0,
     'refreeze_snow':    0.0,
