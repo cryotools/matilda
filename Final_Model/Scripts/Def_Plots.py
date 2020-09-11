@@ -86,6 +86,7 @@ ax4.set_title("Upper groundwater box", fontsize=9)
 ax5.set_title("Lower groundwater box", fontsize=9)
 plt.xlabel("Date", fontsize=9)
 fig.suptitle("Output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+plt.show()
 if plot_save == False:
 	plt.show()
 else:
