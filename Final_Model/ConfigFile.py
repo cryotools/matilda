@@ -31,15 +31,16 @@ observation_data = "daily_observations_2011-18.csv"
 evap_data = " "
 
 # Model configuration
+area_name = "Urumqi" # specify the name of your catchment here
 # Time period to calibrate initial parameters
 cal_period_start = '2011-01-01 00:00:00' # beginning of the calibration period
 cal_period_end = '2011-12-31 23:00:00' # end of calibration: one year is recommended
 # Time period of the model simulation
 sim_period_start = '2012-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
-cal_exclude = True # Excluding calibration period from statistics and plots
+cal_exclude = False # Excluding calibration period from statistics and plots
 # Plot output
-plot_frequency = "monthly" # Plot uses daily or monthly variables
+plot_frequency = "daily" # Plot uses daily or monthly variables
 plot_save = True # Plots are saved in the directory instead of being displayed only
 
 # Variables
