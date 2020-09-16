@@ -5,16 +5,8 @@ home = str(Path.home())
 working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
 
 ##
-hobo = pd.read_csv(working_directory + "HOBO_water/AtBashi01_sep19.csv", usecols=[1, 2, 3])
-hobo.columns = ['datetime', 'abs_press', 'temp']
-hobo.datetime = pd.to_datetime(hobo.datetime)
-hobo.set_index(hobo.datetime, inplace=True)
-hobo = hobo.drop(['datetime'], axis=1)
-hobo.temp = hobo.temp + 273.15
-
 time_start = '2018-09-07 12:00:00'      # longest timeseries of waterlevel
 time_end = '2019-09-14 03:00:00'
-hobo = hobo[time_start: time_end]
 
 aws_up = pd.read_csv(working_directory + 'Minikin/Cognac_glacier/80_2019_09_12_refin.csv', sep=';', decimal=',', usecols=range(0, 4))
 aws_up.columns = ['datetime', 'G', 'temp', 'hum']
