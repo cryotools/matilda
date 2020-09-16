@@ -1,179 +1,17 @@
-# -*- coding: UTF-8 -*-
-"""
-The model is a combination of a degree day model and the HBV model (Bergstöm 1976) to compute total runoff of the
-glacierized catchments.
-This file uses the input files created by the COSIPY-utility "aws2cosipy" as forcing data and additional
-observation runoff data to validate it.
-"""
-##
-import sys
-from Final_Model.ConfigFile import cosipy_nc
-sys.path.extend(['/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Final_Model'])
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-import numpy as np
-import scipy.signal as ss
-import pandas as pd
-import xarray as xr
-
-from ConfigFile import *
-
-print('---')
-print('Read input netcdf file %s' % (cosipy_nc))
-print('Read input csv file %s' % (cosipy_csv))
-print('Read observation data %s' % (observation_data))
-
-# Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
-# Observation data should be given in form of a csv with a date column and daily observations
-ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
-df = pd.read_csv(input_path_cosipy + cosipy_csv)
-obs = pd.read_csv(input_path_observations + observation_data)
-if evap_data_available == True:
-    evap = pd.read_csv(input_path_data + evap_data)
-
-print("Calibration period between" + str(cal_period_start) + " and "  + str(cal_period_end))
-print("Simulation period between: " + str(sim_period_start) + " and "  + str(sim_period_end))
-
-# adjust time
-ds = ds.sel(time=slice(cal_period_start, sim_period_end))
-df.set_index('TIMESTAMP', inplace=True)
-df.index = pd.to_datetime(df.index)
-df = df[cal_period_start: sim_period_end]
-obs.set_index('Date', inplace=True)
-obs.index = pd.to_datetime(obs.index)
-# obs = obs.sort_index()
-obs = obs[cal_period_start: sim_period_end]
-if evap_data_available == True:
-    evap.set_index("Date", inplace=True)
-    evap.index = pd.to_datetime(evap.index)
-    evap = evap[cal_period_start: sim_period_end]
-
-## DDM
-"""
-Degree Day Model to calculate the accumulation, snow and ice melt and runoff rate from the glaciers.
-Model input rewritten and adjusted to our needs from the pypdd function (github.com/juseg/pypdd 
-- # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)
-"""
-print("Running the degree day model")
-
-def calculate_PDD(ds):
-    # masking the dataset to only get the glacier area
-    mask = ds.MASK.values
-    temp = xr.where(mask==1, ds["T2"], np.nan)
-    temp = temp.mean(dim=["lat", "lon"])
-    temp_min = temp.resample(time="D").min(dim="time")
-    temp_max = temp.resample(time="D").max(dim="time")
-    temp_mean = temp.resample(time="D").mean(dim="time")
-    if temp_unit:
-        temp_max, temp_mean, temp_min = temp_max - 273.15, temp_mean - 273.15, temp_min - 273.15
-    else:
-        temp_max, temp_mean, temp_min = temp_max, temp_mean, temp_min
-
-    prec = xr.where(mask==1, ds["RRR"], np.nan)
-    prec = prec.mean(dim=["lat", "lon"])
-    prec = prec.resample(time="D").sum(dim="time")
-    time = temp_mean["time"]
-
-    pdd_ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
-                   xr.DataArray(temp_max, name="temp_max"), prec])
-
-    # calculate the hydrological year
-    def calc_hydrological_year(time):
-        water_year = []
-        for i in time:
-            if 10 <= i["time.month"] <= 12:
-                water_year.append(i["time.year"] + 1)
-            else:
-                water_year.append(i["time.year"])
-        return np.asarray(water_year)
-
-    #water_year = calc_hydrological_year(time)
-    #pdd_ds = pdd_ds.assign_coords(water_year = water_year)
-
-    # calculate the positive degree days
-    pdd_ds["pdd"] = xr.where(temp_mean > 0, temp_mean, 0)
-
-    return pdd_ds
-
-degreedays_ds = calculate_PDD(ds)
-
-# input from the pypdd model
-def calculate_glaciermelt(ds):
-    temp = ds["temp_mean"]
-    prec = ds["RRR"]
-    pdd = ds["pdd"]
-
-    """ pypdd.py line 311
-        Compute accumulation rate from temperature and precipitation.
-        The fraction of precipitation that falls as snow decreases linearly
-        from one to zero between temperature thresholds defined by the
-        `temp_snow` and `temp_rain` attributes.
-    """
-    reduced_temp = (parameters_DDM["temp_rain"] - temp) / (parameters_DDM["temp_rain"] - parameters_DDM["temp_snow"])
-    snowfrac = np.clip(reduced_temp, 0, 1)
-    accu_rate = snowfrac * prec
-
-    # initialize snow depth and melt rates (pypdd.py line 214)
-    snow_depth = xr.zeros_like(temp)
-    snow_melt_rate = xr.zeros_like(temp)
-    ice_melt_rate = xr.zeros_like(temp)
-
-    """ pypdd.py line 331
-        Compute melt rates from snow precipitation and pdd sum.
-        Snow melt is computed from the number of positive degree days (*pdd*)
-        and the `pdd_factor_snow` model attribute. If all snow is melted and
-        some energy (PDD) remains, ice melt is computed using `pdd_factor_ice`.
-        *snow*: array_like
-            Snow precipitation rate.
-        *pdd*: array_like
-            Number of positive degree days.
-    """
-    def melt_rates(snow, pdd):
-    # compute a potential snow melt
-        pot_snow_melt = parameters_DDM['pdd_factor_snow'] * pdd
-    # effective snow melt can't exceed amount of snow
-        snow_melt = np.minimum(snow, pot_snow_melt)
-    # ice melt is proportional to excess snow melt
-        ice_melt = (pot_snow_melt - snow_melt) * parameters_DDM['pdd_factor_ice'] / parameters_DDM['pdd_factor_snow']
-    # return melt rates
-        return (snow_melt, ice_melt)
-
-    # compute snow depth and melt rates (pypdd.py line 219)
-    for i in np.arange(len(temp)):
-        if i > 0:
-            snow_depth[i] = snow_depth[i - 1]
-        snow_depth[i] += accu_rate[i]
-        snow_melt_rate[i], ice_melt_rate[i] = melt_rates(snow_depth[i], pdd[i])
-        snow_depth[i] -= snow_melt_rate[i]
-    total_melt = snow_melt_rate + ice_melt_rate
-    runoff_rate = total_melt - parameters_DDM["refreeze_snow"] * snow_melt_rate \
-                  - parameters_DDM["refreeze_ice"] * ice_melt_rate
-    inst_smb = accu_rate - runoff_rate
-
-    glacier_melt = xr.merge([xr.DataArray(inst_smb, name="DDM_smb"), xr.DataArray(accu_rate, name="DDM_accumulation_rate"), \
-                            xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"), xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"), \
-                            xr.DataArray(total_melt, name="DDM_total_melt"), xr.DataArray(runoff_rate, name="Q_DDM")])
-    #glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
-
-    # making the final df
-    DDM_results = glacier_melt.to_dataframe()
-
-
-    return DDM_results
-
-output_DDM = calculate_glaciermelt(degreedays_ds) # output in mm
-
-## HBV
 """
 Compute the runoff from the catchment with the HBV model
 Python Code from the LHMP and adjusted to our needs (github.com/hydrogo/LHMP -
 Ayzel Georgy. (2016). LHMP: lumped hydrological modelling playground. Zenodo. doi: 10.5281/zenodo.59501)
-For the HBV model, evapotranspiration values are needed. These are calculated with the formula by Oudin et al. (2005) 
+For the HBV model, evapotranspiration values are needed. These are calculated with the formula by Oudin et al. (2005)
 in the unit mm / day.
 """
-print("Running the HBV model")
 
-def simulation(df, parameters_HBV):
+import numpy as np
+import pandas as pd
+import scipy.signal as ss
+from ConfigFile import evap_data_available, temp_unit, prec_unit, prec_conversion, cal_period_start, cal_period_end
+
+def hbv_simulation(df, parameters_HBV):
     # 1. new temporary dataframe from input with daily values
     df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
 
@@ -452,14 +290,3 @@ def simulation(df, parameters_HBV):
                                 "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=df_hbv.index)
     hbv_results = pd.concat([df_hbv, hbv_results], axis=1)
     return hbv_results
-
-output_hbv = simulation(df, parameters_HBV)
-## output dataframe
-output = pd.concat([output_hbv, output_DDM], axis=1)
-output = pd.concat([output, obs], axis=1)
-output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-
-output_csv = output.copy()
-output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+"_test.csv"))
-print("Writing the output csv to disc")
