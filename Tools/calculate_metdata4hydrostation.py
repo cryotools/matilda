@@ -66,3 +66,14 @@ p_hobo.describe()
 ##
 data_hobo = round(pd.DataFrame({'temp': temp_hobo, 'press': p_hobo}), 2)
 data_hobo.to_csv(working_directory + "HOBO_water/temp_press_hydrostation_2018-2019.csv")
+
+# Wie umgehen mit negativen Werten?
+
+## Dilution gauging in m³\s
+# 09:15   0,414
+# 11:15   0,419
+# 13:10   0,349
+# 15:10   0,419
+# 17:50   0,350
+
+
