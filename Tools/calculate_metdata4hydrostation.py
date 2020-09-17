@@ -1,18 +1,20 @@
 import pandas as pd
-from pathlib import Path;
+from pathlib import Path
+import matplotlib.pyplot as plt
 
 home = str(Path.home())
 working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
 
 ##
-time_start = '2018-09-07 12:00:00'      # longest timeseries of waterlevel
-time_end = '2019-09-14 03:00:00'
+time_start = '2018-09-07 18:00:00'      # longest timeseries of waterlevel
+time_end = '2019-09-14 09:00:00'
 
 aws_up = pd.read_csv(working_directory + 'Minikin/Cognac_glacier/80_2019_09_12_refin.csv', sep=';', decimal=',', usecols=range(0, 4))
 aws_up.columns = ['datetime', 'G', 'temp', 'hum']
 aws_up.datetime = pd.to_datetime(aws_up.datetime)
 aws_up.set_index(aws_up.datetime, inplace=True)
 aws_up = aws_up.drop(['datetime'], axis=1)
+aws_up = aws_up.shift(-2,axis=0)                    # Only -2h timeshift results in the correct curves. BUT WHY????
 aws_up.temp = aws_up.temp + 273.15
 aws_up = aws_up[time_start: time_end]
 
@@ -67,13 +69,16 @@ p_hobo.describe()
 data_hobo = round(pd.DataFrame({'temp': temp_hobo, 'press': p_hobo}), 2)
 data_hobo.to_csv(working_directory + "HOBO_water/temp_press_hydrostation_2018-2019.csv")
 
-# Wie umgehen mit negativen Werten?
-
-## Dilution gauging in m³\s
-# 09:15   0,414
-# 11:15   0,419
-# 13:10   0,349
-# 15:10   0,419
-# 17:50   0,350
-
-
+##
+# time_start = '2018-09-07 12:00:00'
+# time_end = '2018-09-15 12:00:00'
+# aws_up = aws_up[time_start: time_end]
+# aws_down = aws_down[time_start: time_end]
+# aws_far = aws_far[time_start: time_end]
+# aws_comb = aws_down
+# aws_comb['temp_up'] = aws_up.temp
+# aws_comb['temp_far'] = aws_far.temp
+# # aws_comb = aws_comb.resample('m').mean()
+#
+# plt.plot(aws_comb)
+# plt.show()
