@@ -1,2 +1,3 @@
-#!/bin/bash
-python3 Scripts/run_model.py
+#!/bin/bash                                                                     
+python3 run_model.py
+
