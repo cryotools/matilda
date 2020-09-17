@@ -7,7 +7,7 @@ observation runoff data to validate it.
 """
 ## Running all the model functions
 import sys
-sys.path.extend(['/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Final_Model'])
+# sys.path.extend(['/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model'])
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
