@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-from ConfigFile import plot_frequency, plot_save, output_path, area_name
+from ConfigFile import plot_frequency, plot_save, output_path, area_name, compare_cosipy
 # Statistical analysis of the output variables
 def create_statistics(output_calibration):
     stats = output_calibration.describe()
@@ -34,8 +34,10 @@ def plot_runoff(plot_data):
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharey=True, figsize=(10,6))
     gs = gridspec.GridSpec(2, 2)
     ax1 = plt.subplot(gs[0, :])
+    if compare_cosipy == True:
+        ax1.plot(plot_data.index.to_pydatetime(), plot_data['Q_COSIPY'], "gray", linewidth=0.8, label="COSIPY")
     ax1.plot(plot_data.index.to_pydatetime(), plot_data['Qobs'], "k", linewidth=1.2, label="Observations")
-    ax1.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], "b", linewidth=1.2, alpha=0.6, label="Total")
+    ax1.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], "b", linewidth=1.2, alpha=0.6, label="Model Total")
     ax2 = plt.subplot(gs[1, :-1], sharey=ax1)
     ax2.plot(plot_data.index.to_pydatetime(), plot_data["Q_HBV"], "g", linewidth=1.2, label="HBV")
     ax3 = plt.subplot(gs[1:, -1], sharey=ax1)

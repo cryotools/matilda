@@ -3,6 +3,8 @@ from pathlib import Path; home = str(Path.home())
 import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+
 
 working_directory = home + "/Seafile/Ana-Lena_Phillip/data/"
 cosipy_nc = working_directory + "input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/best_cosipy_output_no1_2011-18.nc"
@@ -14,7 +16,7 @@ model.set_index("Unnamed: 0", inplace=True)
 model.index = pd.to_datetime(model.index)
 
 cosipy_runoff = cosipy.Q.mean(dim=["lat", "lon"])
-cosipy_runoff_daily = cosipy_runoff.resample(time="D").mean(dim="time")
+cosipy_runoff_daily = cosipy_runoff.resample(time="D").sum(dim="time")
 cosipy_smb = cosipy.surfMB.mean(dim=["lat", "lon"])
 cosipy_melt = cosipy.surfM.mean(dim=["lat", "lon"])
 
@@ -25,6 +27,15 @@ print(str(sum(model["DDM_smb"]))+ " mm total SMB from our model")
 print(str(sum(cosipy_melt.values*1000))+" mm melt from Cosipy")
 print(str(sum(model["DDM_total_melt"]))+ " mm total melt from our model")
 
-plt.plot(model.index.to_pydatetime(), model["Q_Total"])
-plt.plot(model.index.to_pydatetime(), (cosipy_runoff_daily*1000))
+fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(10, 6))
+ax1.plot(model.index.to_pydatetime(), model["Q_Total"], "k")
+ax1.plot(model.index.to_pydatetime(), (cosipy_runoff_daily*1000, "b")
+ax2.plot(model.index.to_pydatetime(), model["DDM_smb"], "k")
+ax2.plot(model.index.to_pydatetime(), (cosipy_smb*1000), "b")
+ax3.plot(model.index.to_pydatetime(), model["DDM_total_melt"], "k")
+ax3.plot(model.index.to_pydatetime(), (cosipy_melt*1000), "b")
+ax1.set_title("Runoff", fontsize=9)
+ax2.set_title("Surface mass balance", fontsize=9)
+ax3.set_title("Melt", fontsize=9)
+plt.xlabel("Date", fontsize=9)
 plt.show()
