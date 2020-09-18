@@ -7,7 +7,7 @@ observation runoff data to validate it.
 """
 ## Running all the model functions
 import sys
-# sys.path.extend(['/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model'])
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
@@ -66,6 +66,11 @@ output = pd.concat([output_hbv, output_DDM], axis=1)
 output = pd.concat([output, obs], axis=1)
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
+# Including Cosipy in the evaluation
+if compare_cosipy == True:# Including Cosipy in the evaluation
+    cosipy_runoff = ds.Q.mean(dim=["lat", "lon"])
+    output["Q_COSIPY"] = cosipy_runoff.resample(time="D").sum(dim="time")*1000
+
 print("Writing the output csv to disc")
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
@@ -84,12 +89,14 @@ if plot_frequency == "daily":
 elif plot_frequency == "monthly":
     plot_data = output_calibration.resample("M").agg({"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum",  \
                                                       "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-                                                      "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
+                                                      "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum", \
+                                                      "Q_COSIPY":"sum"})
 elif plot_frequency == "yearly":
     plot_data = output_calibration.resample("Y").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-         "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
+         "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum", \
+         "Q_COSIPY":"sum"})
 
 stats = create_statistics(output_calibration)
 stats.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
@@ -104,6 +111,7 @@ else:
 
 # Plot the runoff data
 fig1 = plot_runoff(plot_data)
+plt.show()
 if plot_save == False:
 	plt.show()
 else:
