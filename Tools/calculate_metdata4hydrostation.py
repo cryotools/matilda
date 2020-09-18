@@ -6,18 +6,18 @@ home = str(Path.home())
 working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
 
 ##
-time_start = '2018-09-07 18:00:00'      # longest timeseries of waterlevel
+time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel
 time_end = '2019-09-14 09:00:00'
 
-aws_up = pd.read_csv(working_directory + 'Minikin/Cognac_glacier/80_2019_09_12_refin.csv', sep=';', decimal=',', usecols=range(0, 4))
+aws_up = pd.read_csv(working_directory + 'Minikin/Cognac_glacier/80_2019_09_12_refin.csv', sep=';', decimal=',',
+                     usecols=range(0, 4))
 aws_up.columns = ['datetime', 'G', 'temp', 'hum']
 aws_up.datetime = pd.to_datetime(aws_up.datetime)
 aws_up.set_index(aws_up.datetime, inplace=True)
 aws_up = aws_up.drop(['datetime'], axis=1)
-aws_up = aws_up.shift(-2,axis=0)                    # Only -2h timeshift results in the correct curves. BUT WHY????
+aws_up = aws_up.shift(-2, axis=0)  # Only -2h timeshift results in the correct curves. BUT WHY????
 aws_up.temp = aws_up.temp + 273.15
 aws_up = aws_up[time_start: time_end]
-
 
 aws_down = pd.read_csv(working_directory + 'AWS_atbs/temp_2017-05-30_2020-09-16.csv')
 aws_down.columns = ['datetime', 'temp']
@@ -46,23 +46,27 @@ aws_far_temp = aws_far_temp.resample('H').mean()
 
 aws_far['temp'] = aws_far_temp.temp
 aws_far = aws_far[time_start: time_end]
+aws_far.air_press = aws_far.air_press[aws_far.air_press.between(680, 720)]      # Removes extreme outliers that influence the runoff curve.
 
 ##
 alt_hobo = 3342
 alt_aws_far = 3023
 alt_aws_up = 3894
 alt_aws_down = 2250
-lapseT = -(aws_down.temp.mean() - aws_up.temp.mean()) / (alt_aws_down - alt_aws_up) # literature: -0.006 K/m
+lapseT = -(aws_down.temp.mean() - aws_up.temp.mean()) / (alt_aws_down - alt_aws_up)  # literature: -0.006 K/m
 
 ##
-temp_hobo = aws_down.temp + (alt_hobo - alt_aws_down) * lapseT       # Calculate temperature at water level sensor location from aws_down series.
+temp_hobo = aws_down.temp + (
+            alt_hobo - alt_aws_down) * lapseT  # Calculate temperature at water level sensor location from aws_down series.
 temp_mean = (temp_hobo + aws_far.temp) / 2
 
-def p(p0,h,t0, lapseR):
-    return p0 * (1 - (lapseR * h)/t0) ** 5.255       # Calculate air pressure at altitude.
+
+def p(p0, h, t0, lapseR):
+    return p0 * (1 - (lapseR * h) / t0) ** 5.255  # Calculate air pressure at altitude.
 
 
-p_hobo = p(aws_far.air_press, alt_hobo - alt_aws_far, temp_mean, (aws_far.temp.mean() - aws_up.temp.mean()) / (alt_aws_far - alt_aws_up))
+p_hobo = p(aws_far.air_press, alt_hobo - alt_aws_far, temp_mean,
+           (aws_far.temp.mean() - aws_up.temp.mean()) / (alt_aws_far - alt_aws_up))
 p_hobo.describe()
 
 ##
