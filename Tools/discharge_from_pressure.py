@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path;
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
@@ -37,39 +38,51 @@ def h(p):  # Water column in meter from hydrostatic pressure in Pa!
 
 
 hobo['water_column'] = h(hobo.water_press * 100)
+
 hobo.describe()
 
 ##
 # Wie umgehen mit negativen Werten?
-# Wo sind die Tracermessungen von 2018?
 
-tracer = pd.read_csv(working_directory + "HOBO_water/dilution_gauging_2019_09_14.csv")
-tracer.datetime = pd.to_datetime(tracer.datetime)
-tracer.set_index(tracer.datetime, inplace=True)
-tracer = tracer.tz_localize('Asia/Bishkek')
-tracer = tracer.drop(['datetime'], axis=1)
+tracer19 = pd.read_csv(working_directory + "HOBO_water/dilution_gauging_2019_09_14.csv")
+tracer19.datetime = pd.to_datetime(tracer19.datetime)
+tracer19.set_index(tracer19.datetime, inplace=True)
+tracer19 = tracer19.tz_localize('Asia/Bishkek')
+tracer19 = tracer19.drop(['datetime'], axis=1)
 
-hobo_ro = pd.merge(tracer, hobo, how='left', left_index=True, right_index=True)         # Dilution gauging was done after reading out the sensor...
+tracer18 = pd.read_csv(working_directory + "HOBO_water/manual_gauging_2018_09.csv")
+tracer18.datetime = pd.to_datetime(tracer18.datetime)
+tracer18.set_index(tracer18.datetime, inplace=True)
+tracer18 = tracer18.tz_localize('Asia/Bishkek')
+tracer18 = tracer18.drop(['datetime'], axis=1)
+tracer18 = tracer18.resample('H').mean()        # Fit gauging data to HOURLY water level.
+tracer18 = tracer18.dropna()
+
+hobo_ro_18 = pd.merge(tracer18, hobo, how='left', left_index=True, right_index=True)
+# hobo_ro_19 = pd.merge(tracer19, hobo, how='left', left_index=True, right_index=True)         # Dilution gauging was done after reading out the sensor...
 
 ##
-
 predictor = 'water_column'
-
-X = hobo.loc[:, predictor].values.reshape(-1, 1)
-Y = data_wide.loc[:, 'ufp'].values.reshape(-1, 1)
-
+X = hobo_ro_18.loc[:, predictor].values.reshape(-1, 1)
+Y = hobo_ro_18.loc[:, 'discharge'].values.reshape(-1, 1)
 linear_regressor = LinearRegression()
-
 linear_regressor.fit(X, Y)
 Y_pred = linear_regressor.predict(X)
 
 plt.scatter(X, Y)
 plt.plot(X, Y_pred, color='red')
-plt.xlabel(str(''))
-plt.ylabel('')
+plt.xlabel('Water column above sensor [m]')
+plt.ylabel('Run-off [m³/s')
 plt.show()
 
-print('------ Lineare Regression -----')
-print('Funktion: y = %.3f * x + %.3f' % (linear_regressor.coef_[0], linear_regressor.intercept_))
+print('------ Linear Regression -----')
+print('Function: y = %.3f * x + %.3f' % (linear_regressor.coef_[0], linear_regressor.intercept_))
 print("R² Score: {:.2f}".format(linear_regressor.score(X, Y)))
-print("\n")
+
+##
+runoff_18 = pd.DataFrame({'discharge': linear_regressor.coef_[0] * hobo.water_column + linear_regressor.intercept_})
+runoff_18[runoff_18.index.month.isin([10, 11, 12, 1, 2, 3, 4])] = 0
+runoff_18.describe()
+
+plt.plot(runoff_18)
+plt.show()
