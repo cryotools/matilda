@@ -111,7 +111,6 @@ else:
 
 # Plot the runoff data
 fig1 = plot_runoff(plot_data)
-plt.show()
 if plot_save == False:
 	plt.show()
 else:
