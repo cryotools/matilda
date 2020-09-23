@@ -34,8 +34,6 @@ def plot_runoff(plot_data):
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharey=True, figsize=(10,6))
     gs = gridspec.GridSpec(2, 2)
     ax1 = plt.subplot(gs[0, :])
-    if compare_cosipy == True:
-        ax1.plot(plot_data.index.to_pydatetime(), plot_data['Q_COSIPY'], "gray", linewidth=0.8, label="COSIPY")
     ax1.plot(plot_data.index.to_pydatetime(), plot_data['Qobs'], "k", linewidth=1.2, label="Observations")
     ax1.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], "b", linewidth=1.2, alpha=0.6, label="Model Total")
     ax2 = plt.subplot(gs[1, :-1], sharey=ax1)
@@ -62,5 +60,25 @@ def plot_hbv(plot_data):
     ax4.set_title("Upper groundwater box", fontsize=9)
     ax5.set_title("Lower groundwater box", fontsize=9)
     plt.xlabel("Date", fontsize=9)
+    ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
+    ax4.set_ylabel("[mm]", fontsize=9), ax5.set_ylabel("[mm]", fontsize=9)
     fig.suptitle(plot_frequency +" output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    return fig
+
+def plot_cosipy(plot_data_cosipy):
+    fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10,6))
+    ax1.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["Qobs"], "k", label="Observations")
+    ax1.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["Q_Total"], "b", label="Model")
+    ax1.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["Q_COSIPY"], "r", label="COSIPY")
+    ax2.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["DDM_total_melt"], "b")
+    ax2.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["COSIPY_melt"], "r")
+    ax3.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["DDM_smb"], "b")
+    ax3.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["COSIPY_smb"], "r")
+    ax1.set_title("Runoff comparison", fontsize=9)
+    ax2.set_title("Total melt from DDM and COSIPY", fontsize=9)
+    ax3.set_title("Surface mass balance from DDM and COSIPY", fontsize=9)
+    plt.xlabel("Date", fontsize=9)
+    ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
+    ax1.legend()
+    fig.suptitle(plot_frequency +" output comparison from the model and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
     return fig
