@@ -1,0 +1,11 @@
+setup.py
+finalmodel/DDM.py
+finalmodel/HBV.py
+finalmodel/__init__.py
+finalmodel/plots.py
+finalmodel/stats.py
+finalmodel.egg-info/PKG-INFO
+finalmodel.egg-info/SOURCES.txt
+finalmodel.egg-info/dependency_links.txt
+finalmodel.egg-info/not-zip-safe
+finalmodel.egg-info/top_level.txt
