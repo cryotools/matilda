@@ -16,21 +16,28 @@ hobo.columns = ['datetime', 'abs_press', 'water_temp']
 hobo.datetime = pd.to_datetime(hobo.datetime)
 hobo.set_index(hobo.datetime, inplace=True)
 hobo = hobo.tz_localize('UTC')
-hobo = hobo.tz_convert('Asia/Bishkek')                  # tz_convert instead of .shift() to preserve all values
-hobo = hobo.drop(['datetime'], axis=1)                  # SciView shows UTC!
+hobo = hobo.tz_convert('Asia/Bishkek')  # tz_convert instead of .shift() to preserve all values
+hobo = hobo.drop(['datetime'], axis=1)  # SciView shows UTC!
 hobo.water_temp = hobo.water_temp + 273.15
 hobo.abs_press = hobo.abs_press * 10  # from kPa to hPa
 hobo = hobo[time_start: time_end]
+plt.plot(hobo.abs_press["2019-08-01": "2019-08-03"]); plt.show()
 
 
 hobo_clim = pd.read_csv(working_directory + "HOBO_water/temp_press_hydrostation_2018-2019.csv")
 hobo_clim.datetime = pd.to_datetime(hobo_clim.datetime)
 hobo_clim.set_index(hobo_clim.datetime, inplace=True)
-hobo_clim = hobo_clim.tz_localize('Asia/Bishkek')
+hobo_clim = hobo_clim.tz_localize('UTC')
+hobo_clim = hobo_clim.tz_convert('Asia/Bishkek')
 hobo_clim = hobo_clim.drop(['datetime'], axis=1)
+plt.plot(hobo_clim.temp["2019-08-01": "2019-08-03"]); plt.show()
 
 hobo[['air_temp', 'srf_press']] = hobo_clim
 hobo['water_press'] = hobo.abs_press - hobo.srf_press
+
+plt.plot(hobo.air_temp["2019-08-01": "2019-08-03"])
+plt.show()
+
 
 ##
 def h(p):  # Water column in meter from hydrostatic pressure in Pa!
@@ -55,7 +62,7 @@ tracer18.datetime = pd.to_datetime(tracer18.datetime)
 tracer18.set_index(tracer18.datetime, inplace=True)
 tracer18 = tracer18.tz_localize('Asia/Bishkek')
 tracer18 = tracer18.drop(['datetime'], axis=1)
-tracer18 = tracer18.resample('H').mean()        # Fit gauging data to HOURLY water level.
+tracer18 = tracer18.resample('H').mean()  # Fit gauging data to HOURLY water level.
 tracer18 = tracer18.dropna()
 
 hobo_ro_18 = pd.merge(tracer18, hobo, how='left', left_index=True, right_index=True)
@@ -82,7 +89,13 @@ print("R² Score: {:.2f}".format(linear_regressor.score(X, Y)))
 ##
 runoff_18 = pd.DataFrame({'discharge': linear_regressor.coef_[0] * hobo.water_column + linear_regressor.intercept_})
 runoff_18[runoff_18.index.month.isin([10, 11, 12, 1, 2, 3, 4])] = 0
+runoff_18[runoff_18.discharge < 0] = 0
 runoff_18.describe()
 
-plt.plot(runoff_18)
+plt.plot(runoff_18["2019-08-01": "2019-08-02"])
 plt.show()
+
+plt.plot(hobo.air_temp["2019-08-01": "2019-08-03"])
+plt.show()
+
+runoff_18.to_csv(working_directory + "HOBO_water/runoff_cognac_glacier_09-2018_09-2019.csv")
