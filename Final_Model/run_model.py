@@ -21,12 +21,12 @@ from Scripts.stats_plots import *
 ## Data input preprocessing
 print('---')
 print('Read input netcdf file %s' % (cosipy_nc))
-print('Read input csv file %s' % (cosipy_csv))
+print('Read input csv file %s' % (data_csv))
 print('Read observation data %s' % (observation_data))
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
 # Observation data should be given in form of a csv with a date column and daily observations
 ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
-df = pd.read_csv(input_path_cosipy + cosipy_csv)
+df = pd.read_csv(input_path_cosipy + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 if evap_data_available == True:
     evap = pd.read_csv(input_path_data + evap_data)
