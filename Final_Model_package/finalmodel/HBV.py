@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import scipy.signal as ss
 
-def hbv_simulation(df, parameters_HBV):
+def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     # 1. new temporary dataframe from input with daily values
     if "PE" in df.columns:
         df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum', "PE":"sum"})

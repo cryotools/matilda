@@ -6,29 +6,51 @@ This file uses the input files created by the COSIPY-utility "aws2cosipy" as for
 observation runoff data to validate it.
 """
 ## Running all the model functions
-import sys
-#sys.path.append("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Final_Model_package")
+from datetime import datetime
+import os
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import xarray as xr
-from finalmodel import DDM
-from finalmodel import HBV
+import matplotlib.pyplot as plt
+from finalmodel import DDM # importing the DDM model functions
+from finalmodel import HBV # importing the HBV model function
+from finalmodel import stats, plots
 
-#from ConfigFile import *
+## Model configuration
+# Directories
+working_directory = "home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
+input_path_cosipy = "home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+input_path_observations = "home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
+
+cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
+data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Celsius), RRR (mm) and if possible PE (mm)
+observation_data = "daily_observations_2011-18.csv" # Daily Observations in mm
+
+# output
+output_path = working_directory + "Output_package/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
+os.mkdir(output_path)
+
+# Additional information
+area_name = "Urumqi" # specify the name of your catchment here
+# Time period to calibrate initial parameters
+cal_period_start = '2011-01-01 00:00:00' # beginning of the calibration period
+cal_period_end = '2013-12-31 23:00:00' # end of calibration: one year is recommended
+# Time period of the model simulation
+sim_period_start = '2014-01-01 00:00:00' # beginning of simulation period
+sim_period_end = '2018-12-31 23:00:00'
+cal_exclude = False # Include or exclude the calibration period
+plot_save = True
 
 ## Data input preprocessing
 print('---')
 print('Read input netcdf file %s' % (cosipy_nc))
-print('Read input csv file %s' % (cosipy_csv))
+print('Read input csv file %s' % (data_csv))
 print('Read observation data %s' % (observation_data))
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
-# Observation data should be given in form of a csv with a date column and daily observations
 ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
-df = pd.read_csv(input_path_cosipy + cosipy_csv)
+df = pd.read_csv(input_path_cosipy + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
-if evap_data_available == True:
-    evap = pd.read_csv(input_path_data + evap_data)
 
 print("Calibration period between " + str(cal_period_start) + " and "  + str(cal_period_end))
 print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_period_end))
@@ -41,10 +63,6 @@ obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
 # obs = obs.sort_index()
 obs = obs[cal_period_start: sim_period_end]
-if evap_data_available == True:
-    evap.set_index("Date", inplace=True)
-    evap.index = pd.to_datetime(evap.index)
-    evap = evap[cal_period_start: sim_period_end]
 
 ## DDM model
 print("Running the degree day model")
@@ -55,35 +73,23 @@ output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm
 print(output_DDM.head(5))
 ## HBV model
 print("Running the HBV model")
+ parameters_HBV = [1.0, 0.15, 250, 0.055, 0.055, 0.04, 0.7, 3.0, \
+        1.5, 120, 1.0, 0.0, 5.0, 0.7, 0.05, 0.1] # Initial parameters
 # Runoff calculations for the catchment with the HBV model
-output_hbv = HBV.hbv_simulation(df, parameters_HBV) # output in mm
+output_hbv = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV) # output in mm
 print(output_hbv.head(5))
 
 ## Output postprocessing
 output = pd.concat([output_hbv, output_DDM], axis=1)
 output = pd.concat([output, obs], axis=1)
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-
-# Including Cosipy in the evaluation
-if compare_cosipy == True:# Including Cosipy in the evaluation
-    output_cosipy = output[{"Qobs", "Q_Total", "DDM_smb", "DDM_total_melt"}]
-    cosipy_runoff = ds.Q.mean(dim=["lat", "lon"])
-    cosipy_smb = ds.surfMB.mean(dim=["lat", "lon"])
-    #cosipy_smb = cosipy_smb.resample(time="D").sum(dim="time")
-    cosipy_melt = ds.surfM.mean(dim=["lat", "lon"])
-    #cosipy_melt = cosipy_melt.resample(time="D").sum(dim="time")
-    output_cosipy["Q_COSIPY"] = cosipy_runoff.resample(time="D").sum(dim="time")*1000
-    output_cosipy["COSIPY_smb"] = cosipy_smb.to_dataframe().surfMB.resample('D').sum()*1000
-    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').mean()*1000
-    output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
-
 print("Writing the output csv to disc")
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
 output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
 ## Statistical analysis
-# Calibration period
+# Calibration period included in the statistical analysis
 if cal_exclude == True:
     output_calibration = output[~(output.index < cal_period_end)]
 else:
@@ -102,53 +108,30 @@ elif plot_frequency == "yearly":
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
 
-stats = create_statistics(output_calibration)
+stats = stats.create_statistics(output_calibration)
 stats.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
-if compare_cosipy == True:
-    stats = create_statistics(output_cosipy)
-    stats.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
-        output_calibration.index.values[-1])[:4] + ".csv")
-    if plot_frequency == "daily":
-        plot_data_cosipy = output_cosipy.copy()
-    elif plot_frequency == "monthly":
-        plot_data_cosipy = output_cosipy.resample("M").agg(
-            {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
-             "COSIPY_smb":"sum", "COSIPY_melt":"sum" })
-    elif plot_frequency == "yearly":
-        plot_data_cosipy = output_cosipy.resample("Y").agg(
-            {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
-             "COSIPY_smb":"sum", "COSIPY_melt":"sum" })
 
 ## Plotting the output data
 # Plot the meteorological data
-fig = plot_meteo(plot_data)
+fig = plots.plot_meteo(plot_data)
 if plot_save == False:
 	plt.show()
 else:
 	plt.savefig(output_path + "meteorological_data_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
 
 # Plot the runoff data
-fig1 = plot_runoff(plot_data)
+fig1 = plots.plot_runoff(plot_data)
 if plot_save == False:
 	plt.show()
 else:
 	plt.savefig(output_path + "model_runoff_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
 
 # Plot the HBV paramters
-fig2 = plot_hbv(plot_data)
+fig2 = plots.plot_hbv(plot_data)
 if plot_save == False:
 	plt.show()
 else:
 	plt.savefig(output_path + "HBV_output_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
-
-if compare_cosipy == True:
-    fig3 = plot_cosipy(plot_data_cosipy)
-    if plot_save == False:
-        plt.show()
-    else:
-        plt.savefig(
-            output_path + "COSIPY_output_" + str(plot_data.index.values[1])[:4] + "-" + str(plot_data.index.values[-1])[
-                                                                                     :4] + ".png")
 
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
