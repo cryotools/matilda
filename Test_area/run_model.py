@@ -19,9 +19,9 @@ from finalmodel import stats, plots
 
 ## Model configuration
 # Directories
-working_directory = "home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
-input_path_cosipy = "home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
-input_path_observations = "home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
+working_directory = "/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
+input_path_cosipy = "/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+input_path_observations = "/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
 data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Celsius), RRR (mm) and if possible PE (mm)
@@ -73,7 +73,7 @@ output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm
 print(output_DDM.head(5))
 ## HBV model
 print("Running the HBV model")
- parameters_HBV = [1.0, 0.15, 250, 0.055, 0.055, 0.04, 0.7, 3.0, \
+parameters_HBV = [1.0, 0.15, 250, 0.055, 0.055, 0.04, 0.7, 3.0, \
         1.5, 120, 1.0, 0.0, 5.0, 0.7, 0.05, 0.1] # Initial parameters
 # Runoff calculations for the catchment with the HBV model
 output_hbv = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV) # output in mm
