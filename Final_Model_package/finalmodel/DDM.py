@@ -15,6 +15,7 @@ def calculate_PDD(ds):
     temp_min = temp.resample(time="D").min(dim="time")
     temp_max = temp.resample(time="D").max(dim="time")
     temp_mean = temp.resample(time="D").mean(dim="time")
+    temp_max, temp_mean, temp_min = temp_max - 273.15, temp_mean - 273.15, temp_min - 273.15
 
     prec = xr.where(mask==1, ds["RRR"], np.nan)
     prec = prec.mean(dim=["lat", "lon"])
@@ -44,8 +45,30 @@ def calculate_PDD(ds):
 
 # Calculation of melt and runoff: input from the pypdd model
 def calculate_glaciermelt(ds):
-    global parameters_DDM
-    return parameters_DDM
+    # Initial Parameters for the DDM
+    """
+        *pdd_factor_snow* : float
+            Positive degree-day factor for snow.
+        *pdd_factor_ice* : float
+            Positive degree-day factor for ice.
+        *refreeze_snow* : float
+            Refreezing fraction of melted snow.
+        *refreeze_ice* : float
+            Refreezing fraction of melted ice.
+        *temp_snow* : float
+            Temperature at which all precipitation falls as snow.
+        *temp_rain* : float
+            Temperature at which all precipitation falls as rain.
+    """
+    parameters_DDM = {
+        'pdd_factor_snow': 2.8,
+        # according to Huintjes et al. 2010  [5.7 mm per day per Celsius according to Hock 2003]
+        'pdd_factor_ice': 5.6,  # according to Huintjes et al. 2010 [7.4 mm per day per Celsius according to Hock 2003]
+        'temp_snow': 0.0,
+        'temp_rain': 2.0,
+        'refreeze_snow': 0.0,
+        'refreeze_ice': 0.0}
+
     temp = ds["temp_mean"]
     prec = ds["RRR"]
     pdd = ds["pdd"]
