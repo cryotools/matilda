@@ -19,9 +19,9 @@ from finalmodel import stats, plots
 
 ## Model configuration
 # Directories
-working_directory = "home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
-input_path_cosipy = "home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
-input_path_observations = "home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
+working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
+input_path_cosipy = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
 data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Celsius), RRR (mm) and if possible PE (mm)
