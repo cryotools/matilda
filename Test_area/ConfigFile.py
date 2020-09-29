@@ -19,11 +19,10 @@ input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/in
 
 input_path_data = home + ""
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
-cosipy_csv = "best_cosipy_input_no1_2011-18.csv"
+data_csv = "best_cosipy_input_no1_2011-18.csv"
 
 output_path = working_directory + "Output/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
-# output_path = working_directory + "Output/"
-os.mkdir(output_path)
+#os.mkdir(output_path)
 
 # dataframe with two columns, date and observations
 observation_data = "daily_observations_2011-18.csv"
