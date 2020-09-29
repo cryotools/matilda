@@ -17,7 +17,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     else:
        df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
 
-    Temp = df_hbv['T2']
+    Temp = df_hbv['T2']-273.15
     Prec = df_hbv['RRR']
 
     # Calculation of PE with Oudin et al. 2005

@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import pandas as pd
 
 # Plotting the meteorological parameters
 def plot_meteo(plot_data):
@@ -10,9 +9,9 @@ def plot_meteo(plot_data):
     ax3.plot(plot_data.index.to_pydatetime(), plot_data["PE"], "green")
     plt.xlabel("Date", fontsize=9)
     ax1.grid(linewidth=0.25), ax2.grid(linewidth=0.25), ax3.grid(linewidth=0.25)
-    ax1.set_title("mean temperature", fontsize=9)
-    ax2.set_title("precipitation sum", fontsize=9)
-    ax3.set_title("evapotranspiration sum", fontsize=9)
+    ax1.set_title("Mean temperature", fontsize=9)
+    ax2.set_title("Precipitation sum", fontsize=9)
+    ax3.set_title("Evapotranspiration sum", fontsize=9)
     ax1.set_ylabel("[°C]", fontsize=9)
     ax2.set_ylabel("[mm]", fontsize=9)
     ax3.set_ylabel("[mm]", fontsize=9)
@@ -32,8 +31,8 @@ def plot_runoff(plot_data):
     ax3.plot(plot_data.index.to_pydatetime(), plot_data["Q_DDM"], "r", linewidth=1, label="DDM")
     ax1.legend(), ax2.legend(), ax3.legend(),
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
-    ax1.set_title("runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[:4]+"-" \
-              +str(plot_data.index.values[-1])[:4]+" for the "+area_name+" catchment", size=14)
+    ax1.set_title("Runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[:4]+"-" \
+              +str(plot_data.index.values[-1])[:4], size=14)
     return fig
 
 # Plotting the HBV output parameters
@@ -52,7 +51,7 @@ def plot_hbv(plot_data):
     plt.xlabel("Date", fontsize=9)
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax4.set_ylabel("[mm]", fontsize=9), ax5.set_ylabel("[mm]", fontsize=9)
-    fig.suptitle("output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    fig.suptitle("Output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
     return fig
 
 def plot_cosipy(plot_data_cosipy):
@@ -70,5 +69,5 @@ def plot_cosipy(plot_data_cosipy):
     plt.xlabel("Date", fontsize=9)
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax1.legend()
-    fig.suptitle(plot_frequency +" output comparison from the model and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
+    fig.suptitle("Output comparison from the model and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
     return fig

@@ -19,26 +19,19 @@ from finalmodel import stats, plots
 
 ## Model configuration
 # Directories
-<<<<<<< HEAD
 working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
 input_path_cosipy = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
-=======
-working_directory = "/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
-input_path_cosipy = "/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
-input_path_observations = "/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
->>>>>>> c9e787349f4e8854ced677eecb429a2ea7cedda8
 
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
-data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Celsius), RRR (mm) and if possible PE (mm)
-observation_data = "daily_observations_2011-18.csv" # Daily Observations in mm
+data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
+observation_data = "daily_observations_2011-18.csv" # Daily Runoff Observations in mm
 
 # output
 output_path = working_directory + "Output_package/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
-os.mkdir(output_path)
+os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 # Additional information
-area_name = "Urumqi" # specify the name of your catchment here
 # Time period to calibrate initial parameters
 cal_period_start = '2011-01-01 00:00:00' # beginning of the calibration period
 cal_period_end = '2013-12-31 23:00:00' # end of calibration: one year is recommended
@@ -46,7 +39,8 @@ cal_period_end = '2013-12-31 23:00:00' # end of calibration: one year is recomme
 sim_period_start = '2014-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
 cal_exclude = False # Include or exclude the calibration period
-plot_save = True
+plot_frequency = "daily" # possible options are daily, monthly or yearly
+plot_save = True # saves plot in folder, otherwise just shows it in Python
 
 ## Data input preprocessing
 print('---')
@@ -62,12 +56,11 @@ print("Calibration period between " + str(cal_period_start) + " and "  + str(cal
 print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_period_end))
 # adjust time
 ds = ds.sel(time=slice(cal_period_start, sim_period_end))
-df.set_index('TIMESTAMP', inplace=True)
+df.set_index('TIMESTAMP', inplace=True) # set date column as index
 df.index = pd.to_datetime(df.index)
 df = df[cal_period_start: sim_period_end]
 obs.set_index('Date', inplace=True)
-obs.index = pd.to_datetime(obs.index)
-# obs = obs.sort_index()
+obs.index = pd.to_datetime(obs.index) # set date column as index
 obs = obs[cal_period_start: sim_period_end]
 
 ## DDM model
