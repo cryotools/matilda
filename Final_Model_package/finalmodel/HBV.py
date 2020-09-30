@@ -6,7 +6,7 @@ For the HBV model, evapotranspiration values are needed. These are calculated wi
 in the unit mm / day.
 """
 
-import numpy as np
+import numpy as npthey
 import pandas as pd
 import scipy.signal as ss
 
@@ -17,7 +17,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     else:
        df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
 
-    Temp = df_hbv['T2']-273.15
+    Temp = df_hbv['T2']
     Prec = df_hbv['RRR']
 
     # Calculation of PE with Oudin et al. 2005
@@ -28,11 +28,14 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     if "PE" in df.columns:
         Evap = df_hbv["PE"]
     else:
-        df_hbv["PE"] = np.where((df_hbv["T2"] - 273.15) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
-                                                              ((df_hbv["T2"] - 273.15) +5)/100)*1000, 0)
+        df_hbv["PE"] = np.where((df_hbv["T2"]) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
+                                                              ((df_hbv["T2"]) +5)/100)*1000, 0)
         Evap = df_hbv["PE"]
 
     # 2. set the parameters for the HBV
+    # Initial parameters
+    #parameters_HBV = [1.0, 0.15, 250, 0.055, 0.055, 0.04, 0.7, 3.0, \
+    #                  1.5, 120, 1.0, 0.0, 5.0, 0.7, 0.05, 0.1]
     parBETA, parCET, parFC, parK0, parK1, parK2, parLP, parMAXBAS,\
     parPERC, parUZL, parPCORR, parTT, parCFMAX, parSFCF, parCFR, parCWH = parameters_HBV
 
