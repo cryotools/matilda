@@ -63,12 +63,25 @@ obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index) # set date column as index
 obs = obs[cal_period_start: sim_period_end]
 
+# adjusting the variable units: T2: K to °C
+df["T2"] = df["T2"] - 273.15
+ds["T2"] = ds["T2"] - 273.15
+
+
 ## DDM model
 print("Running the degree day model")
+parameters_DDM = {
+    'pdd_factor_snow': 2.8, # according to Huintjes et al. 2010  [5.7 mm per day per Celsius according to Hock 2003]
+    'pdd_factor_ice': 5.6,  # according to Huintjes et al. 2010 [7.4 mm per day per Celsius according to Hock 2003]
+    'temp_snow': 0.0,
+    'temp_rain': 2.0,
+    'refreeze_snow': 0.0,
+    'refreeze_ice': 0.0}
+
 # Calculating the positive degree days
 degreedays_ds = DDM.calculate_PDD(ds)
 # Calculating runoff and melt
-output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm
+output_DDM = DDM.calculate_glaciermelt(degreedays_ds, parameters_DDM) # output in mm
 print(output_DDM.head(5))
 ## HBV model
 print("Running the HBV model")
