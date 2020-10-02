@@ -38,6 +38,10 @@ cal_period_end = '2013-12-31 23:00:00' # end of calibration: one year is recomme
 # Time period of the model simulation
 sim_period_start = '2014-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
+# Downscaling the temperature and precipitation to glacier altitude for the DDM
+lapse_rate_temperature = -0.006 # K/m
+lapse_rate_precipitation = 0
+height_diff = 0 # height difference between AWS and glacier in m
 cal_exclude = False # Include or exclude the calibration period
 plot_frequency = "daily" # possible options are daily, monthly or yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
@@ -63,32 +67,38 @@ obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index) # set date column as index
 obs = obs[cal_period_start: sim_period_end]
 
+# Downscaling the dataframe to the glacier height
+df_DDM = df.copy()
+df_DDM["T2"] = df_DDM["T2"] + height_diff * float(lapse_rate_temperature)
+df_DDM["RRR"] = df_DDM["RRR"] + height_diff * float(lapse_rate_precipitation)
+
 # adjusting the variable units: T2: K to °C
 df["T2"] = df["T2"] - 273.15
+df_DDM["T2"] = df_DDM["T2"] - 273.15
 ds["T2"] = ds["T2"] - 273.15
 
+#height = xr.where(ds["mask"] == 1, ds["HGT"], np.nan)
+#height = height.mean(dim=["lat", "lon"])
 
 ## DDM model
 print("Running the degree day model")
-parameters_DDM = {
+"""Parameter DDM
     'pdd_factor_snow': 2.8, # according to Huintjes et al. 2010  [5.7 mm per day per Celsius according to Hock 2003]
     'pdd_factor_ice': 5.6,  # according to Huintjes et al. 2010 [7.4 mm per day per Celsius according to Hock 2003]
     'temp_snow': 0.0,
     'temp_rain': 2.0,
     'refreeze_snow': 0.0,
-    'refreeze_ice': 0.0}
+    'refreeze_ice': 0.0}"""
 
 # Calculating the positive degree days
-degreedays_ds = DDM.calculate_PDD(ds)
+degreedays_ds = DDM.calculate_PDD(df_DDM) # include either downscaled glacier dataframe or dataset with mask
 # Calculating runoff and melt
-output_DDM = DDM.calculate_glaciermelt(degreedays_ds, parameters_DDM) # output in mm
+output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm, parameter adjustment possible
 print(output_DDM.head(5))
 ## HBV model
 print("Running the HBV model")
-parameters_HBV = [1.0, 0.15, 250, 0.055, 0.055, 0.04, 0.7, 3.0, \
-        1.5, 120, 1.0, 0.0, 5.0, 0.7, 0.05, 0.1] # Initial parameters
 # Runoff calculations for the catchment with the HBV model
-output_hbv = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV) # output in mm
+output_hbv = HBV.hbv_simulation(df, cal_period_start, cal_period_end) # output in mm, individual parameters can be set here
 print(output_hbv.head(5))
 
 ## Output postprocessing
@@ -148,3 +158,6 @@ else:
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
 print('---')
+
+##
+
