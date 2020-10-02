@@ -4,13 +4,57 @@ Python Code from the LHMP and adjusted to our needs (github.com/hydrogo/LHMP -
 Ayzel Georgy. (2016). LHMP: lumped hydrological modelling playground. Zenodo. doi: 10.5281/zenodo.59501)
 For the HBV model, evapotranspiration values are needed. These are calculated with the formula by Oudin et al. (2005)
 in the unit mm / day.
+
+List of 16 HBV model parameters
+    [parBETA, parCET,  parFC,    parK0,
+    parK1,    parK2,   parLP,    parMAXBAS,
+    parPERC,  parUZL,  parPCORR, parTT,
+    parCFMAX, parSFCF, parCFR,   parCWH]
+
+    # 16 PARAMETERS_HBV
+    # BETA   - parameter that determines the relative contribution to runoff from rain or snowmelt
+    #          [1, 6]
+    # CET    - Evaporation correction factor
+    #          (should be 0 if we don't want to change (Oudin et al., 2005) formula values)
+    #          [0, 0.3]
+    # FC     - maximum soil moisture storage
+    #          [50, 500]
+    # K0     - recession coefficient for surface soil box (upper part of SUZ)
+    #          [0.01, 0.4]
+    # K1     - recession coefficient for upper groudwater box (main part of SUZ)
+    #          [0.01, 0.4]
+    # K2     - recession coefficient for lower groudwater box (whole SLZ)
+    #          [0.001, 0.15]
+    # LP     - Threshold for reduction of evaporation (SM/FC)
+    #          [0.3, 1]
+    # MAXBAS - routing parameter, order of Butterworth filter
+    #          [1, 7]
+    # PERC   - percolation from soil to upper groundwater box
+    #          [0, 3]
+    # UZL    - threshold parameter for groundwater boxes runoff (mm)
+    #          [0, 500]
+    # PCORR  - Precipitation (input sum) correction factor
+    #          [0.5, 2]
+    # TT     - Temperature which separate rain and snow fraction of precipitation
+    #          [-1.5, 2.5]
+    # CFMAX  - Snow melting rate (mm/day per Celsius degree)
+    #          [1, 10]
+    # SFCF   - SnowFall Correction Factor
+    #          [0.4, 1]
+    # CFR    - Refreezing coefficient
+    #          [0, 0.1] (usually 0.05)
+    # CWH    - Fraction (portion) of meltwater and rainfall which retain in snowpack (water holding capacity)
+    #          [0, 0.2] (usually 0.1)
 """
 
 import numpy as npthey
 import pandas as pd
 import scipy.signal as ss
+import numpy as np
 
-def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
+def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.15,  parFC=250, parK0=0.055, parK1=0.055, \
+                   parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parCFMAX=5.0, \
+                   parSFCF=0.7, parCFR=0.05, parCWH=0.1):
     # 1. new temporary dataframe from input with daily values
     if "PE" in df.columns:
         df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum', "PE":"sum"})
@@ -32,15 +76,8 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
                                                               ((df_hbv["T2"]) +5)/100)*1000, 0)
         Evap = df_hbv["PE"]
 
-    # 2. set the parameters for the HBV
-    # Initial parameters
-    #parameters_HBV = [1.0, 0.15, 250, 0.055, 0.055, 0.04, 0.7, 3.0, \
-    #                  1.5, 120, 1.0, 0.0, 5.0, 0.7, 0.05, 0.1]
-    parBETA, parCET, parFC, parK0, parK1, parK2, parLP, parMAXBAS,\
-    parPERC, parUZL, parPCORR, parTT, parCFMAX, parSFCF, parCFR, parCWH = parameters_HBV
-
-    # 3. Calibration period:
-    # 3.1 meteorological forcing preprocessing
+    # 2. Calibration period:
+    # 2.1 meteorological forcing preprocessing
     Temp_cal = Temp[cal_period_start:cal_period_end]
     Prec_cal = Prec[cal_period_start:cal_period_end]
     Evap_cal = Evap[cal_period_start:cal_period_end]
@@ -61,7 +98,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     # c. control Evaporation
     Evap_cal = np.where(Evap_cal > 0, Evap_cal, 0)
 
-    # 3.2 Initial parameter calibration
+    # 2.2 Initial parameter calibration
     # snowpack box
     SNOWPACK_cal = np.zeros(len(Prec_cal))
     SNOWPACK_cal[0] = 0.0001
@@ -75,10 +112,10 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     ETact_cal = np.zeros(len(Prec_cal))
     ETact_cal[0] = 0.0001
 
-    # 3.3 Running model for calibration period
+    # 2.3 Running model for calibration period
     for t in range(1, len(Prec_cal)):
 
-        # 3.3.1 Snow routine
+        # 2.3.1 Snow routine
         # how snowpack forms
         SNOWPACK_cal[t] = SNOWPACK_cal[t-1] + SNOW_cal[t]
         # how snowpack melts
@@ -107,7 +144,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
         # meltwater after recharge to soil
         MELTWATER_cal[t] = MELTWATER_cal[t] - tosoil
 
-        # 3.3.1 Soil and evaporation routine
+        # 2.3.1 Soil and evaporation routine
         # soil wetness calculation
         soil_wetness = (SM_cal[t-1] / parFC)**parBETA
         # control soil wetness (should be in [0, 1])
@@ -137,7 +174,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
         # last soil moisture updating
         SM_cal[t] = SM_cal[t] - ETact_cal[t]
 
-    # 4. meteorological forcing preprocessing for simulation
+    # 3. meteorological forcing preprocessing for simulation
     # overall correction factor
     Prec = parPCORR * Prec
     # precipitation separation
@@ -155,7 +192,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     # c. control Evaporation
     Evap = np.where(Evap > 0, Evap, 0)
 
-    # 5. initialize boxes and initial conditions after calibration
+    # 4. initialize boxes and initial conditions after calibration
     # snowpack box
     SNOWPACK = np.zeros(len(Prec))
     SNOWPACK[0] = SNOWPACK_cal[-1]
@@ -178,10 +215,10 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
     Qsim = np.zeros(len(Prec))
     Qsim[0] = 0.0001
 
-    # 6. The main cycle of calculations
+    # 5. The main cycle of calculations
     for t in range(1, len(Qsim)):
 
-        # 6.1 Snow routine
+        # 5.1 Snow routine
         # how snowpack forms
         SNOWPACK[t] = SNOWPACK[t-1] + SNOW[t]
         # how snowpack melts
@@ -210,7 +247,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
         # meltwater after recharge to soil
         MELTWATER[t] = MELTWATER[t] - tosoil
 
-        # 6.2 Soil and evaporation routine
+        # 5.2 Soil and evaporation routine
         # soil wetness calculation
         soil_wetness = (SM[t-1] / parFC)**parBETA
         # control soil wetness (should be in [0, 1])
@@ -240,7 +277,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
         # last soil moisture updating
         SM[t] = SM[t] - ETact[t]
 
-        # 6.3 Groundwater routine
+        # 5.3 Groundwater routine
         # upper groudwater box
         SUZ[t] = SUZ[t-1] + recharge + excess
         # percolation control
@@ -265,7 +302,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parameters_HBV):
         # Total runoff calculation
         Qsim[t] = Q0 + Q1 + Q2
 
-    # 7. Scale effect accounting
+    # 6. Scale effect accounting
     # delay and smoothing simulated hydrograph
     # (Beck et al.,2016) used triangular transformation based on moving window
     # here are my method with simple forward filter based on Butterworht filter design

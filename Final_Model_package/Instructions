@@ -11,8 +11,8 @@ As input, dataframes with temperature (in Celsius, T2), precipitation (in mm, RR
 An example run of the model can be found at runmodel.py and the following workflow is recommened:
 - read in the data and adjust the variable names, units and timesteps
 - specify the calibration period (one year is recommended)
-- the calculate_pdd function calculates the positive degree days and the calculate_melt function uses this output to apply the degree day model
-- the HBV_simulation runs the HBV model and calculates PE if neccessary
+- the calculate_pdd function calculates the positive degree days and the calculate_melt function uses this output to apply the degree day model. The individual parameters can be adjusted in the function
+- the HBV_simulation runs the HBV model and calculates PE if neccessary. The individual parameters can be adjusted in the function
 - combine the two outputs (calculate_melt + hbv_simulation)
 - adjust the time to daily, monthly or yearly steps, depending on your desired output
 - use the create_statistics function to get a simple dataframe with statistical measures
