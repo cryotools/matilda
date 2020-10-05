@@ -76,18 +76,20 @@ def sdss_open(path, celsius=False, resample=True, tz_localize = True, timezone =
 
 ## Function to calculate lapse rate from timeseries
 
-def lapseR(high_values, low_values, alt_high, alt_low,
+def lapseR(high_values, low_values, alt_high, alt_low, unit='K/m',
            seasonal=False, season=None, summer=[4,5,6,7,8,9,10,11], winter=[12,1,2,3]):
     if seasonal and season is 'summer':
         lapseR = (high_values[high_values.index.month.isin(summer)].mean()
                   - low_values[low_values.index.month.isin(summer)].mean()) / (alt_high - alt_low)
+        print('The lapse rate between', alt_low, 'm and', alt_high, 'm in', season, 'is', round(lapseR, 5), unit)
     elif seasonal and season is 'winter':
         lapseR = (high_values[high_values.index.month.isin(winter)].mean()
                   - low_values[low_values.index.month.isin(winter)].mean()) / (alt_high - alt_low)
+        print('Lapse rate between', alt_low, 'm and', alt_high, 'm in', season, 'is', round(lapseR, 5), unit)
     else:
         lapseR = (high_values.mean()-low_values.mean()) / (alt_high-alt_low)
+        print('The lapse rate', alt_low, 'm and', alt_high, 'm is', round(lapseR, 5), unit)
     return lapseR
-
 
 
 ## Apply preprocessessing on all datasets from SDSS
@@ -135,7 +137,7 @@ hobo1 = hobo_open(path1)
 hobo2 = hobo_open(path2, time_slice=True, time_end='2018-11-04 20:00:00')                        # "Freezes" at 2018-11-04 20:00:00!
 hobo3 = hobo_open(path3, resample=True, time_slice=True, time_end='2019-05-05 07:00:00')        # "Freezes" at 2019-05-05 07:22:05!
 
-## Compare temperature timeseries and calculate lapse rates
+## Compare temperature timeseries
 compare = pd.DataFrame({'aws [2250m]': aws.temp, 'minikin_down [2250m]': minikin_down.temp,
                         'hobo1 [3037 m]': hobo1.temp, 'hobo2 [3377m]': hobo2.temp, 'hobo3 [3746m]': hobo3.temp,
                         'minikin_up [3864m]': minikin_up.temp}, index=minikin_up.index)
@@ -151,23 +153,28 @@ plt.plot(compare_slim)
 plt.legend(compare_slim.columns.tolist(), loc="upper left")
 plt.show()
 
-print('Air temperature lapse rate 2250m - 3864m:', round(lapseR(minikin_up.temp, aws.temp, alt_minikin_up,
-                                                                alt_minikin_down), 5), 'K/m')  # literature: -0.006 K/m
-print('Air temperature lapse rate 2250m - 3037m:', round(lapseR(hobo1.temp, aws.temp, alt_hobo1,
-                                                                alt_minikin_down), 5), 'K/m')
-print('Air temperature lapse rate 3037m - 3864m:', round(lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,
-                                                                alt_hobo1), 5), 'K/m')
-# Seasonal lapse rates
-print('Air temperature lapse rate 2250m - 3864m (winter):', round(lapseR(minikin_up.temp, aws.temp, alt_minikin_up,
-                                                                alt_minikin_down, seasonal=True, season='winter'), 5), 'K/m')  # literature: -0.006 K/m
-print('Air temperature lapse rate 2250m - 3037m (winter):', round(lapseR(hobo1.temp, aws.temp, alt_hobo1,
-                                                                alt_minikin_down, seasonal=True, season='winter'), 5), 'K/m')
-print('Air temperature lapse rate 3037m - 3864m (winter):', round(lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,
-                                                                alt_hobo1, seasonal=True, season='winter'), 5), 'K/m')
+## Calculate lapse rates
+lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down)
+lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down)
+lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,alt_hobo1)
 
-print('Air temperature lapse rate 2250m - 3864m (summer):', round(lapseR(minikin_up.temp, aws.temp, alt_minikin_up,
-                                                                alt_minikin_down, seasonal=True, season='summer'), 5), 'K/m')  # literature: -0.006 K/m
-print('Air temperature lapse rate 2250m - 3037m (summer):', round(lapseR(hobo1.temp, aws.temp, alt_hobo1,
-                                                                alt_minikin_down, seasonal=True, season='summer'), 5), 'K/m')
-print('Air temperature lapse rate 3037m - 3864m (summer):', round(lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,
-                                                                alt_hobo1, seasonal=True, season='summer'), 5), 'K/m')
+# Seasonal lapse rates
+lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down, seasonal=True, season='winter')
+lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down, seasonal=True, season='winter')
+lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,alt_hobo1, seasonal=True, season='winter')
+
+lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down, seasonal=True, season='summer')
+lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down, seasonal=True, season='summer')
+lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,alt_hobo1, seasonal=True, season='summer')
+
+# As df:
+lapse_rates = {'All year': [lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down),
+                            lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down),
+                            lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,alt_hobo1)],
+               'Summer': [lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down, seasonal=True, season='summer'),
+                          lapseR(hobo1.temp, aws.temp, alt_hobo1, alt_minikin_down, seasonal=True, season='summer'),
+                          lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up, alt_hobo1, seasonal=True, season='summer')],
+               'Winter': [lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down, seasonal=True, season='winter'),
+                          lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down, seasonal=True, season='winter'),
+                          lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,alt_hobo1, seasonal=True, season='winter')]}
+lapseR_df = pd.DataFrame(lapse_rates, index = ['2250m to 3894m','2250m to 3036.876m', '3036.876m to 3894m '])
