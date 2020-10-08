@@ -173,6 +173,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
 
         # last soil moisture updating
         SM_cal[t] = SM_cal[t] - ETact_cal[t]
+    print("HBV Calibration fished")
 
     # 3. meteorological forcing preprocessing for simulation
     # overall correction factor
