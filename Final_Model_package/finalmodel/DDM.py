@@ -5,6 +5,7 @@ Model input rewritten and adjusted to our needs from the pypdd function (github.
 """
 import xarray as xr
 import numpy as np
+
 # Function to calculate the positive degree days on the glacier area
 def calculate_PDD(ds):
     # masking the dataset to only get the glacier area
@@ -12,6 +13,7 @@ def calculate_PDD(ds):
         mask = ds.MASK.values
         temp = xr.where(mask==1, ds["T2"], np.nan)
         temp = temp.mean(dim=["lat", "lon"])
+        temp = xr.where(temp>=100, temp - 273.15, temp) # making sure the temperature is in Celsius
         temp_min = temp.resample(time="D").min(dim="time")
         temp_max = temp.resample(time="D").max(dim="time")
         temp_mean = temp.resample(time="D").mean(dim="time")
@@ -21,6 +23,8 @@ def calculate_PDD(ds):
         time = temp_mean["time"]
     else:
         temp = ds["T2"]
+        if temp[1] >= 100: # making sure the temperature is in Celsius
+            temp = temp - 273.15
         temp_min = temp.resample("D").min()
         temp_mean = temp.resample("D").mean()
         temp_max = temp.resample("D").max()

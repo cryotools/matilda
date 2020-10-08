@@ -9,22 +9,20 @@ in the unit mm / day.
 import numpy as np
 import pandas as pd
 import scipy.signal as ss
-from ConfigFile import evap_data_available, temp_unit, prec_unit, prec_conversion, cal_period_start, cal_period_end
+from ConfigFile import evap_unit, evap_conversion, temp_unit, prec_unit, prec_conversion, cal_period_start, cal_period_end
 
 def hbv_simulation(df, parameters_HBV):
     # 1. new temporary dataframe from input with daily values
-    df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
-
-    if evap_data_available == True:
-        evap = evap.resample("D").agg({"PE": 'sum'})
-        df_hbv = evap["PE"]
+    if "PE" in df.columns:
+        df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum', "PE":"sum"})
+    else:
+       df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
 
     Temp = df_hbv['T2']
-    if temp_unit == True:
+    if temp_unit == False:
         Temp = Temp - 273.15
     else:
         Temp = Temp
-
     Prec = df_hbv['RRR']
     if prec_unit == False:
         Prec = Prec / prec_conversion
@@ -36,11 +34,13 @@ def hbv_simulation(df, parameters_HBV):
     extra_rad = 27.086217947590317
     latent_heat_flux = 2.45
     water_density = 1000
-    if evap_data_available == False:
-        df_hbv["PE"] = np.where((df_hbv["T2"] - 273.15) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
-                                                              ((df_hbv["T2"] - 273.15) +5)/100)*1000, 0)
+    if "PE" in df.columns:
         Evap = df_hbv["PE"]
+        if evap_unit == False:
+            Evap = Evap / evap_conversion
     else:
+        df_hbv["PE"] = np.where((df_hbv["T2"]) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
+                                                              ((df_hbv["T2"]) +5)/100)*1000, 0)
         Evap = df_hbv["PE"]
 
     # 2. set the parameters for the HBV
@@ -144,6 +144,7 @@ def hbv_simulation(df, parameters_HBV):
 
         # last soil moisture updating
         SM_cal[t] = SM_cal[t] - ETact_cal[t]
+    print("HBV Calibration fished")
 
     # 4. meteorological forcing preprocessing for simulation
     # overall correction factor
@@ -286,7 +287,6 @@ def hbv_simulation(df, parameters_HBV):
     Qsim_smoothed = np.where(Qsim_smoothed > 0, Qsim_smoothed, 0)
 
     Qsim = Qsim_smoothed
-    hbv_results = pd.DataFrame({"HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
+    hbv_results = pd.DataFrame({"T2":Temp, "RRR":Prec, "PE":Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
                                 "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=df_hbv.index)
-    hbv_results = pd.concat([df_hbv, hbv_results], axis=1)
     return hbv_results
