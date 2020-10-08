@@ -8,8 +8,8 @@ observation runoff data to validate it.
 ## Running all the model functions
 from datetime import datetime
 import os
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+#import warnings
+#warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -38,13 +38,16 @@ cal_period_end = '2013-12-31 23:00:00' # end of calibration: one year is recomme
 # Time period of the model simulation
 sim_period_start = '2014-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
+
 # Downscaling the temperature and precipitation to glacier altitude for the DDM
 lapse_rate_temperature = -0.006 # K/m
 lapse_rate_precipitation = 0
-height_diff = 0 # height difference between AWS and glacier in m
+height_diff = 21 # height difference between AWS (4025) and glacier (4036) in m
+
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "daily" # possible options are daily, monthly or yearly
+plot_frequency = "monthly" # possible options are daily, monthly or yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
+cosipy = True # usage of COSIPY input
 
 ## Data input preprocessing
 print('---')
@@ -77,9 +80,6 @@ df["T2"] = df["T2"] - 273.15
 df_DDM["T2"] = df_DDM["T2"] - 273.15
 ds["T2"] = ds["T2"] - 273.15
 
-#height = xr.where(ds["mask"] == 1, ds["HGT"], np.nan)
-#height = height.mean(dim=["lat", "lon"])
-
 ## DDM model
 print("Running the degree day model")
 """Parameter DDM
@@ -91,7 +91,7 @@ print("Running the degree day model")
     'refreeze_ice': 0.0}"""
 
 # Calculating the positive degree days
-degreedays_ds = DDM.calculate_PDD(df_DDM) # include either downscaled glacier dataframe or dataset with mask
+degreedays_ds = DDM.calculate_PDD(ds) # include either downscaled glacier dataframe or dataset with mask
 # Calculating runoff and melt
 output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm, parameter adjustment possible
 print(output_DDM.head(5))
@@ -130,8 +130,42 @@ elif plot_frequency == "yearly":
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
 
-stats = stats.create_statistics(output_calibration)
-stats.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
+stats_output = stats.create_statistics(output_calibration)
+stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
+
+## Cosipy comparison
+if cosipy == True:
+    output_cosipy = output[{"Qobs", "Q_Total", "DDM_smb", "DDM_total_melt"}]
+    cosipy_runoff = ds.Q.mean(dim=["lat", "lon"])
+    cosipy_smb = ds.surfMB.mean(dim=["lat", "lon"])
+    #cosipy_smb = cosipy_smb.resample(time="D").sum(dim="time")
+    cosipy_melt = ds.surfM.mean(dim=["lat", "lon"])
+    #cosipy_melt = cosipy_melt.resample(time="D").sum(dim="time")
+    output_cosipy["Q_COSIPY"] = cosipy_runoff.to_dataframe().Q.resample('D').sum()*1000
+    output_cosipy["COSIPY_smb"] = cosipy_smb.to_dataframe().surfMB.resample('D').sum()*1000
+    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').mean()*1000
+    output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
+
+    stats_cosipy = stats.create_statistics(output_cosipy)
+    stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
+        output_calibration.index.values[-1])[:4] + ".csv")
+    if plot_frequency == "daily":
+        plot_data_cosipy = output_cosipy.copy()
+    elif plot_frequency == "monthly":
+        plot_data_cosipy = output_cosipy.resample("M").agg(
+            {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
+             "COSIPY_smb":"sum", "COSIPY_melt":"sum" })
+    elif plot_frequency == "yearly":
+        plot_data_cosipy = output_cosipy.resample("Y").agg(
+            {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
+             "COSIPY_smb":"sum", "COSIPY_melt":"sum" })
+
+    fig3 = plots.plot_cosipy(plot_data_cosipy)
+    if plot_save == False:
+        plt.show()
+    else:
+        plt.savefig(output_path + "COSIPY_output_" + str(plot_data_cosipy.index.values[1])[:4] + "-" + str(
+            plot_data_cosipy.index.values[-1])[:4] + ".png")
 
 ## Plotting the output data
 # Plot the meteorological data
@@ -158,6 +192,3 @@ else:
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
 print('---')
-
-##
-

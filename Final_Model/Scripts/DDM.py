@@ -5,26 +5,33 @@ Model input rewritten and adjusted to our needs from the pypdd function (github.
 """
 import xarray as xr
 import numpy as np
-from ConfigFile import temp_unit, parameters_DDM
+from ConfigFile import temp_unit, prec_unit, prec_conversion, parameters_DDM
 
 # Function to calculate the positive degree days on the glacier area
 def calculate_PDD(ds):
     # masking the dataset to only get the glacier area
-    mask = ds.MASK.values
-    temp = xr.where(mask==1, ds["T2"], np.nan)
-    temp = temp.mean(dim=["lat", "lon"])
-    temp_min = temp.resample(time="D").min(dim="time")
-    temp_max = temp.resample(time="D").max(dim="time")
-    temp_mean = temp.resample(time="D").mean(dim="time")
-    if temp_unit:
-        temp_max, temp_mean, temp_min = temp_max - 273.15, temp_mean - 273.15, temp_min - 273.15
+    if isinstance(ds, xr.Dataset):
+        mask = ds.MASK.values
+        temp = xr.where(mask==1, ds["T2"], np.nan)
+        temp = temp.mean(dim=["lat", "lon"])
+        temp = xr.where(temp>=100, temp - 273.15, temp) # making sure the temperature is in Celsius
+        temp_min = temp.resample(time="D").min(dim="time")
+        temp_max = temp.resample(time="D").max(dim="time")
+        temp_mean = temp.resample(time="D").mean(dim="time")
+        prec = xr.where(mask == 1, ds["RRR"], np.nan)
+        prec = prec.mean(dim=["lat", "lon"])
+        prec = prec.resample(time="D").sum(dim="time")
+        time = temp_mean["time"]
     else:
-        temp_max, temp_mean, temp_min = temp_max, temp_mean, temp_min
-
-    prec = xr.where(mask==1, ds["RRR"], np.nan)
-    prec = prec.mean(dim=["lat", "lon"])
-    prec = prec.resample(time="D").sum(dim="time")
-    time = temp_mean["time"]
+        temp = ds["T2"]
+        if temp_unit == False: # making sure the temperature is in Celsius
+            temp = temp - 273.15
+        temp_min = temp.resample("D").min()
+        temp_mean = temp.resample("D").mean()
+        temp_max = temp.resample("D").max()
+        prec = ds["RRR"].resample("D").sum()
+        if prec_unit == False:
+            prec = prec / prec_conversion
 
     pdd_ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
                    xr.DataArray(temp_max, name="temp_max"), prec])

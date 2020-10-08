@@ -26,10 +26,8 @@ print('Read observation data %s' % (observation_data))
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
 # Observation data should be given in form of a csv with a date column and daily observations
 ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
-df = pd.read_csv(input_path_cosipy + data_csv)
+df = pd.read_csv(input_path_cosipy + data_csv) # dataframe with temperature, precipitation and if possible evaporation
 obs = pd.read_csv(input_path_observations + observation_data)
-if evap_data_available == True:
-    evap = pd.read_csv(input_path_data + evap_data)
 
 print("Calibration period between " + str(cal_period_start) + " and "  + str(cal_period_end))
 print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_period_end))
@@ -42,10 +40,6 @@ obs.set_index('Date', inplace=True)
 obs.index = pd.to_datetime(obs.index)
 # obs = obs.sort_index()
 obs = obs[cal_period_start: sim_period_end]
-if evap_data_available == True:
-    evap.set_index("Date", inplace=True)
-    evap.index = pd.to_datetime(evap.index)
-    evap = evap[cal_period_start: sim_period_end]
 
 ## DDM model
 print("Running the degree day model")

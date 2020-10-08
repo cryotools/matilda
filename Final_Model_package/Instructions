@@ -2,7 +2,7 @@ The Final Model is available as a python package in your local environment. To i
 pip3 install .
 This installs the package on your computer and should be accessible from all other files.
 
-The package requires the following python packages 'pandas' , 'xarray', 'matplotlib', 'numpy', 'scipy' which should be automatically installed with installing the finalmodel as described. 
+The package requires the following python packages 'pandas' , 'xarray', 'matplotlib', 'numpy', 'scipy', 'os', 'datetime' which should be automatically installed with installing the finalmodel as described. 
 
 The finalmodel contains the following parts: degree day model (DDM), HBV model (HBV), simple statistical description (stats) and plots for the runoff, meteorological parameters and HBV output (plots). 
 

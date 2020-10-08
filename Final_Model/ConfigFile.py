@@ -19,7 +19,7 @@ input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/in
 
 input_path_data = home + ""
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
-cosipy_csv = "best_cosipy_input_no1_2011-18.csv"
+data_csv = "best_cosipy_input_no1_2011-18.csv"
 
 output_path = working_directory + "Output/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
 # output_path = working_directory + "Output/"
@@ -46,12 +46,13 @@ compare_cosipy = True # compare model output with output from Cosipy
 
 # Variables
 # Temperature
-temp_unit = True # Temperature unit is Kelvin
+temp_unit = False # Temperature unit is already in Celsius
 # Precipitation
 prec_unit = True # Precipitation unit is in mm
 prec_conversion = 1000 # Conversion factor through division
-# Evapotranspiration: unit is mm / day
-evap_data_available = False # ET data is available, else it will be calculated using the formula by Oudin et al. (2005)
+# Evapotranspiration: ET data is available, else it will be calculated using the formula by Oudin et al. (2005)
+evap_unit = False # unit is mm# Conversion factor through division / day
+evap_conversion = 1000
 # Runoff observation: unit is mm / day
 
 # Parameters for the DDM
