@@ -91,12 +91,12 @@ if plot_frequency == "daily":
 elif plot_frequency == "monthly":
     plot_data = output_calibration.resample("M").agg({"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum",  \
                                                       "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-                                                      "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
+                                                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 elif plot_frequency == "yearly":
     plot_data = output_calibration.resample("Y").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-         "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
+         "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 
 stats = create_statistics(output_calibration)
 stats.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
