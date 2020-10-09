@@ -48,7 +48,7 @@ compare_cosipy = True # compare model output with output from Cosipy
 # Temperature
 temp_unit = False # Temperature unit is already in Celsius
 # Precipitation
-prec_unit = True # Precipitation unit is in mm
+prec_unit = Truefn # Precipitation unit is in mm
 prec_conversion = 1000 # Conversion factor through division
 # Evapotranspiration: ET data is available, else it will be calculated using the formula by Oudin et al. (2005)
 evap_unit = False # unit is mm# Conversion factor through division / day

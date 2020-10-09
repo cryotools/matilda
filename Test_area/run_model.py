@@ -32,11 +32,11 @@ output_path = working_directory + "Output_package/" + cosipy_nc[:-3] + ">>" + da
 os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 # Additional information
-# Time period to calibrate initial parameters
-cal_period_start = '2011-01-01 00:00:00' # beginning of the calibration period
-cal_period_end = '2013-12-31 23:00:00' # end of calibration: one year is recommended
+# Time period for the spin up
+cal_period_start = '2011-01-01 00:00:00' # beginning of  period
+cal_period_end = '2011-12-31 23:00:00' # end of period: one year is recommended
 # Time period of the model simulation
-sim_period_start = '2014-01-01 00:00:00' # beginning of simulation period
+sim_period_start = '2012-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
 
 # Downscaling the temperature and precipitation to glacier altitude for the DDM
@@ -59,7 +59,7 @@ ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
 df = pd.read_csv(input_path_cosipy + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 
-print("Calibration period between " + str(cal_period_start) + " and "  + str(cal_period_end))
+print("Spin up period between " + str(cal_period_start) + " and "  + str(cal_period_end))
 print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_period_end))
 # adjust time
 ds = ds.sel(time=slice(cal_period_start, sim_period_end))
@@ -105,6 +105,10 @@ print(output_hbv.head(5))
 output = pd.concat([output_hbv, output_DDM], axis=1)
 output = pd.concat([output, obs], axis=1)
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
+
+nash_sut = stats.NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model efficiency coefficient
+print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(nash_sut))
+
 print("Writing the output csv to disc")
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
@@ -123,12 +127,12 @@ if plot_frequency == "daily":
 elif plot_frequency == "monthly":
     plot_data = output_calibration.resample("M").agg({"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum",  \
                                                       "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-                                                      "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
+                                                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 elif plot_frequency == "yearly":
     plot_data = output_calibration.resample("Y").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-         "HBV_soil_moisture": "sum", "HBV_upper_gw": "sum", "HBV_lower_gw": "sum"})
+         "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 
 stats_output = stats.create_statistics(output_calibration)
 stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
@@ -146,6 +150,8 @@ if cosipy == True:
     output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').mean()*1000
     output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
 
+    nash_sut_cosipy = stats.NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
+
     stats_cosipy = stats.create_statistics(output_cosipy)
     stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
         output_calibration.index.values[-1])[:4] + ".csv")
@@ -160,7 +166,7 @@ if cosipy == True:
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
              "COSIPY_smb":"sum", "COSIPY_melt":"sum" })
 
-    fig3 = plots.plot_cosipy(plot_data_cosipy)
+    fig3 = plots.plot_cosipy(plot_data_cosipy, nash_sut, nash_sut_cosipy)
     if plot_save == False:
         plt.show()
     else:
@@ -176,7 +182,7 @@ else:
 	plt.savefig(output_path + "meteorological_data_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
 
 # Plot the runoff data
-fig1 = plots.plot_runoff(plot_data)
+fig1 = plots.plot_runoff(plot_data, nash_sut)
 if plot_save == False:
 	plt.show()
 else:

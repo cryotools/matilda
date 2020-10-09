@@ -173,14 +173,14 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
 
         # last soil moisture updating
         SM_cal[t] = SM_cal[t] - ETact_cal[t]
-    print("HBV Calibration fished")
+    print("HBV Spin up fished")
 
     # 3. meteorological forcing preprocessing for simulation
     # overall correction factor
     Prec = parPCORR * Prec
     # precipitation separation
     # if T < parTT: SNOW, else RAIN
-    RAIN = np.where(Temp  > parTT, Prec, 0)
+    RAIN = np.where(Temp > parTT, Prec, 0)
     SNOW = np.where(Temp <= parTT, Prec, 0)
     # snow correction factor
     SNOW = parSFCF * SNOW
