@@ -72,8 +72,8 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
     if "PE" in df.columns:
         Evap = df_hbv["PE"]
     else:
-        df_hbv["PE"] = np.where((df_hbv["T2"]) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
-                                                              ((df_hbv["T2"]) +5)/100)*1000, 0)
+        df_hbv["PE"] = np.where((Temp) + 5 > 0, ((extra_rad/(water_density*latent_heat_flux))* \
+                                                              ((Temp) +5)/100)*1000, 0)
         Evap = df_hbv["PE"]
 
     # 2. Calibration period:
