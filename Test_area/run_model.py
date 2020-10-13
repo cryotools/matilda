@@ -107,7 +107,7 @@ output = pd.concat([output, obs], axis=1)
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 nash_sut = stats.NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model efficiency coefficient
-print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(nash_sut))
+print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(round(nash_sut, 2)))
 
 print("Writing the output csv to disc")
 output_csv = output.copy()
@@ -147,7 +147,7 @@ if cosipy == True:
     #cosipy_melt = cosipy_melt.resample(time="D").sum(dim="time")
     output_cosipy["Q_COSIPY"] = cosipy_runoff.to_dataframe().Q.resample('D').sum()*1000
     output_cosipy["COSIPY_smb"] = cosipy_smb.to_dataframe().surfMB.resample('D').sum()*1000
-    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').mean()*1000
+    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').sum()*1000
     output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
 
     nash_sut_cosipy = stats.NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
@@ -160,7 +160,7 @@ if cosipy == True:
     elif plot_frequency == "monthly":
         plot_data_cosipy = output_cosipy.resample("M").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
-             "COSIPY_smb":"sum", "COSIPY_melt":"sum" })
+             "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
     elif plot_frequency == "yearly":
         plot_data_cosipy = output_cosipy.resample("Y").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
