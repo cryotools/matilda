@@ -61,7 +61,7 @@ output = pd.concat([output, obs], axis=1)
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 nash_sut = NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model efficiency coefficient
-print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(nash_sut))
+print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(round(nash_sut, 2)))
 
 print("Writing the output csv to disc")
 output_csv = output.copy()
@@ -101,7 +101,7 @@ if compare_cosipy == True:# Including Cosipy in the evaluation
     #cosipy_melt = cosipy_melt.resample(time="D").sum(dim="time")
     output_cosipy["Q_COSIPY"] = cosipy_runoff.resample(time="D").sum(dim="time")*1000
     output_cosipy["COSIPY_smb"] = cosipy_smb.to_dataframe().surfMB.resample('D').sum()*1000
-    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').mean()*1000
+    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').sum()*1000
     nash_sut_cosipy = NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
     output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
 
