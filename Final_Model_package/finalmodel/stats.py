@@ -12,4 +12,5 @@ def create_statistics(output_calibration):
     sum.columns = ["sum"]
     sum = sum.transpose()
     stats = stats.append(sum)
+    stats = stats.round(3)
     return stats

@@ -330,4 +330,5 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
     Qsim = Qsim_smoothed
     hbv_results = pd.DataFrame({"T2":Temp, "RRR":Prec, "PE":Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
                                 "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=df_hbv.index)
+    hbv_results = hbv_results.round(3)
     return hbv_results

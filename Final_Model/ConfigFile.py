@@ -40,7 +40,7 @@ sim_period_start = '2012-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
 cal_exclude = False # Excluding calibration period from statistics and plots
 # Plot output
-plot_frequency = "monthly" # Plot uses daily, monthly or yearly variables
+plot_frequency = "weekly" # Plot uses daily, weekly, monthly or yearly variables
 plot_save = True # Plots are saved in the directory instead of being displayed only
 compare_cosipy = True # compare model output with output from Cosipy
 
