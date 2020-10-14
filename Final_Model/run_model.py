@@ -64,9 +64,8 @@ nash_sut = NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model effici
 print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(round(nash_sut, 2)))
 
 print("Writing the output csv to disc")
-output_csv = output.copy()
-output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
+output = output.fillna(0)
+output.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
 ## Statistical analysis
 # Calibration period
@@ -78,10 +77,16 @@ else:
 # Daily, monthly or yearly output
 if plot_frequency == "daily":
     plot_data = output_calibration.copy()
+elif plot_frequency == "weekly":
+    plot_data = output_calibration.resample("W").agg(
+        {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
+         "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+         "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 elif plot_frequency == "monthly":
-    plot_data = output_calibration.resample("M").agg({"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum",  \
-                                                      "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-                                                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+    plot_data = output_calibration.resample("M").agg(
+        {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
+         "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+         "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 elif plot_frequency == "yearly":
     plot_data = output_calibration.resample("Y").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
@@ -110,6 +115,10 @@ if compare_cosipy == True:# Including Cosipy in the evaluation
         output_calibration.index.values[-1])[:4] + ".csv")
     if plot_frequency == "daily":
         plot_data_cosipy = output_cosipy.copy()
+    elif plot_frequency == "weekly":
+        plot_data_cosipy = output_cosipy.resample("W").agg(
+            {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
+             "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
     elif plot_frequency == "monthly":
         plot_data_cosipy = output_cosipy.resample("M").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb": "sum", "DDM_total_melt": "sum", \
