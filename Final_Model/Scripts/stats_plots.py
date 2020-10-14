@@ -11,6 +11,7 @@ def create_statistics(output_calibration):
     sum.columns = ["sum"]
     sum = sum.transpose()
     stats = stats.append(sum)
+    stats = stats.round(3)
     return stats
 
 # Nash–Sutcliffe model efficiency coefficient
@@ -32,6 +33,7 @@ def plot_meteo(plot_data):
     ax2.set_ylabel("[mm]", fontsize=9)
     ax3.set_ylabel("[mm]", fontsize=9)
     fig.suptitle("Meteorological input parameters in " +str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    plt.tight_layout()
     return fig
 
 # Plotting the runoff
@@ -51,6 +53,7 @@ def plot_runoff(plot_data, nash_sut):
               +str(plot_data.index.values[-1])[:4]+" for the "+area_name+" catchment", size=14)
     ax1.text(0.05, 0.95, 'NS efficiency coefficient ' + str(round(nash_sut,2)),  transform=ax1.transAxes, fontsize=12,
         verticalalignment='top')
+    plt.tight_layout()
     return fig
 
 # Plotting the HBV output parameters
@@ -70,6 +73,7 @@ def plot_hbv(plot_data):
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax4.set_ylabel("[mm]", fontsize=9), ax5.set_ylabel("[mm]", fontsize=9)
     fig.suptitle(plot_frequency +" output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    plt.tight_layout()
     return fig
 
 def plot_cosipy(plot_data_cosipy, nash_sut, nash_sut_cosipy):
@@ -86,8 +90,9 @@ def plot_cosipy(plot_data_cosipy, nash_sut, nash_sut_cosipy):
     ax3.set_title("Surface mass balance from DDM and COSIPY", fontsize=9)
     plt.xlabel("Date", fontsize=9)
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
-    ax1.legend()
+    ax1.legend(loc="upper right")
     fig.suptitle(plot_frequency +" output comparison from the model and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
     ax1.text(0.05, 0.95, 'NS efficiency coefficient ' + str(round(nash_sut, 2)) + "\nNS efficiency coefficient COSIPY " \
              + str(round(nash_sut_cosipy, 2)), transform=ax1.transAxes, fontsize=8, verticalalignment='top')
+    plt.tight_layout()
     return fig

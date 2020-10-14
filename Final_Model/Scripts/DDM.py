@@ -137,6 +137,7 @@ def calculate_glaciermelt(ds, pdd_factor_snow=2.8, pdd_factor_ice=5.6, temp_snow
 
     # making the final df
     DDM_results = glacier_melt.to_dataframe()
+    DDM_results = DDM_results.round(3)
 
 
     return DDM_results

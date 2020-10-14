@@ -45,7 +45,7 @@ lapse_rate_precipitation = 0
 height_diff = 21 # height difference between AWS (4025) and glacier (4036) in m
 
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "monthly" # possible options are daily, monthly or yearly
+plot_frequency = "weekly" # possible options are daily, weekly, monthly or yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = True # usage of COSIPY input
 
@@ -110,9 +110,8 @@ nash_sut = stats.NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model 
 print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(round(nash_sut, 2)))
 
 print("Writing the output csv to disc")
-output_csv = output.copy()
-output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
+output = output.fillna(0)
+output.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
 ## Statistical analysis
 # Calibration period included in the statistical analysis
@@ -124,10 +123,16 @@ else:
 # Daily, monthly or yearly output
 if plot_frequency == "daily":
     plot_data = output_calibration.copy()
+elif plot_frequency == "weekly":
+    plot_data = output_calibration.resample("W").agg(
+        {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
+         "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+         "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 elif plot_frequency == "monthly":
-    plot_data = output_calibration.resample("M").agg({"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum",  \
-                                                      "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-                                                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+    plot_data = output_calibration.resample("M").agg(
+        {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
+         "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+         "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
 elif plot_frequency == "yearly":
     plot_data = output_calibration.resample("Y").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
@@ -148,6 +153,7 @@ if cosipy == True:
     output_cosipy["Q_COSIPY"] = cosipy_runoff.to_dataframe().Q.resample('D').sum()*1000
     output_cosipy["COSIPY_smb"] = cosipy_smb.to_dataframe().surfMB.resample('D').sum()*1000
     output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').sum()*1000
+    output_cosipy = output_cosipy.round(3)
     output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
 
     nash_sut_cosipy = stats.NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
@@ -157,6 +163,10 @@ if cosipy == True:
         output_calibration.index.values[-1])[:4] + ".csv")
     if plot_frequency == "daily":
         plot_data_cosipy = output_cosipy.copy()
+    elif plot_frequency == "weekly":
+        plot_data_cosipy = output_cosipy.resample("W").agg(
+            {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
+             "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
     elif plot_frequency == "monthly":
         plot_data_cosipy = output_cosipy.resample("M").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
