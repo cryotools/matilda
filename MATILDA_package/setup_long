@@ -1,5 +1,5 @@
 """
-Setup too for the Final Model
+Setup for MATILDA
 """
 
 # Always prefer setuptools over distutils
@@ -19,14 +19,14 @@ setup(
     # package, this name will be registered for you. It will determine how
     # users can install this project, e.g.:
     #
-    # $ pip install final_model
+    # $ pip install MATILDA
     #
-    # And where it will live on PyPI: https://pypi.org/project/fina_model/
+    # And where it will live on PyPI: https://pypi.org/project/MATILDA/
     #
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='final_model',  # Required
+    name='MATILDA',  # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
