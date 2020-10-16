@@ -1,10 +1,10 @@
-The Final Model is available as a python package in your local environment. To install, navigate the terminal in the downloaded finalmodel folder and use pip (or pip3) with the following command:
+MATILDA (Modeling wATer resources In gLacierizeD cAtchments) is available as a python package in your local environment. To install, navigate the terminal in the downloaded MATILDA folder and use pip (or pip3) with the following command:
 pip3 install .
 This installs the package on your computer and should be accessible from all other files.
 
 The package requires the following python packages 'pandas' , 'xarray', 'matplotlib', 'numpy', 'scipy', 'os', 'datetime' which should be automatically installed with installing the finalmodel as described. 
 
-The finalmodel contains the following parts: degree day model (DDM), HBV model (HBV), simple statistical description (stats) and plots for the runoff, meteorological parameters and HBV output (plots). 
+MATILDA contains the following parts: degree day model (DDM), HBV model (HBV), simple statistical description (stats) and plots for the runoff, meteorological parameters and HBV output (plots). 
 
 As input, dataframes with temperature (in Celsius, T2), precipitation (in mm, RRR) and if possible potential evapotranspiration (in mm, PE) daily observations are required as well as runoff observations (inmm, Qobs) to evaluate the output.
 
