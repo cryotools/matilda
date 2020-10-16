@@ -7,9 +7,9 @@ from datetime import datetime
 
 # Directories		# Defining home could be misleading. Better full paths?
 
-working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
+working_directory = home + "/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA/"
 
-input_path_cosipy = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+input_path_data = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 	# Cirrus directories
@@ -17,7 +17,6 @@ input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/in
 #input_path_cosipy = "/data/projects/ebaca/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 #input_path_observations = home + "/data/projects/ebaca/data/input_output/input/observations/glacierno1/hydro/"
 
-input_path_data = home + ""
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
 data_csv = "best_cosipy_input_no1_2011-18.csv"
 
@@ -40,7 +39,7 @@ sim_period_start = '2012-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
 cal_exclude = False # Excluding calibration period from statistics and plots
 # Plot output
-plot_frequency = "weekly" # Plot uses daily, weekly, monthly or yearly variables
+plot_frequency = "Weekly" # Plot uses Daily, Weekly, Monthly or Yearly variables
 plot_save = True # Plots are saved in the directory instead of being displayed only
 compare_cosipy = True # compare model output with output from Cosipy
 
