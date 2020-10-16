@@ -25,8 +25,8 @@ print('Read input csv file %s' % (data_csv))
 print('Read observation data %s' % (observation_data))
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
 # Observation data should be given in form of a csv with a date column and daily observations
-ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
-df = pd.read_csv(input_path_cosipy + data_csv) # dataframe with temperature, precipitation and if possible evaporation
+ds = xr.open_dataset(input_path_data + cosipy_nc)
+df = pd.read_csv(input_path_data + data_csv) # dataframe with temperature, precipitation and if possible evaporation
 obs = pd.read_csv(input_path_observations + observation_data)
 
 print("Calibration period between " + str(cal_period_start) + " and "  + str(cal_period_end))
@@ -75,19 +75,19 @@ else:
     output_calibration = output.copy()
 
 # Daily, monthly or yearly output
-if plot_frequency == "daily":
+if plot_frequency == "Daily":
     plot_data = output_calibration.copy()
-elif plot_frequency == "weekly":
+elif plot_frequency == "Weekly":
     plot_data = output_calibration.resample("W").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
-elif plot_frequency == "monthly":
+elif plot_frequency == "Monthly":
     plot_data = output_calibration.resample("M").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
-elif plot_frequency == "yearly":
+elif plot_frequency == "Yearly":
     plot_data = output_calibration.resample("Y").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
@@ -113,17 +113,17 @@ if compare_cosipy == True:# Including Cosipy in the evaluation
     stats_cosipy = create_statistics(output_cosipy)
     stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
         output_calibration.index.values[-1])[:4] + ".csv")
-    if plot_frequency == "daily":
+    if plot_frequency == "Daily":
         plot_data_cosipy = output_cosipy.copy()
-    elif plot_frequency == "weekly":
+    elif plot_frequency == "Weekly":
         plot_data_cosipy = output_cosipy.resample("W").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
              "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
-    elif plot_frequency == "monthly":
+    elif plot_frequency == "Monthly":
         plot_data_cosipy = output_cosipy.resample("M").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb": "sum", "DDM_total_melt": "sum", \
              "COSIPY_smb": "sum", "COSIPY_melt": "sum"})
-    elif plot_frequency == "yearly":
+    elif plot_frequency == "Yearly":
         plot_data_cosipy = output_cosipy.resample("Y").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb": "sum", "DDM_total_melt": "sum", \
              "COSIPY_smb": "sum", "COSIPY_melt": "sum"})

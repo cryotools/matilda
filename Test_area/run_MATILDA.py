@@ -17,8 +17,8 @@ from MATILDA import stats, plots # importing functions for statistical analysis 
 
 ## Model configuration
 # Directories
-working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA/"
-input_path_cosipy = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/"
+input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
@@ -26,7 +26,7 @@ data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Temp
 observation_data = "daily_observations_2011-18.csv" # Daily Runoff Observations in mm
 
 # output
-output_path = working_directory + "Output_package/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
+output_path = working_directory + "Output/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
 os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 # Additional information
@@ -43,7 +43,7 @@ lapse_rate_precipitation = 0
 height_diff = 21 # height difference between AWS (4025) and glacier (4036) in m
 
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "weekly" # possible options are daily, weekly, monthly or yearly
+plot_frequency = "Weekly" # possible options are Daily, Weekly, Monthly or Yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = True # usage of COSIPY input
 
@@ -54,8 +54,8 @@ print('Read input netcdf file %s' % (cosipy_nc))
 print('Read input csv file %s' % (data_csv))
 print('Read observation data %s' % (observation_data))
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
-ds = xr.open_dataset(input_path_cosipy + cosipy_nc)
-df = pd.read_csv(input_path_cosipy + data_csv)
+ds = xr.open_dataset(input_path_data + cosipy_nc)
+df = pd.read_csv(input_path_data + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 
 print("Spin up period between " + str(cal_period_start) + " and "  + str(cal_period_end))
@@ -120,19 +120,19 @@ else:
     output_calibration = output.copy()
 
 # Daily, monthly or yearly output
-if plot_frequency == "daily":
+if plot_frequency == "Daily":
     plot_data = output_calibration.copy()
-elif plot_frequency == "weekly":
+elif plot_frequency == "Weekly":
     plot_data = output_calibration.resample("W").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
-elif plot_frequency == "monthly":
+elif plot_frequency == "Monthly":
     plot_data = output_calibration.resample("M").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
-elif plot_frequency == "yearly":
+elif plot_frequency == "Yearly":
     plot_data = output_calibration.resample("Y").agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
@@ -160,22 +160,22 @@ if cosipy == True:
     stats_cosipy = stats.create_statistics(output_cosipy)
     stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
         output_calibration.index.values[-1])[:4] + ".csv")
-    if plot_frequency == "daily":
+    if plot_frequency == "Daily":
         plot_data_cosipy = output_cosipy.copy()
-    elif plot_frequency == "weekly":
+    elif plot_frequency == "Weekly":
         plot_data_cosipy = output_cosipy.resample("W").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
              "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
-    elif plot_frequency == "monthly":
+    elif plot_frequency == "Monthly":
         plot_data_cosipy = output_cosipy.resample("M").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
              "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
-    elif plot_frequency == "yearly":
+    elif plot_frequency == "Yearly":
         plot_data_cosipy = output_cosipy.resample("Y").agg(
             {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
              "COSIPY_smb":"sum", "COSIPY_melt":"sum" })
 
-    fig3 = plots.plot_cosipy(plot_data_cosipy, nash_sut, nash_sut_cosipy)
+    fig3 = plots.plot_cosipy(plot_data_cosipy, plot_frequency, nash_sut, nash_sut_cosipy)
     if plot_save == False:
         plt.show()
     else:
@@ -184,21 +184,21 @@ if cosipy == True:
 
 ## Plotting the output data
 # Plot the meteorological data
-fig = plots.plot_meteo(plot_data)
+fig = plots.plot_meteo(plot_data, plot_frequency)
 if plot_save == False:
 	plt.show()
 else:
 	plt.savefig(output_path + "meteorological_data_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
 
 # Plot the runoff data
-fig1 = plots.plot_runoff(plot_data, nash_sut)
+fig1 = plots.plot_runoff(plot_data, plot_frequency, nash_sut)
 if plot_save == False:
 	plt.show()
 else:
 	plt.savefig(output_path + "model_runoff_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
 
 # Plot the HBV paramters
-fig2 = plots.plot_hbv(plot_data)
+fig2 = plots.plot_hbv(plot_data, plot_frequency)
 if plot_save == False:
 	plt.show()
 else:
