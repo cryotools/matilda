@@ -1,11 +1,9 @@
 # -*- coding: UTF-8 -*-
 """
-The model is a combination of a degree day model and the HBV model (Bergstöm 1976) to compute total runoff of the
-glacierized catchments.
-This file uses the input files created by the COSIPY-utility "aws2cosipy" as forcing data and additional
-observation runoff data to validate it.
+MATILDA (Modeling wATer resources In gLacierizeD cAtchments) is a combination of a degree day model and the HBV model (Bergstöm 1976) to compute total runoff of glacierized catchments.
+This file may use the input files created by the COSIPY-utility "aws2cosipy" as forcing data and or a simple dataframe with temperature, precipitation and if possible evapotranspiration and additional observation runoff data to validate it.
 """
-## Running all the model functions
+## Running all the required functions
 from datetime import datetime
 import os
 #import warnings
@@ -13,13 +11,13 @@ import os
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
-from finalmodel import DDM # importing the DDM model functions
-from finalmodel import HBV # importing the HBV model function
-from finalmodel import stats, plots
+from MATILDA import DDM # importing the DDM model functions
+from MATILDA import HBV # importing the HBV model function
+from MATILDA import stats, plots # importing functions for statistical analysis and plotting
 
 ## Model configuration
 # Directories
-working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/Final_Model/"
+working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA/"
 input_path_cosipy = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
@@ -51,6 +49,7 @@ cosipy = True # usage of COSIPY input
 
 ## Data input preprocessing
 print('---')
+print('Starting MATILDA model run')
 print('Read input netcdf file %s' % (cosipy_nc))
 print('Read input csv file %s' % (data_csv))
 print('Read observation data %s' % (observation_data))
