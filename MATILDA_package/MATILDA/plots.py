@@ -15,12 +15,12 @@ def plot_meteo(plot_data, plot_frequency):
     ax1.set_ylabel("[°C]", fontsize=9)
     ax2.set_ylabel("[mm]", fontsize=9)
     ax3.set_ylabel("[mm]", fontsize=9)
-    fig.suptitle(plot_frequency + " meteorological input parameters in " +str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    fig.suptitle(plot_frequency_long + " meteorological input parameters in " +str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
     plt.tight_layout()
     return fig
 
 # Plotting the runoff
-def plot_runoff(plot_data, plot_frequency, nash_sut):
+def plot_runoff(plot_data, plot_frequency_long, nash_sut):
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharey=True, figsize=(10,6))
     gs = gridspec.GridSpec(2, 2)
     ax1 = plt.subplot(gs[0, :])
@@ -39,7 +39,7 @@ def plot_runoff(plot_data, plot_frequency, nash_sut):
     return fig
 
 # Plotting the HBV output parameters
-def plot_hbv(plot_data, plot_frequency):
+def plot_hbv(plot_data, plot_frequency_long):
     fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, sharex=True, figsize=(10,6))
     ax1.plot(plot_data.index.to_pydatetime(), plot_data["HBV_AET"], "k")
     ax2.plot(plot_data.index.to_pydatetime(), plot_data["HBV_soil_moisture"], "k")
@@ -54,11 +54,11 @@ def plot_hbv(plot_data, plot_frequency):
     plt.xlabel("Date", fontsize=9)
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax4.set_ylabel("[mm]", fontsize=9), ax5.set_ylabel("[mm]", fontsize=9)
-    fig.suptitle(plot_frequency + " output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    fig.suptitle(plot_frequency_long + " output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
     plt.tight_layout()
     return fig
 
-def plot_cosipy(plot_data_cosipy, plot_frequency, nash_sut, nash_sut_cosipy):
+def plot_cosipy(plot_data_cosipy, plot_frequency_long, nash_sut, nash_sut_cosipy):
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10,6))
     ax1.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["Qobs"], c="#0072B2", label="Observations")
     ax1.plot(plot_data_cosipy.index.to_pydatetime(), plot_data_cosipy["Q_Total"], c="#D55E00", alpha=0.7, label="MATILDA")
