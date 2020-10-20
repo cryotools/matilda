@@ -47,7 +47,6 @@ List of 16 HBV model parameters
     #          [0, 0.2] (usually 0.1)
 """
 
-import numpy as npthey
 import pandas as pd
 import scipy.signal as ss
 import numpy as np
