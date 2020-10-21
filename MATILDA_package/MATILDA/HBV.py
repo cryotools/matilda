@@ -51,7 +51,6 @@ import numpy as npthey
 import pandas as pd
 import scipy.signal as ss
 import numpy as np
-
 def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.15,  parFC=250, parK0=0.055, parK1=0.055, \
                    parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parCFMAX=5.0, \
                    parSFCF=0.7, parCFR=0.05, parCWH=0.1):
@@ -62,6 +61,8 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
        df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
 
     Temp = df_hbv['T2']
+    if Temp[1] >= 100:  # making sure the temperature is in Celsius
+        Temp = Temp - 273.15
     Prec = df_hbv['RRR']
 
     # Calculation of PE with Oudin et al. 2005
@@ -316,8 +317,7 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
     Qsim_smoothed = np.where(Qsim_smoothed > 0, Qsim_smoothed, 0)
 
     Qsim = Qsim_smoothed
-    hbv_results = pd.DataFrame({"HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
+    hbv_results = pd.DataFrame({"T2":Temp, "RRR":Prec, "PE":Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
                                 "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=df_hbv.index)
-    hbv_results = pd.concat([df_hbv, hbv_results], axis=1)
     hbv_results = hbv_results.round(3)
     return hbv_results
