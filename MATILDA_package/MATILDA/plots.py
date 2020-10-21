@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 # Plotting the meteorological parameters
-def plot_meteo(plot_data, plot_frequency):
+def plot_meteo(plot_data, plot_frequency_long):
     fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10,6))
     ax1.plot(plot_data.index.to_pydatetime(), (plot_data["T2"]), c="#d7191c")
     ax2.bar(plot_data.index.to_pydatetime(), plot_data["RRR"], width=10, color="#2c7bb6")
@@ -32,7 +32,7 @@ def plot_runoff(plot_data, plot_frequency_long, nash_sut):
     ax3.plot(plot_data.index.to_pydatetime(), plot_data["Q_DDM"], c="#CC79A7", linewidth=1.2, label="DDM")
     ax1.legend(), ax2.legend(), ax3.legend(),
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
-    ax1.set_title(plot_frequency + " runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[:4]+"-" \
+    ax1.set_title(plot_frequency_long + " runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[:4]+"-" \
               +str(plot_data.index.values[-1])[:4], size=14)
     ax1.text(0.05, 0.95, 'NS coeff ' + str(round(nash_sut,2)),  transform=ax1.transAxes, fontsize=12,
         verticalalignment='top')
@@ -73,7 +73,7 @@ def plot_cosipy(plot_data_cosipy, plot_frequency_long, nash_sut, nash_sut_cosipy
     plt.xlabel("Date", fontsize=9)
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax1.legend(loc="upper right")
-    fig.suptitle(plot_frequency + " output comparison from MATILDA and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
+    fig.suptitle(plot_frequency_long + " output comparison from MATILDA and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
     ax1.text(0.05, 0.95, 'NS coeff ' + str(round(nash_sut, 2)) + "\nNS coeff COSIPY " \
              + str(round(nash_sut_cosipy,2)),  transform=ax1.transAxes, fontsize=8, verticalalignment='top')
     plt.tight_layout()
