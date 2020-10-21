@@ -12,42 +12,41 @@ List of 16 HBV model parameters
     parCFMAX, parSFCF, parCFR,   parCWH]
 
     # 16 PARAMETERS_HBV
-    # BETA   - parameter that determines the relative contribution to runoff from rain or snowmelt
+    # BETA   - Parameter that determines the relative contribution to runoff from rain or snow melt
     #          [1, 6]
     # CET    - Evaporation correction factor
     #          (should be 0 if we don't want to change (Oudin et al., 2005) formula values)
     #          [0, 0.3]
-    # FC     - maximum soil moisture storage
+    # FC     - Maximum soil moisture storage
     #          [50, 500]
-    # K0     - recession coefficient for surface soil box (upper part of SUZ)
+    # K0     - Recession coefficient for surface soil box (upper part of SUZ)
     #          [0.01, 0.4]
-    # K1     - recession coefficient for upper groudwater box (main part of SUZ)
+    # K1     - Recession coefficient for upper groundwater box (main part of SUZ)
     #          [0.01, 0.4]
-    # K2     - recession coefficient for lower groudwater box (whole SLZ)
+    # K2     - Recession coefficient for lower groundwater box (whole SLZ)
     #          [0.001, 0.15]
     # LP     - Threshold for reduction of evaporation (SM/FC)
     #          [0.3, 1]
-    # MAXBAS - routing parameter, order of Butterworth filter
+    # MAXBAS - Routing parameter, order of Butterworth filter
     #          [1, 7]
-    # PERC   - percolation from soil to upper groundwater box
+    # PERC   - Percolation from soil to upper groundwater box
     #          [0, 3]
-    # UZL    - threshold parameter for groundwater boxes runoff (mm)
+    # UZL    - Threshold parameter for groundwater boxes runoff (mm)
     #          [0, 500]
     # PCORR  - Precipitation (input sum) correction factor
     #          [0.5, 2]
-    # TT     - Temperature which separate rain and snow fraction of precipitation
+    # TT     - Temperature which separates rain and snow fraction of precipitation
     #          [-1.5, 2.5]
     # CFMAX  - Snow melting rate (mm/day per Celsius degree)
     #          [1, 10]
-    # SFCF   - SnowFall Correction Factor
+    # SFCF   - Snowfall correction Factor
     #          [0.4, 1]
     # CFR    - Refreezing coefficient
     #          [0, 0.1] (usually 0.05)
-    # CWH    - Fraction (portion) of meltwater and rainfall which retain in snowpack (water holding capacity)
+    # CWH    - Fraction of meltwater and rainfall that retains in snowpack (water holding capacity)
     #          [0, 0.2] (usually 0.1)
 """
 
-import numpy as npthey
 import pandas as pd
 import scipy.signal as ss
 import numpy as np
