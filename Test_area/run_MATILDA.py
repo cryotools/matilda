@@ -43,8 +43,8 @@ lapse_rate_precipitation = 0
 height_diff = 21 # height difference between AWS (4025) and glacier (4036) in m
 
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "M" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
-plot_frequency_long = "Monthly" # Daily, Weekly, Monthly or Yearly
+plot_frequency = "W" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
+plot_frequency_long = "Weekly" # Daily, Weekly, Monthly or Yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = False # usage of COSIPY input
 
@@ -91,23 +91,25 @@ print("Running the degree day model")
     'refreeze_ice': 0.0}"""
 
 # Calculating the positive degree days
-degreedays_ds = DDM.calculate_PDD(ds) # include either downscaled glacier dataframe or dataset with mask
+print("Calculating the positive degree days")
+degreedays_ds = DDM.calculate_PDD(df_DDM)
+print("Calculating melt")
+# include either downscaled glacier dataframe or dataset with mask
 # Calculating runoff and melt
 output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm, parameter adjustment possible
-print(output_DDM.head(5))
+print("Finished running the DDM")
 ## HBV model
 print("Running the HBV model")
 # Runoff calculations for the catchment with the HBV model
 output_hbv = HBV.hbv_simulation(df, cal_period_start, cal_period_end) # output in mm, individual parameters can be set here
-print(output_hbv.head(5))
-
+print("Finished running the HBV")
 ## Output postprocessing
 output = pd.concat([output_hbv, output_DDM], axis=1)
 output = pd.concat([output, obs], axis=1)
 output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
 
 nash_sut = stats.NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model efficiency coefficient
-print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(round(nash_sut, 2)))
+print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
 
 print("Writing the output csv to disc")
 output = output.fillna(0)
@@ -128,7 +130,8 @@ plot_data = output_calibration.resample(plot_frequency).agg(
 
 stats_output = stats.create_statistics(output_calibration)
 stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
-
+print("Output overview")
+print(stats_output[["T2", "RRR", "PE", "Q_DDM", "Qobs", "Q_Total"]])
 ## Cosipy comparison
 if cosipy == True:
     output_cosipy = output[{"Qobs", "Q_Total", "DDM_smb", "DDM_total_melt"}]
