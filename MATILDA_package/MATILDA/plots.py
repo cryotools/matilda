@@ -34,7 +34,7 @@ def plot_runoff(plot_data, plot_frequency_long, nash_sut):
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax1.set_title(plot_frequency_long + " runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[:4]+"-" \
               +str(plot_data.index.values[-1])[:4], size=14)
-    ax1.text(0.05, 0.95, 'NS coeff ' + str(round(nash_sut,2)),  transform=ax1.transAxes, fontsize=12,
+    ax1.text(0.01, 0.95, 'NS coeff ' + str(round(nash_sut,2)),  transform=ax1.transAxes, fontsize=8,
         verticalalignment='top')
     return fig
 
