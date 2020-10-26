@@ -127,6 +127,7 @@ plot_data = output_calibration.resample(plot_frequency).agg(
     {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
     "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
     "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+plot_data = plot_data[cal_period_start: sim_period_end]
 
 stats_output = stats.create_statistics(output_calibration)
 stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
@@ -154,6 +155,7 @@ if cosipy == True:
     plot_data_cosipy = output_cosipy.resample(plot_frequency).agg(
         {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
         "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
+    plot_data_cosipy = plot_data_cosipy[cal_period_start: sim_period_end]
 
     fig3 = plots.plot_cosipy(plot_data_cosipy, plot_frequency_long, nash_sut, nash_sut_cosipy)
     if plot_save == False:
@@ -187,3 +189,6 @@ else:
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
 print('---')
+
+##
+
