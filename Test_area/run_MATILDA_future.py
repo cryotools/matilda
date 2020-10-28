@@ -18,11 +18,11 @@ from MATILDA import stats, plots # importing functions for statistical analysis 
 ## Model configuration
 # Directories
 working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/"
-input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/"
+input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/"
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
 
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
-data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
+data_csv = "best_cosipy_input_no1_2000-20.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
 observation_data = "daily_observations_2011-18.csv" # Daily Runoff Observations in mm
 
 # output
@@ -31,11 +31,11 @@ os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 # Additional information
 # Time period for the spin up
-cal_period_start = '2011-01-01 00:00:00' # beginning of  period
-cal_period_end = '2011-12-31 23:00:00' # end of period: one year is recommended
+cal_period_start = '2000-01-01 00:00:00' # beginning of  period
+cal_period_end = '2001-12-31 23:00:00' # end of period: one year is recommended
 # Time period of the model simulation
-sim_period_start = '2012-01-01 00:00:00' # beginning of simulation period
-sim_period_end = '2018-12-31 23:00:00'
+sim_period_start = '2002-01-01 00:00:00' # beginning of simulation period
+sim_period_end = '2020-07-10 03:00:00'
 
 # Downscaling the temperature and precipitation to glacier altitude for the DDM
 lapse_rate_temperature = -0.006 # K/m
@@ -43,8 +43,8 @@ lapse_rate_precipitation = 0
 height_diff = 21 # height difference between AWS (4025) and glacier (4036) in m
 
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "W" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
-plot_frequency_long = "Weekly" # Daily, Weekly, Monthly or Yearly
+plot_frequency = "M" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
+plot_frequency_long = "Monthly" # Daily, Weekly, Monthly or Yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = False # usage of COSIPY input
 
@@ -133,36 +133,6 @@ stats_output = stats.create_statistics(output_calibration)
 stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
 print("Output overview")
 print(stats_output[["T2", "RRR", "PE", "Q_DDM", "Qobs", "Q_Total"]])
-## Cosipy comparison
-if cosipy == True:
-    output_cosipy = output[{"Qobs", "Q_Total", "DDM_smb", "DDM_total_melt"}]
-    cosipy_runoff = ds.Q.mean(dim=["lat", "lon"])
-    cosipy_smb = ds.surfMB.mean(dim=["lat", "lon"])
-    #cosipy_smb = cosipy_smb.resample(time="D").sum(dim="time")
-    cosipy_melt = ds.surfM.mean(dim=["lat", "lon"])
-    #cosipy_melt = cosipy_melt.resample(time="D").sum(dim="time")
-    output_cosipy["Q_COSIPY"] = cosipy_runoff.to_dataframe().Q.resample('D').sum()*1000
-    output_cosipy["COSIPY_smb"] = cosipy_smb.to_dataframe().surfMB.resample('D').sum()*1000
-    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').sum()*1000
-    output_cosipy = output_cosipy.round(3)
-    output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
-
-    nash_sut_cosipy = stats.NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
-
-    stats_cosipy = stats.create_statistics(output_cosipy)
-    stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
-        output_calibration.index.values[-1])[:4] + ".csv")
-    plot_data_cosipy = output_cosipy.resample(plot_frequency).agg(
-        {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
-        "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
-    plot_data_cosipy = plot_data_cosipy[cal_period_start: sim_period_end]
-
-    fig3 = plots.plot_cosipy(plot_data_cosipy, plot_frequency_long, nash_sut, nash_sut_cosipy)
-    if plot_save == False:
-        plt.show()
-    else:
-        plt.savefig(output_path + "COSIPY_output_" + str(plot_data_cosipy.index.values[1])[:4] + "-" + str(
-            plot_data_cosipy.index.values[-1])[:4] + ".png")
 
 ## Plotting the output data
 # Plot the meteorological data
@@ -190,3 +160,15 @@ print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
 print('---')
 
+## Climate change scenarios
+
+temp_increase = 2 # specify increase under climate change here
+
+df_cc = df.copy()
+df_DDM_cc = df_DDM.copy()
+
+df_cc["T2"] = df_cc["T2"] + temp_increase
+df_DDM_cc["T2"] = df_DDM_cc["T2"] + temp_increase
+
+degreedays_ds_cc = DDM.calculate_PDD(df_DDM)
+output_DDM_cc = DDM.calculate_glaciermelt(degreedays_ds_cc)
