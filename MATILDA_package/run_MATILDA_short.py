@@ -4,10 +4,7 @@ MATILDA (Modeling water resources in glacierized catchments)
 ## Running all the required functions
 import pandas as pd
 import matplotlib.pyplot as plt
-from MATILDA import dataformatting
-from MATILDA import DDM
-from MATILDA import HBV
-from MATILDA import stats, plots
+from MATILDA import dataformatting, HBV, DDM, plots, stats
 
 ## Model configuration and data preprocessing
 df = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/best_cosipy_input_no1_2011-18.csv")
