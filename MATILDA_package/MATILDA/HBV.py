@@ -51,7 +51,7 @@ import pandas as pd
 import scipy.signal as ss
 import numpy as np
 def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.15,  parFC=250, parK0=0.055, parK1=0.055, \
-                   parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parCFMAX=5.0, \
+                   parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parTT_rain=2.0, parCFMAX=5.0, \
                    parSFCF=0.7, parCFR=0.05, parCWH=0.1):
     # 1. new temporary dataframe from input with daily values
     if "PE" in df.columns:
@@ -85,8 +85,11 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
     Prec_cal = parPCORR * Prec_cal
     # precipitation separation
     # if T < parTT: SNOW, else RAIN
-    RAIN_cal = np.where(Temp_cal  > parTT, Prec_cal, 0)
-    SNOW_cal = np.where(Temp_cal <= parTT, Prec_cal, 0)
+    RAIN_cal = np.where(Temp_cal > parTT_rain, Prec_cal, 0)
+    #SNOW_cal2 = np.where(Temp_cal <= parTT, Prec_cal, 0)
+    reduced_temp_cal = (parTT_rain - Temp_cal) / (parTT_rain - parTT)
+    snowfrac_cal = np.clip(reduced_temp_cal, 0, 1)
+    SNOW_cal = snowfrac_cal * Prec_cal
     # snow correction factor
     SNOW_cal = parSFCF * SNOW_cal
     # evaporation correction
@@ -181,7 +184,12 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
     # precipitation separation
     # if T < parTT: SNOW, else RAIN
     RAIN = np.where(Temp > parTT, Prec, 0)
-    SNOW = np.where(Temp <= parTT, Prec, 0)
+    #SNOW = np.where(Temp <= parTT, Prec, 0)
+    reduced_temp = (parTT_rain - Temp) / (parTT_rain - parTT)
+    snowfrac = np.clip(reduced_temp, 0, 1)
+    SNOW = snowfrac * Prec
+    # snow correction factor
+    SNOW = parSFCF * SNOW
     # snow correction factor
     SNOW = parSFCF * SNOW
     # evaporation correction
