@@ -1,1 +1,3 @@
 cdo sellonlatbox,78.18,78.38,42.07,42.27 20200717_Issyk_Kul_ERA5L_1987_1988.nc kara_batkak_hourly_1987-88.nc
+
+cdo sellonlatbox,78,78.27,42.08,42.15 /data/projects/prime-SG/io/Issyk_Kul/ERA5_land/20200722_Issyk_Kul_ERA5L_1982_2019.nc /data/scratch/susterph/azamat/test_cut.nc
