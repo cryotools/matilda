@@ -148,9 +148,11 @@ plt.show()
 
 compare_slim = pd.DataFrame({'aws [2250m]': aws.temp, 'hobo1 [3037 m]': hobo1.temp,
                         'minikin_up [3864m]': minikin_up.temp}, index=minikin_up.index)
-compare_slim = compare_slim.resample('M').mean()
+compare_slim = compare_slim.resample('W').mean()
 plt.plot(compare_slim)
 plt.legend(compare_slim.columns.tolist(), loc="upper left")
+# plt.title("Monthly Mean Air Temperature in Bash-Kaindy river valley [°C]")
+# plt.savefig('/home/phillip/Seafile/EBA-CA/Workshops/Final_workshop_October2020/Bilder/temp_cognac.png', bbox_inches='tight', dpi=300)
 plt.show()
 
 ## Calculate lapse rates

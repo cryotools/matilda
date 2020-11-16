@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
 ##
-ncfile_z = home + "/Seafile/Ana-Lena_Phillip/data/input_output/ERA5/global/ERA5_land_Z_geopotential.nc"
-ncfile_evap = home + "/Seafile/Ana-Lena_Phillip/data/input_output/ERA5/202004_Urumqi_era5_evap_run_2011-2018.nc"
+ncfile_z = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/global/ERA5_land_Z_geopotential.nc"
+ncfile_evap = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/202004_Urumqi_era5_evap_run_2011-2018.nc"
 
 nc_z = xr.open_dataset(ncfile_z)
 nc_evap = xr.open_dataset(ncfile_evap)
@@ -67,7 +67,7 @@ plt.plot(x, y_pred, color="g")
 # putting labels
 plt.xlabel('Elevation [m]')
 plt.ylabel("Potential evaporation [m]")
-
+plt.show()
 
 ##
 lapse_rate = b_1
