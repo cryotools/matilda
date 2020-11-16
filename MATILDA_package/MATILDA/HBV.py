@@ -51,7 +51,7 @@ import pandas as pd
 import scipy.signal as ss
 import numpy as np
 def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.15,  parFC=250, parK0=0.055, parK1=0.055, \
-                   parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parTT_rain=2.0, parCFMAX=5.0, \
+                   parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parTT_rain=2.0, parCFMAX=2.8, \
                    parSFCF=0.7, parCFR=0.05, parCWH=0.1):
     # 1. new temporary dataframe from input with daily values
     if "PE" in df.columns:
