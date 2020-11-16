@@ -20,7 +20,7 @@ input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/in
 cosipy_nc = "best_cosipy_output_no1_2011-18.nc"
 data_csv = "best_cosipy_input_no1_2011-18.csv"
 
-output_path = working_directory + "Output/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
+output_path = working_directory + "Output/" + cosipy_nc[:-3] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
 # output_path = working_directory + "Output/"
 os.mkdir(output_path)
 
