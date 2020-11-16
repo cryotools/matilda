@@ -73,8 +73,8 @@ def calculate_glaciermelt(ds, pdd_factor_snow=2.8, pdd_factor_ice=5.6, temp_snow
         'pdd_factor_ice': 5.6,  # according to Huintjes et al. 2010 [7.4 mm per day per Celsius according to Hock 2003]
         'temp_snow': 0.0,
         'temp_rain': 2.0,
-        'refreeze_snow': 0.0,
-        'refreeze_ice': 0.0}
+        'refreeze_snow': 0.05,
+        'refreeze_ice': 0.05}
     """
 
     temp = ds["temp_mean"]
