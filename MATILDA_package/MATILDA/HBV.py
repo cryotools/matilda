@@ -53,6 +53,13 @@ import numpy as np
 def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.15,  parFC=250, parK0=0.055, parK1=0.055, \
                    parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parTT_rain=2.0, parCFMAX=2.8, \
                    parSFCF=0.7, parCFR=0.05, parCWH=0.1):
+
+    hbv_parameter = {"BETA":parBETA, "CET":parCET, "FC":parFC, "K0":parK0, "K1":parK1, "K2":parK2, "LP":parLP, \
+                     "MAXBAS":parMAXBAS, "PERC":parPERC, "UZL":parUZL, "PCORR":parPCORR, "TT":parTT, "TT_rain":parTT_rain, \
+                    "CFMAX":parCFMAX, "SFCF":parSFCF, "CFR":parCFR, "CWH":parCWH}
+    hbv_parameter = pd.DataFrame(hbv_parameter.items(), columns=['parameter','value'])
+    hbv_parameter["routine"] = "HBV"
+
     # 1. new temporary dataframe from input with daily values
     if "PE" in df.columns:
         df_hbv = df.resample("D").agg({"T2": 'mean', "RRR": 'sum', "PE":"sum"})
@@ -327,4 +334,4 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
     hbv_results = pd.DataFrame({"T2":Temp, "RRR":Prec, "PE":Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
                                 "HBV_upper_gw": SUZ,"HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=df_hbv.index)
     hbv_results = hbv_results.round(3)
-    return hbv_results
+    return hbv_results, hbv_parameter
