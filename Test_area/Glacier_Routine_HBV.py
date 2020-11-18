@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 ## Files + Input
 working_directory = "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/"
-input= home + working_directory + "Glacier_Routine_Data/GlacierProfile.txt"
+input = home + working_directory + "Glacier_Routine_Data/GlacierProfile.txt"
 output = home + working_directory + "Glacier_Routine_Data/Lookup_Table.txt"
 
 glacier_profile = pd.read_csv(input, sep="\t", header=1) # Glacier Profile

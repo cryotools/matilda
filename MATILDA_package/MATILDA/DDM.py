@@ -5,6 +5,7 @@ Model input rewritten and adjusted to our needs from the pypdd function (github.
 """
 import xarray as xr
 import numpy as np
+import pandas as pd
 
 # Function to calculate the positive degree days on the glacier area
 def calculate_PDD(ds):
@@ -76,6 +77,10 @@ def calculate_glaciermelt(ds, pdd_factor_snow=2.8, pdd_factor_ice=5.6, temp_snow
         'refreeze_snow': 0.05,
         'refreeze_ice': 0.05}
     """
+    DDM_parameter = {"pdd_snow":pdd_factor_snow, "pdd_ice":pdd_factor_ice, "TT_snow":temp_snow, "TT_rain":temp_rain, \
+                     "refreeze_ice":refreeze_ice, "refreeze_snow":refreeze_snow}
+    DDM_parameter = pd.DataFrame(DDM_parameter.items(), columns=['parameter','value'])
+    DDM_parameter["routine"] = "DDM"
 
     temp = ds["temp_mean"]
     prec = ds["RRR"]
@@ -138,4 +143,4 @@ def calculate_glaciermelt(ds, pdd_factor_snow=2.8, pdd_factor_ice=5.6, temp_snow
     DDM_results = DDM_results.round(3)
 
 
-    return DDM_results
+    return DDM_results, DDM_parameter

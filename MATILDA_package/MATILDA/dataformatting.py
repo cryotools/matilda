@@ -26,6 +26,7 @@ def output_postproc(output_hbv, output_DDM, obs):
     output = pd.concat([output_hbv, output_DDM], axis=1)
     output = pd.concat([output, obs], axis=1)
     output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
+    output = output.fillna(0)
     return output
 
 def output_cosipy(output, ds):
@@ -40,6 +41,11 @@ def output_cosipy(output, ds):
     output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').sum()*1000
     output_cosipy = output_cosipy.round(3)
     return output_cosipy
+
+def output_parameter(parameter_HBV, parameter_DDM):
+    parameter = parameter_HBV.append(parameter_DDM)
+    return parameter
+
 
 def plot_data(output, plot_frequency, cal_period_start, sim_period_end):
     plot_data = output.resample(plot_frequency).agg(
