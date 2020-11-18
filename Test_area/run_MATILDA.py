@@ -9,11 +9,11 @@ import os
 #import warnings
 #warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
-import xarray as xr
 import matplotlib.pyplot as plt
 from MATILDA import DDM # importing the DDM model functions
 from MATILDA import HBV # importing the HBV model function
 from MATILDA import stats, plots # importing functions for statistical analysis and plotting
+from MATILDA import dataformatting # importing functions to format the data automatically
 
 ## Model configuration
 # Directories
@@ -26,7 +26,7 @@ data_csv = "best_cosipy_input_no1_2011-18.csv" # dataframe with columns T2 (Temp
 observation_data = "daily_observations_2011-18.csv" # Daily Runoff Observations in mm
 
 # output
-output_path = working_directory + "Output/" + cosipy_nc[:-3] + ">>" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
+output_path = working_directory + "Output/" + cosipy_nc[:-3] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
 os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 # Additional information
@@ -43,8 +43,8 @@ lapse_rate_precipitation = 0
 height_diff = 21 # height difference between AWS (4025) and glacier (4036) in m
 
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "M" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
-plot_frequency_long = "Monthly" # Daily, Weekly, Monthly or Yearly
+plot_frequency = "W" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
+plot_frequency_long = "Weekly" # Daily, Weekly, Monthly or Yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = False # usage of COSIPY input
 
@@ -55,30 +55,21 @@ print('Read input netcdf file %s' % (cosipy_nc))
 print('Read input csv file %s' % (data_csv))
 print('Read observation data %s' % (observation_data))
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
-ds = xr.open_dataset(input_path_data + cosipy_nc)
+#ds = xr.open_dataset(input_path_data + cosipy_nc)
 df = pd.read_csv(input_path_data + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 
 print("Spin up period between " + str(cal_period_start) + " and "  + str(cal_period_end))
 print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_period_end))
-# adjust time
-ds = ds.sel(time=slice(cal_period_start, sim_period_end))
-df.set_index('TIMESTAMP', inplace=True) # set date column as index
-df.index = pd.to_datetime(df.index)
-df = df[cal_period_start: sim_period_end]
-obs.set_index('Date', inplace=True)
-obs.index = pd.to_datetime(obs.index) # set date column as index
-obs = obs[cal_period_start: sim_period_end]
+# adjust time and format
+df = dataformatting.data_preproc(df, cal_period_start, sim_period_end)
+obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
+#ds = dataformatting.data_preproc(ds, cal_period_start, sim_period_end)
 
 # Downscaling the dataframe to the glacier height
 df_DDM = df.copy()
 df_DDM["T2"] = df_DDM["T2"] + height_diff * float(lapse_rate_temperature)
 df_DDM["RRR"] = df_DDM["RRR"] + height_diff * float(lapse_rate_precipitation)
-
-# adjusting the variable units: T2: K to °C
-df["T2"] = df["T2"] - 273.15
-df_DDM["T2"] = df_DDM["T2"] - 273.15
-ds["T2"] = ds["T2"] - 273.15
 
 ## DDM model
 print("Running the degree day model")
@@ -91,26 +82,27 @@ print("Running the degree day model")
     'refreeze_ice': 0.0}"""
 
 # Calculating the positive degree days
-degreedays_ds = DDM.calculate_PDD(ds) # include either downscaled glacier dataframe or dataset with mask
+degreedays_ds = DDM.calculate_PDD(df_DDM) # include either downscaled glacier dataframe or dataset with mask
 # Calculating runoff and melt
-output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm, parameter adjustment possible
+output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, temp_snow=-1.9, refreeze_snow=0.05, refreeze_ice=0.05) # output in mm, parameter adjustment possible
 print(output_DDM.head(5))
 ## HBV model
 print("Running the HBV model")
 # Runoff calculations for the catchment with the HBV model
-output_hbv = HBV.hbv_simulation(df, cal_period_start, cal_period_end) # output in mm, individual parameters can be set here
+output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.88, parFC=453, parLP=0.92, parBETA=1.15, \
+                                parPERC=3.63, parUZL=33, parK0=0.33, parK1=0.01, parK2=0.05) # output in mm, individual parameters can be set here
 print(output_hbv.head(5))
 
 ## Output postprocessing
-output = pd.concat([output_hbv, output_DDM], axis=1)
-output = pd.concat([output, obs], axis=1)
-output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
+output = dataformatting.output_postproc(output_hbv, output_DDM, obs)
 
 nash_sut = stats.NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model efficiency coefficient
 print("The Nash–Sutcliffe model efficiency coefficient of the total model is " + str(round(nash_sut, 2)))
 
+parameter = dataformatting.output_parameter(parameter_HBV, parameter_DDM)
+parameter.to_csv(output_path + "parameter.csv")
+
 print("Writing the output csv to disc")
-output = output.fillna(0)
 output.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
 ## Statistical analysis
@@ -121,26 +113,14 @@ else:
     output_calibration = output.copy()
 
 # Daily, weekly, monthly or yearly output
-plot_data = output_calibration.resample(plot_frequency).agg(
-    {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
-    "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-    "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+plot_data = dataformatting.plot_data(output, plot_frequency, cal_period_start, sim_period_end)
 
 stats_output = stats.create_statistics(output_calibration)
 stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
 
 ## Cosipy comparison
 if cosipy == True:
-    output_cosipy = output[{"Qobs", "Q_Total", "DDM_smb", "DDM_total_melt"}]
-    cosipy_runoff = ds.Q.mean(dim=["lat", "lon"])
-    cosipy_smb = ds.surfMB.mean(dim=["lat", "lon"])
-    #cosipy_smb = cosipy_smb.resample(time="D").sum(dim="time")
-    cosipy_melt = ds.surfM.mean(dim=["lat", "lon"])
-    #cosipy_melt = cosipy_melt.resample(time="D").sum(dim="time")
-    output_cosipy["Q_COSIPY"] = cosipy_runoff.to_dataframe().Q.resample('D').sum()*1000
-    output_cosipy["COSIPY_smb"] = cosipy_smb.to_dataframe().surfMB.resample('D').sum()*1000
-    output_cosipy["COSIPY_melt"] = cosipy_melt.to_dataframe().surfM.resample('D').sum()*1000
-    output_cosipy = output_cosipy.round(3)
+    output_cosipy = dataformatting.output_cosipy(output, ds)
     output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
 
     nash_sut_cosipy = stats.NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
@@ -148,9 +128,8 @@ if cosipy == True:
     stats_cosipy = stats.create_statistics(output_cosipy)
     stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
         output_calibration.index.values[-1])[:4] + ".csv")
-    plot_data_cosipy = output_cosipy.resample(plot_frequency).agg(
-        {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb":"sum", "DDM_total_melt":"sum", \
-        "COSIPY_smb":"sum", "COSIPY_melt":"sum"})
+
+    plot_data_cosipy = dataformatting.plot_data_cosipy(output_cosipy, plot_frequency, cal_period_start, sim_period_end)
 
     fig3 = plots.plot_cosipy(plot_data_cosipy, plot_frequency_long, nash_sut, nash_sut_cosipy)
     if plot_save == False:
