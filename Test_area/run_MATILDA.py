@@ -9,6 +9,7 @@ import os
 #import warnings
 #warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
+import xarray as xr
 import matplotlib.pyplot as plt
 from MATILDA import DDM # importing the DDM model functions
 from MATILDA import HBV # importing the HBV model function
