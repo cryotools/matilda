@@ -6,7 +6,7 @@ import numpy as np
 ## Files + Input
 working_directory = "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/"
 input = home + working_directory + "Glacier_Routine_Data/GlacierProfile.txt"
-output = home + working_directory + "Glacier_Routine_Data/Lookup_Table.txt"
+output = home + working_directory + "Glacier_Routine_Data/"
 
 glacier_profile = pd.read_csv(input, sep="\t", header=1) # Glacier Profile
 area = pd.read_csv(input, sep="\t", nrows=1, header=None) # Area of catchment and glacier proportion
@@ -86,12 +86,13 @@ for _ in range(100):
     hi_k = hi_k + fs*glacier_profile["delta_h"]
     # 6. width scaling
     # ai scaled = ai * root(hi/hi initial)
-    ai = ai * np.sqrt((hi_k/hi_initial))
-    ai = pd.Series(np.where(np.isnan(ai), 0, ai))
+    ai_scaled = ai * np.sqrt((hi_k/hi_initial))
+    #ai = pd.Series(np.where(np.isnan(ai), 0, ai))
     # 7. create lookup table
     # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
-    lookup_table = lookup_table.append(ai, ignore_index=True)
+    lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
 
+lookup_table = lookup_table.fillna(0)
 # update the elevation zones: new sum of all the elevation bands in that zone
 ##
 # k= 2
