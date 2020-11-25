@@ -3,11 +3,12 @@ longitude_range=75.85,76.06
 latitude_range=40.94,41.17
 
 ncdf_folder=/data/projects/ensembles/era5_land/ERA5Land_HighMountainAsia/nc/
-destination_folder=/data/projects/ebaca/data/input_output/input/ERA5/
+destination_folder=/data/projects/ebaca/data/input_output/input/ERA5/no182
 destination_name=no182
-dataset_name=no182_ERA5_Land_1981_2019.nc
+dataset_name=ERA5_Land_1981_2019.nc
 underscore=_
 
+mkdir $destination_folder/variables
 for field in "d2m" "sf" "sp" "ssrd" "strd" "t2m" "tp" "u10" "v10" ; do
     echo $field
     output_folder=$destination_folder/variables/$field
