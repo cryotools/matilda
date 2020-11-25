@@ -85,12 +85,12 @@ degreedays_ds = DDM.calculate_PDD(df_DDM)
 print("Calculating melt with the DDM")
 # include either downscaled glacier dataframe or dataset with mask
 # Calculating runoff and melt
-output_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm, parameter adjustment possible
+output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds) # output in mm, parameter adjustment possible
 print("Finished running the DDM")
 ## HBV model
 print("Running the HBV model")
 # Runoff calculations for the catchment with the HBV model
-output_hbv = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parCFMAX=2.8) # output in mm, individual parameters can be set here
+output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parCFMAX=2.8) # output in mm, individual parameters can be set here
 print("Finished running the HBV")
 ## Output postprocessing
 output = dataformatting.output_postproc(output_hbv, output_DDM, obs)
@@ -102,6 +102,8 @@ print("Writing the output csv to disc")
 output = output.fillna(0)
 output.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
+parameter = dataformatting.output_parameter(parameter_HBV, parameter_DDM)
+parameter.to_csv(output_path + "model_parameter.csv")
 ## Statistical analysis
 # Calibration period included in the statistical analysis
 if cal_exclude == True:
