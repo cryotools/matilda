@@ -36,8 +36,11 @@ def plot_runoff(plot_data, plot_frequency_long='', nash_sut=None):
     ax1.set_title(plot_frequency_long + " runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[:4]+"-" \
               +str(plot_data.index.values[-1])[:4], size=14)
     if nash_sut is not None:
-        ax1.text(0.01, 0.95, 'NS coeff ' + str(round(nash_sut,2)),  transform=ax1.transAxes, fontsize=8,
-        verticalalignment='top')
+        if nash_sut == "error":
+            ax1.text(0.01, 0.95, 'NS coeff error', transform=ax1.transAxes, fontsize=8, verticalalignment='top')
+        else:
+            ax1.text(0.01, 0.95, 'NS coeff ' + str(round(nash_sut,2)),  transform=ax1.transAxes, fontsize=8,
+            verticalalignment='top')
     return fig
 
 
@@ -79,7 +82,10 @@ def plot_cosipy(plot_data_cosipy, plot_frequency_long='', nash_sut=None, nash_su
     ax1.legend(loc="upper right")
     fig.suptitle(plot_frequency_long + " output comparison from MATILDA and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
     if nash_sut is not None:
-        ax1.text(0.01, 0.95, 'NS coeff ' + str(round(nash_sut, 2)) + "\nNS coeff COSIPY " \
+        if nash_sut == "error":
+            ax1.text(0.01, 0.95, 'NS coeff error', transform=ax1.transAxes, fontsize=8, verticalalignment='top')
+        else:
+            ax1.text(0.01, 0.95, 'NS coeff ' + str(round(nash_sut, 2)) + "\nNS coeff COSIPY " \
              + str(round(nash_sut_cosipy,2)),  transform=ax1.transAxes, fontsize=8, verticalalignment='top')
     plt.tight_layout()
     return fig
