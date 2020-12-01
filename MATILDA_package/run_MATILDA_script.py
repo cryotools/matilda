@@ -52,18 +52,18 @@ cosipy = False  # usage of COSIPY input
 ## Data input preprocessing
 print('---')
 print('Starting MATILDA model run')
-#print('Read input netcdf file %s' % (cosipy_nc))
+print('Read input netcdf file %s' % (cosipy_nc))
 print('Read input csv file %s' % (data_csv))
 print('Read observation data %s' % (observation_data))
 # Import necessary input: cosipy.nc, cosipy.csv and runoff observation data
-#ds = xr.open_dataset(input_path_data + cosipy_nc)
+ds = xr.open_dataset(input_path_data + cosipy_nc)
 df = pd.read_csv(input_path_data + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 
 print("Spin up period between " + str(cal_period_start) + " and "  + str(cal_period_end))
 print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_period_end))
 df = dataformatting.data_preproc(df, cal_period_start, sim_period_end) # formatting the input to right format
-#ds = dataformatting.data_preproc(ds, cal_period_start, sim_period_end)
+ds = dataformatting.data_preproc(ds, cal_period_start, sim_period_end)
 obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
 
 # Downscaling the dataframe to the glacier height
@@ -90,7 +90,7 @@ print("Finished running the DDM")
 ## HBV model
 print("Running the HBV model")
 # Runoff calculations for the catchment with the HBV model
-output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parCFMAX=2.8) # output in mm, individual parameters can be set here
+output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end) # output in mm, individual parameters can be set here
 print("Finished running the HBV")
 ## Output postprocessing
 output = dataformatting.output_postproc(output_hbv, output_DDM, obs)
