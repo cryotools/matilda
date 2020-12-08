@@ -46,7 +46,7 @@ height_diff = 21 # height difference between AWS (4025) and glacier (4036) in m
 cal_exclude = False # Include or exclude the calibration period
 plot_frequency = "W" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
 plot_frequency_long = "Weekly" # Daily, Weekly, Monthly or Yearly
-plot_save = True # saves plot in folder, otherwise just shows it in Python
+plot_save = False # saves plot in folder, otherwise just shows it in Python
 cosipy = False  # usage of COSIPY input
 
 ## Data input preprocessing
@@ -90,7 +90,7 @@ print("Finished running the DDM")
 ## HBV model
 print("Running the HBV model")
 # Runoff calculations for the catchment with the HBV model
-output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parCFMAX=2.8) # output in mm, individual parameters can be set here
+output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parBETA=3, parCET=0.09, parFC=124, parK0=0.04, parK1=0.131, parK2=0.125, parLP=0.437, parMAXBAS=3, parPERC=2.04, parUZL=477, parPCORR=1.789, parTT=0.237, parCFMAX=3.502, parSFCF=0.827, parCFR=0.059, parCWH=0.119) # output in mm, individual parameters can be set here
 print("Finished running the HBV")
 ## Output postprocessing
 output = dataformatting.output_postproc(output_hbv, output_DDM, obs)
