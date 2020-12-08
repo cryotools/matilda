@@ -9,8 +9,8 @@ import datetime
 working_directory = '/Seafile/Ana-Lena_Phillip/data/'
 output = home + working_directory + "HBV-Light/HBV-light_data/Glacier_No.1/Python/Data/"
 
-era5_file = home + "/Seafile/Ana-Lena_Phillip/data/input_output/best_cosipyrun_no1_2011-18/best_cosipy_input_no1_2011-18.csv"
-runoff_observations = home + working_directory + "observations/glacierno1/hydro/dailyrunoff_2011-18_glacierno1.xls"
+era5_file = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/best_cosipy_input_no1_2011-18.csv"
+runoff_observations = home + working_directory + "input_output/input/observations/glacierno1/hydro/dailyrunoff_2011-18_glacierno1.xls"
 
 #Time slice
 time_start = '2011-01-01 00:00:00'
