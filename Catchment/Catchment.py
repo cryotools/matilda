@@ -16,6 +16,8 @@ def plotFigure(data, label, cmap='Blues'):
     plt.grid()
 
 DEM_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif'
+DEM_file = home + '/Desktop/Bash_Kaindy/Delineation/DEM_clipped.tif'
+
 ##
 grid = Grid.from_raster(DEM_file, data_name='dem')
 fig, ax = plt.subplots(figsize=(8,6))
@@ -52,7 +54,7 @@ plt.tight_layout()
 plt.show()
 
 # Specify pour point
-x, y = 86.821089, 43.114518
+x, y = 75.95305517173902, 41.12583245460784
 
 # Delineate the catchment
 grid.catchment(data='dir', x=x, y=y, dirmap=dirmap, out_name='catch',
@@ -86,7 +88,7 @@ schema = {
     'properties': {'LABEL': 'float:16'}
 }
 
-with fiona.open(home + "/Seafile/Ana-Lena_Phillip/PycharmProjects/Ana/catchment.shp", 'w',
+with fiona.open(home + "/Desktop/Bash_Kaindy/Delineation/catchment.shp", 'w',
                 driver='ESRI Shapefile',
                 crs=grid.crs.srs,
                 schema=schema) as c:
@@ -99,7 +101,7 @@ with fiona.open(home + "/Seafile/Ana-Lena_Phillip/PycharmProjects/Ana/catchment.
         c.write(rec)
         i += 1
 ## work with shapefile
-shp = gpd.read_file(home + "/Seafile/Ana-Lena_Phillip/PycharmProjects/Ana/catchment.shp")
+shp = gpd.read_file(home + "/Desktop/Bash_Kaindy/Delineation/catchment.shp")
 fig, ax = plt.subplots(figsize=(6,6))
 shp.plot(ax=ax)
 plt.xlabel('Longitude')

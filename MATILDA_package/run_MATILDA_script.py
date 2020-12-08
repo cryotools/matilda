@@ -28,7 +28,7 @@ observation_data = "daily_observations_2011-18.csv" # Daily Runoff Observations 
 
 # output
 output_path = working_directory + "Output/" + cosipy_nc[:-3] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
-os.mkdir(output_path) # creates new folder for each model run with timestamp
+#os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 # Additional information
 # Time period for the spin up
