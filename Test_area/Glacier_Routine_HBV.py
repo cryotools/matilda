@@ -55,11 +55,12 @@ else:
 glacier_profile["delta_h"] = (glacier_profile["norm_elevation"] + a)**y + (b*(glacier_profile["norm_elevation"] + a))+c
 
 ## Pre-simulation: LOOP
-# 4. scaling factor to scale dimensionless deltah
-# fs = deltaM / (sum(ai*deltahi)
-fs = deltaM / sum(ai * glacier_profile["delta_h"])
 
-for _ in range(100):
+for _ in range(10):
+    # 4. scaling factor to scale dimensionless deltah
+    # fs = deltaM / (sum(ai*deltahi)
+    fs = deltaM / sum(ai * glacier_profile["delta_h"])
+
     # 5. compute glacier geometry for reduced mass
     # hi,k+1 = hi,k + fs deltahi
     hi_k = hi_k + fs*glacier_profile["delta_h"]

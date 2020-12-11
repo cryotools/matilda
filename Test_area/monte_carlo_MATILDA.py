@@ -2,8 +2,9 @@ import random
 import pandas as pd
 import scipy.signal as ss
 import numpy as np
+import xarray as xr
 from progress.bar import Bar
-from MATILDA import dataformatting
+from MATILDA import dataformatting, DDM
 
 df = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/best_cosipy_input_no1_2011-18.csv")
 obs = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/daily_observations_2011-18.csv")
@@ -14,10 +15,20 @@ sim_period_start = '2012-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2018-12-31 23:00:00'
 df = dataformatting.data_preproc(df, cal_period_start, sim_period_end) # formatting the input to right format
 obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
+df_DDM = dataformatting.glacier_downscaling(df, height_diff=21, lapse_rate_temperature=-0.006, lapse_rate_precipitation=0)
 
+degreedays_ds = DDM.calculate_PDD(df_DDM)
+
+
+# DDM parameter: minimum and maximum values
+pdd_snow_min, pdd_snow_max = [1,8]
+pdd_ice_min, pdd_ice_max = [1,8]
+temp_snow_min, temp_snow_max = [-1.5, 2.5]
+temp_rain_min, temp_rain_max = [0, 2]
+refreeze_snow_min, refreeze_snow_max = [0, 0.1]
+refreeze_ice_min, refreeze_ice_max = [0, 0.1]
 
 # HBV parameter: minimum and maximum values
-
 BETA_min, BETA_max = [1,6]
 CET_min, CET_max = [0, 0.3]
 FC_min, FC_max = [50, 500]
@@ -30,19 +41,27 @@ PERC_min, PERC_max = [0, 3]
 UZL_min, UZL_max = [0, 500]
 PCORR_min, PCORR_max = [0.5, 2]
 TT_min, TT_max = [-1.5, 2.5]
-TT_rain_min, TT_rain_max = [-1.5, 0]
+TT_rain_min, TT_rain_max = [0, 2]
 CFMAX_min, CFMAX_max = [1, 10]
 SFCF_min, SFCF_max = [0.4, 1]
 CFR_min, CFR_max = [0, 0.1]
 CWH_min, CWH_max = [0, 0.2]
 
 # Monte Carlo Simulation for HBV
-def monte_carlo(df, obs, cal_period_start, cal_period_end, n):
+def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
     monte_carlo_results = []
     bar = Bar('Monte Carlo run', max=n)
 
     for i in range(n):
         bar.next()
+
+        # get a random value for each DDM parameter
+        pdd_factor_snow = random.uniform(pdd_snow_min, pdd_snow_max)
+        pdd_factor_ice = random.uniform(pdd_ice_min, pdd_ice_max)
+        temp_snow = random.uniform(temp_snow_min, temp_snow_max)
+        temp_rain = random.uniform(temp_rain_min, temp_rain_max)
+        refreeze_snow = random.uniform(refreeze_snow_min, refreeze_snow_max)
+        refreeze_ice = random.uniform(refreeze_ice_min, refreeze_ice_max)
 
         # get a random value for each HBV parameter
         parBETA = random.randrange(BETA_min, BETA_max)
@@ -62,6 +81,71 @@ def monte_carlo(df, obs, cal_period_start, cal_period_end, n):
         parSFCF = random.uniform(SFCF_min, SFCF_max)
         parCFR = random.uniform(CFR_min, CFR_max)
         parCWH = random.uniform(CWH_min, CWH_max)
+
+        # actual DDM simulation
+        temp = ds["temp_mean"]
+        prec = ds["RRR"]
+        pdd = ds["pdd"]
+
+        """ pypdd.py line 311
+            Compute accumulation rate from temperature and precipitation.
+            The fraction of precipitation that falls as snow decreases linearly
+            from one to zero between temperature thresholds defined by the
+            `temp_snow` and `temp_rain` attributes.
+        """
+        reduced_temp = (temp_rain - temp) / (temp_rain - temp_snow)
+        snowfrac = np.clip(reduced_temp, 0, 1)
+        accu_rate = snowfrac * prec
+
+        # initialize snow depth and melt rates (pypdd.py line 214)
+        snow_depth = xr.zeros_like(temp)
+        snow_melt_rate = xr.zeros_like(temp)
+        ice_melt_rate = xr.zeros_like(temp)
+
+        """ pypdd.py line 331
+            Compute melt rates from snow precipitation and pdd sum.
+            Snow melt is computed from the number of positive degree days (*pdd*)
+            and the `pdd_factor_snow` model attribute. If all snow is melted and
+            some energy (PDD) remains, ice melt is computed using `pdd_factor_ice`.
+            *snow*: array_like
+                Snow precipitation rate.
+            *pdd*: array_like
+                Number of positive degree days.
+        """
+
+        def melt_rates(snow, pdd):
+            # compute a potential snow melt
+            pot_snow_melt = pdd_factor_snow * pdd
+            # effective snow melt can't exceed amount of snow
+            snow_melt = np.minimum(snow, pot_snow_melt)
+            # ice melt is proportional to excess snow melt
+            ice_melt = (pot_snow_melt - snow_melt) * pdd_factor_ice / pdd_factor_snow
+            # return melt rates
+            return (snow_melt, ice_melt)
+
+        # compute snow depth and melt rates (pypdd.py line 219)
+        for i in np.arange(len(temp)):
+            if i > 0:
+                snow_depth[i] = snow_depth[i - 1]
+            snow_depth[i] += accu_rate[i]
+            snow_melt_rate[i], ice_melt_rate[i] = melt_rates(snow_depth[i], pdd[i])
+            snow_depth[i] -= snow_melt_rate[i]
+        total_melt = snow_melt_rate + ice_melt_rate
+        runoff_rate = total_melt - refreeze_snow * snow_melt_rate \
+                      - refreeze_ice * ice_melt_rate
+        inst_smb = accu_rate - runoff_rate
+
+        glacier_melt = xr.merge(
+            [xr.DataArray(inst_smb, name="DDM_smb"), xr.DataArray(accu_rate, name="DDM_accumulation_rate"), \
+             xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"),
+             xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"), \
+             xr.DataArray(total_melt, name="DDM_total_melt"), xr.DataArray(runoff_rate, name="Q_DDM")])
+        # glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
+
+        # making the final dataframe
+        DDM_results = glacier_melt.to_dataframe()
+        DDM_results = DDM_results.round(3)
+
 
         # actual HBV simulation
         # 1. new temporary dataframe from input with daily values
@@ -336,15 +420,22 @@ def monte_carlo(df, obs, cal_period_start, cal_period_end, n):
 
         Qsim = Qsim_smoothed
 
-        nash_sut = 1 - np.sum((obs["Qobs"] - Qsim) ** 2) / (np.sum((obs["Qobs"] - obs["Qobs"].mean()) ** 2))
+        Q_Total = Qsim + runoff_rate
+
+        nash_sut = 1 - np.sum((obs["Qobs"] - Q_Total) ** 2) / (np.sum((obs["Qobs"] - obs["Qobs"].mean()) ** 2))
 
         monte_carlo_results.append({"Run":i, "BETA":parBETA, "CET":parCET, "FC":parFC, "K0":parK0, "K1":parK1, "K2":parK2, "LP":parLP, \
                 "MAXBAS":parMAXBAS, "PERC":parPERC, "UZL":parUZL, "PCORR":parPCORR, "TT":parTT, "CFMAX": parCFMAX, \
-                "SFCF":parSFCF, "CFR":parCFR, "CWH":parCWH, "Nash Sutcliff":nash_sut})
+                "SFCF":parSFCF, "CFR":parCFR, "CWH":parCWH, "PDD_snow":pdd_factor_snow, "PDD_ice":pdd_factor_ice, \
+                "DDM_temp_snow":temp_snow, "DDM_temp_rain":temp_rain, "refreeze_snow":refreeze_snow, "refreeze_ice":refreeze_ice, "Nash Sutcliff":nash_sut})
     monte_carlo_results = pd.DataFrame(monte_carlo_results)
     monte_carlo_results = monte_carlo_results.round(3)
     bar.finish()
 
     return monte_carlo_results
 
-monte_carlo_results = monte_carlo(df, obs, cal_period_start, cal_period_end, 1000)
+monte_carlo_results = monte_carlo(degreedays_ds, df, obs, cal_period_start, cal_period_end, 100)
+monte_carlo_results.to_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results.csv")
+results_100 = pd.read_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results.csv")
+results_100 = results_100.sort_values(by=['Nash Sutcliff'], ascending=False)
+
