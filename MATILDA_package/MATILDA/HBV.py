@@ -36,6 +36,7 @@ List of 16 HBV model parameters
     # PCORR  - Precipitation (input sum) correction factor
     #          [0.5, 2]
     # TT     - Temperature which separates rain and snow fraction of precipitation
+    # TT     - Temperature which separates rain and snow fraction of precipitation
     #          [-1.5, 2.5]
     # CFMAX  - Snow melting rate (mm/day per Celsius degree)
     #          [1, 10]
