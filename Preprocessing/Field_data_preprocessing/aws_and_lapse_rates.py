@@ -10,7 +10,7 @@ from Preprocessing_functions import *
 working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
 
 ## General settings
-time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel
+time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel sensor
 time_end = '2019-09-14 09:00:00'
 
 alt_hobo = 3342         # Water level sensor
@@ -53,7 +53,7 @@ aws.columns = ['temp', 'wd', 'prec', 'rh', 'ws']
 aws.temp = aws.temp + 273.15
 aws.to_csv(working_directory + 'AWS_atbs/atbs_met-data_2017-2020.csv')
 
-## Apply preprocessing on HOBO timeseries
+## Apply preprocessing on HOBO-temphum timeseries
 path1 = working_directory + 'HOBO_temphum/HOBO1.csv'
 path2 = working_directory + 'HOBO_temphum/HOBO2.csv'
 path3 = working_directory + 'HOBO_temphum/HOBO3.csv'
