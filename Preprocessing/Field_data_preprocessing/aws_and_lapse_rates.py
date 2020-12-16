@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import sys
 import glob
 
-sys.path.append('/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
+# sys.path.append('/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
+sys.path.append('C:/Users/Phillip/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
 from fundamental_physical_constants import g, M, R
 
 home = str(Path.home())
