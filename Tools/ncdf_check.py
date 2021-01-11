@@ -15,7 +15,7 @@ in_file2 = working_directory + 't2m_no182_ERA5_Land_1981_2019.nc'
 
 in_file = working_directory + 'no182ERA5_Land_1981_2019.nc'
 
-# ds = xr.open_dataset(in_file)
+ds = xr.open_dataset(in_file)
 # ds2 = xr.open_dataset(in_file2)
 
 # ds81_ss = xr.open_dataset(in_file81_ss)
@@ -27,3 +27,4 @@ in_file = working_directory + 'no182ERA5_Land_1981_2019.nc'
 pick = ds.sel(lat=41.0, lon=75.9, method='nearest')
 
 pick_df = pick.to_dataframe()
+pick_df.to_csv(home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_1981_2019.csv')
