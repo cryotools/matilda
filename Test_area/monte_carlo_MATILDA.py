@@ -23,7 +23,7 @@ degreedays_ds = DDM.calculate_PDD(df_DDM)
 # DDM parameter: minimum and maximum values
 pdd_snow_min, pdd_snow_max = [1,8]
 pdd_ice_min, pdd_ice_max = [1,8]
-temp_snow_min, temp_snow_max = [-1.5, 2.5]
+temp_snow_min, temp_snow_max = [-1.5, 2]
 temp_rain_min, temp_rain_max = [0, 2]
 refreeze_snow_min, refreeze_snow_max = [0, 0.1]
 refreeze_ice_min, refreeze_ice_max = [0, 0.1]
@@ -40,7 +40,7 @@ MAXBAS_min, MAXBAS_max = [2, 7]
 PERC_min, PERC_max = [0, 3]
 UZL_min, UZL_max = [0, 500]
 PCORR_min, PCORR_max = [0.5, 2]
-TT_min, TT_max = [-1.5, 2.5]
+TT_min, TT_max = [-1.5, 2]
 TT_rain_min, TT_rain_max = [0, 2]
 CFMAX_min, CFMAX_max = [1, 10]
 SFCF_min, SFCF_max = [0.4, 1]
@@ -59,6 +59,8 @@ def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
         pdd_factor_snow = random.uniform(pdd_snow_min, pdd_snow_max)
         pdd_factor_ice = random.uniform(pdd_ice_min, pdd_ice_max)
         temp_snow = random.uniform(temp_snow_min, temp_snow_max)
+        if temp_snow > temp_rain_min:
+            temp_rain_min = temp_snow
         temp_rain = random.uniform(temp_rain_min, temp_rain_max)
         refreeze_snow = random.uniform(refreeze_snow_min, refreeze_snow_max)
         refreeze_ice = random.uniform(refreeze_ice_min, refreeze_ice_max)
@@ -76,6 +78,8 @@ def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
         parUZL = random.randrange(UZL_min, UZL_max)
         parPCORR = random.uniform(PCORR_min, PCORR_max)
         parTT = random.uniform(TT_min, TT_max)
+        if parTT > TT_rain_min:
+            TT_rain_min = parTT
         parTT_rain = random.uniform(TT_rain_min, TT_rain_max)
         parCFMAX = random.uniform(CFMAX_min, CFMAX_max)
         parSFCF = random.uniform(SFCF_min, SFCF_max)
@@ -434,7 +438,7 @@ def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
 
     return monte_carlo_results
 
-monte_carlo_results = monte_carlo(degreedays_ds, df, obs, cal_period_start, cal_period_end, 100)
+monte_carlo_results = monte_carlo(degreedays_ds, df, obs, cal_period_start, cal_period_end, 10)
 monte_carlo_results.to_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results.csv")
 results_100 = pd.read_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results.csv")
 results_100 = results_100.sort_values(by=['Nash Sutcliff'], ascending=False)
