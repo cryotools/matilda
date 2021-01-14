@@ -15,7 +15,13 @@ def plot_meteo(plot_data, plot_frequency_long=''):
     ax1.set_ylabel("[°C]", fontsize=9)
     ax2.set_ylabel("[mm]", fontsize=9)
     ax3.set_ylabel("[mm]", fontsize=9)
-    fig.suptitle(plot_frequency_long + " meteorological input parameters in " +str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
+        fig.suptitle(plot_frequency_long + " meteorological input parameters in " + str(plot_data.index.values[-1])[:4],
+                     size=14)
+    else:
+        fig.suptitle(plot_frequency_long + " meteorological input parameters in " + str(plot_data.index.values[1])[
+                                                                                    :4] + "-" + str(
+            plot_data.index.values[-1])[:4], size=14)
     plt.tight_layout()
     return fig
 
@@ -33,8 +39,13 @@ def plot_runoff(plot_data, plot_frequency_long='', nash_sut=None):
     ax3.plot(plot_data.index.to_pydatetime(), plot_data["Q_DDM"], c="#CC79A7", linewidth=1.2, label="DDM")
     ax1.legend(), ax2.legend(), ax3.legend(),
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
-    ax1.set_title(plot_frequency_long + " runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[:4]+"-" \
-              +str(plot_data.index.values[-1])[:4], size=14)
+    if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
+        ax1.set_title(plot_frequency_long + " runoff comparison of the model and observations in "+ str(plot_data.index.values[-1])[:4],
+                     size=14)
+    else:
+        ax1.set_title(plot_frequency_long + " runoff comparison of the model and observations in "+ str(plot_data.index.values[1])[
+                                                                                    :4] + "-" + str(
+            plot_data.index.values[-1])[:4], size=14)
     if nash_sut is not None:
         if nash_sut == "error":
             ax1.text(0.01, 0.95, 'NS coeff exceeds boundaries', transform=ax1.transAxes, fontsize=8, verticalalignment='top')
@@ -60,7 +71,13 @@ def plot_hbv(plot_data, plot_frequency_long=''):
     plt.xlabel("Date", fontsize=9)
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax4.set_ylabel("[mm]", fontsize=9), ax5.set_ylabel("[mm]", fontsize=9)
-    fig.suptitle(plot_frequency_long + " output from the HBV model in the period "+ str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4], size=14)
+    if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
+        fig.suptitle(plot_frequency_long + " output from the HBV model in the period "+ str(plot_data.index.values[-1])[:4],
+                     size=14)
+    else:
+        fig.suptitle(plot_frequency_long + " output from the HBV model in the period "+ str(plot_data.index.values[1])[
+                                                                                    :4] + "-" + str(
+            plot_data.index.values[-1])[:4], size=14)
     plt.tight_layout()
     return fig
 
@@ -80,7 +97,13 @@ def plot_cosipy(plot_data_cosipy, plot_frequency_long='', nash_sut=None, nash_su
     plt.xlabel("Date", fontsize=9)
     ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
     ax1.legend(loc="upper right")
-    fig.suptitle(plot_frequency_long + " output comparison from MATILDA and COSIPY in "+ str(plot_data_cosipy.index.values[1])[:4]+"-"+str(plot_data_cosipy.index.values[-1])[:4], size=14)
+    if str(plot_data_cosipy.index.values[1])[:4] == str(plot_data_cosipy.index.values[-1])[:4]:
+        fig.suptitle(plot_frequency_long + " output comparison from MATILDA and COSIPY in "+  str(plot_data_cosipy.index.values[-1])[:4],
+                     size=14)
+    else:
+        fig.suptitle(plot_frequency_long + " output comparison from MATILDA and COSIPY in "+  str(plot_data_cosipy.index.values[1])[
+                                                                                    :4] + "-" + str(
+            plot_data_cosipy.index.values[-1])[:4], size=14)
     if nash_sut is not None:
         if nash_sut == "error":
             ax1.text(0.01, 0.95, 'NS coeff exceeds boundaries', transform=ax1.transAxes, fontsize=8, verticalalignment='top')
