@@ -15,7 +15,6 @@ era5_file = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no18
 output_csv = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2018_2019_down.csv'
 
 target_altitude = 3360
-timezone_difference_to_UTC = 6
 margin = 0.2
 z0 = 0.00212                                # (m) mean between roughness firn 4 mm and fresh snow 0.24 mm
 lapse_rate_temperature = -0.006             # K/m  temperature lapse rate
@@ -79,7 +78,8 @@ total_precipitation = total_precipitation * 1000
 
 
 ### delete first value because of problem with accumualted variables
-time_local = era5['time'].to_index() + pd.Timedelta(hours=timezone_difference_to_UTC)
+time_local = era5['time'].to_index()
+time_local = time_local.tz_localize('Asia/Bishkek')
 time_local = time_local[1:]
 temperature = temperature[1:]
 total_precipitation = total_precipitation[1:]
@@ -91,6 +91,5 @@ check(total_precipitation,'TP',25.0,0.0)
 
 raw_data = {'TIMESTAMP': time_local, 'T2': temperature, 'RRR': total_precipitation}
 df = pd.DataFrame(raw_data, columns = ['TIMESTAMP', 'T2',  'RRR'])
-check_for_nans_dataframe(df)
 df.to_csv(output_csv,index=False)
 print("CSV file has been stored to disc")
