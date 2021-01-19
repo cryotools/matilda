@@ -9,7 +9,6 @@ sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA
 #from Preprocessing_functions import *
 working_directory = home + '/Seafile/Tianshan_data/'
 
-
 ## General settings
 time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel sensor
 time_end = '2019-09-14 09:00:00'
@@ -105,3 +104,47 @@ lapse_rates = {'All year': [lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt
                           lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down, seasonal=True, season='winter'),
                           lapseR(minikin_up.temp, hobo1.temp, alt_minikin_up,alt_hobo1, seasonal=True, season='winter')]}
 lapseR_df = pd.DataFrame(lapse_rates, index = ['2250m to 3894m','2250m to 3036.876m', '3036.876m to 3894m '])
+
+## Comparing the ERA5 data
+era5 = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2018_2019_down.csv")
+era5.set_index('TIMESTAMP', inplace=True)
+era5.index = pd.to_datetime(era5.index)
+era5 = era5["2018-09-07":"2019-09-13"]
+
+era5["temp_2250"] = era5["T2"]+(2250-3360)*float(-0.006)
+era5["temp_3037"] = era5["T2"]+(3037-3360)*float(-0.006)
+era5["temp_3864"] = era5["T2"]+(3864-3360)*float(-0.006)
+era5 = era5.resample('W').mean()
+
+compare_slim["temp_2250"] = era5["temp_2250"]
+compare_slim["temp_3037"] = era5["temp_3037"]
+compare_slim["temp_3864"] = era5["temp_3864"]
+
+plt.plot(compare_slim)
+plt.legend(compare_slim.columns.tolist(), loc="upper left")
+plt.show()
+
+fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10,6))
+ax1.plot(compare_slim.index.to_pydatetime(), (compare_slim["aws [2250m]"]), c="#d7191c", label="aws [2250m]")
+ax1.plot(compare_slim.index.to_pydatetime(), compare_slim["temp_2250"], color="#2c7bb6", label="temp_2250")
+ax2.plot(compare_slim.index.to_pydatetime(), compare_slim["hobo1 [3037 m]"], color="#d7191c", label="hobo1 [3037 m]")
+ax2.plot(compare_slim.index.to_pydatetime(), (compare_slim["temp_3037"]), c="#2c7bb6", label="temp_3037")
+ax3.plot(compare_slim.index.to_pydatetime(), compare_slim["minikin_up [3864m]"], c="#d7191c", label="minikin_up [3864m]")
+ax3.plot(compare_slim.index.to_pydatetime(), (compare_slim["temp_3864"]), c="#2c7bb6", label="temp_3864")
+ax1.legend(), ax2.legend(), ax3.legend()
+plt.show()
+
+## Cutting the new runoff data
+df = pd.read_excel("/home/ana/Desktop/runoff_bashkaindy_11_2019-11_2020.xlsx", parse_dates=[['Date', 'Time']])
+#df["Runoff"] = pd.to_numeric(df["Runoff"])
+df.set_index('Date_Time', inplace=True)
+df.index = pd.to_datetime(df.index)
+
+df_daily = df.resample("D").aggregate({"Runoff":"mean"})
+df_daily["Qobs"] = df_daily["Runoff"]* 86400/46232000*1000
+
+df2 = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/runoff_bashkaindy_2019.csv")
+
+df2["Date"] = pd.to_datetime(df2["Date"])
+df2.set_index("Date", inplace=True)
+

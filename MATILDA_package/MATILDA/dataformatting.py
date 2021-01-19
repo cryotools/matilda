@@ -1,6 +1,7 @@
 import pandas as pd
 import xarray as xr
 import numpy as np
+from _datetime import date
 
 def data_preproc(df, cal_period_start, sim_period_end):
     if isinstance(df, xr.Dataset):
@@ -13,6 +14,12 @@ def data_preproc(df, cal_period_start, sim_period_end):
         df.set_index('Date', inplace=True)
         df.index = pd.to_datetime(df.index)
         df = df[cal_period_start: sim_period_end]
+        if "Qobs" in df.columns: # expanding the observation period to the whole one year, filling the NAs with 0
+            idx_first = df.index.year[1]
+            idx_last = df.index.year[-1]
+            idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=df.index.name)
+            df = df.reindex(idx)
+            df = df.fillna(0)
     return df
 
 def glacier_downscaling(df, height_diff, lapse_rate_temperature=0, lapse_rate_precipitation=0):
@@ -26,7 +33,6 @@ def output_postproc(output_hbv, output_DDM, obs):
     output = pd.concat([output_hbv, output_DDM], axis=1)
     output = pd.concat([output, obs], axis=1)
     output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-    output = output.fillna(0)
     return output
 
 def output_cosipy(output, ds):
@@ -48,10 +54,12 @@ def output_parameter(parameter_HBV, parameter_DDM):
 
 
 def plot_data(output, plot_frequency, cal_period_start, sim_period_end):
+    obs = output["Qobs"].resample(plot_frequency).agg(pd.DataFrame.sum, skipna=False)
     plot_data = output.resample(plot_frequency).agg(
-        {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", "Qobs": "sum", \
+        {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+    plot_data["Qobs"] = obs
     plot_data = plot_data[cal_period_start: sim_period_end]
     return plot_data
 
