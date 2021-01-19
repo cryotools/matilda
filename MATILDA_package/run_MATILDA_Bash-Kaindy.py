@@ -32,10 +32,10 @@ os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 # Additional information
 # Time period for the spin up
-cal_period_start = '2019-01-01 00:00:00' # beginning of  period
+cal_period_start = '2018-01-01 00:00:00' # beginning of  period
 cal_period_end = '2019-12-31 23:00:00' # end of period: one year is recommended
 # Time period of the model simulation
-sim_period_start = '2019-01-01 00:00:00' # beginning of simulation period
+sim_period_start = '2018-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2019-12-31 23:00:00'
 
 glacier_area = 2.566
@@ -47,7 +47,7 @@ lapse_rate_precipitation = 0
 height_diff = 682 # height difference between AWS (4025) and glacier (4036) in m
 
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "D" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
+plot_frequency = "M" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
 plot_frequency_long = "Daily" # Daily, Weekly, Monthly or Yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = False  # usage of COSIPY input
@@ -109,8 +109,9 @@ else:
     print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
 
 print("Writing the output csv to disc")
-output = output.fillna(0)
-output.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
+output_csv = output.copy()
+output_csv = output_csv.fillna(0)
+output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
 parameter = dataformatting.output_parameter(parameter_HBV, parameter_DDM)
 parameter.to_csv(output_path + "model_parameter.csv")
