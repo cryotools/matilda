@@ -62,7 +62,7 @@ longitude = 76.1
 # longitude = float(era5_static.where(era5_static == era5_static.min(), drop=True).lon)
 
 era5 = era5.sel(lat=latitude, lon=longitude, method='nearest'); era5_static = era5_static.sel(lat=latitude,lon=longitude, method='nearest')
-height_diff = target_altitude  - era5_static.z.values/g ; print("Height difference between target_altitude: ", height_diff)
+height_diff = target_altitude - era5_static.z.values/g ; print("Height difference between target_altitude: ", height_diff)
 print('First timestamp: ', era5.time[0].values, ' last timestamp: ', era5.time[-1].values)
 print("Altitude of gridpoint ", era5_static.z.values/g)
 
