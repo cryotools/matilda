@@ -6,19 +6,22 @@ import xarray as xr
 from progress.bar import Bar
 from MATILDA import dataformatting, DDM
 
-df = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/best_cosipyrun_no1_2011-18/best_cosipy_input_no1_2011-18.csv")
-obs = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/daily_observations_2011-18.csv")
-cal_period_start = '2011-01-01 00:00:00' # beginning of  period
-cal_period_end = '2011-12-31 23:00:00' # end of period: one year is recommended
+df = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2018_2019_down.csv")
+obs = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/runoff_bashkaindy_2019.csv")
+cal_period_start = '2019-01-01 00:00:00' # beginning of  period
+cal_period_end = '2019-12-31 23:00:00' # end of period: one year is recommended
 # Time period of the model simulation
-sim_period_start = '2012-01-01 00:00:00' # beginning of simulation period
-sim_period_end = '2018-12-31 23:00:00'
+sim_period_start = '2019-01-01 00:00:00' # beginning of simulation period
+sim_period_end = '2019-12-31 23:00:00'
+glacier_area = 2.566
+catchment_area = 46.232
 df = dataformatting.data_preproc(df, cal_period_start, sim_period_end) # formatting the input to right format
 obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
-df_DDM = dataformatting.glacier_downscaling(df, height_diff=21, lapse_rate_temperature=-0.006, lapse_rate_precipitation=0)
+ix = pd.date_range(start=sim_period_start, end=sim_period_end, freq='D')
+obs = obs.reindex(ix)
+df_DDM = dataformatting.glacier_downscaling(df, height_diff=682, lapse_rate_temperature=-0.006, lapse_rate_precipitation=0)
 
 degreedays_ds = DDM.calculate_PDD(df_DDM)
-
 
 # DDM parameter: minimum and maximum values
 pdd_snow_min, pdd_snow_max = [1,8]
@@ -60,7 +63,7 @@ def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
         pdd_factor_ice = random.uniform(pdd_ice_min, pdd_ice_max)
         temp_snow = random.uniform(temp_snow_min, temp_snow_max)
         if temp_snow > temp_rain_min:
-            temp_rain_min = temp_snow
+            temp_rain_min == temp_snow
         temp_rain = random.uniform(temp_rain_min, temp_rain_max)
         refreeze_snow = random.uniform(refreeze_snow_min, refreeze_snow_max)
         refreeze_ice = random.uniform(refreeze_ice_min, refreeze_ice_max)
@@ -79,7 +82,7 @@ def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
         parPCORR = random.uniform(PCORR_min, PCORR_max)
         parTT = random.uniform(TT_min, TT_max)
         if parTT > TT_rain_min:
-            TT_rain_min = parTT
+            TT_rain_min == parTT
         parTT_rain = random.uniform(TT_rain_min, TT_rain_max)
         parCFMAX = random.uniform(CFMAX_min, CFMAX_max)
         parSFCF = random.uniform(SFCF_min, SFCF_max)
@@ -137,6 +140,7 @@ def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
         total_melt = snow_melt_rate + ice_melt_rate
         runoff_rate = total_melt - refreeze_snow * snow_melt_rate \
                       - refreeze_ice * ice_melt_rate
+        runoff_rate = runoff_rate * (glacier_area / catchment_area)  # scaling glacier melt to glacier area
         inst_smb = accu_rate - runoff_rate
 
         glacier_melt = xr.merge(
@@ -438,8 +442,8 @@ def monte_carlo(ds, df, obs, cal_period_start, cal_period_end, n):
 
     return monte_carlo_results
 
-monte_carlo_results = monte_carlo(degreedays_ds, df, obs, cal_period_start, cal_period_end, 10)
-monte_carlo_results.to_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results.csv")
-results_100 = pd.read_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results.csv")
+monte_carlo_results = monte_carlo(degreedays_ds, df, obs, cal_period_start, cal_period_end, 1000)
+monte_carlo_results.to_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results_bash-kaindy.csv")
+results_100 = pd.read_csv("/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/monte_carlo_results_bash-kaindy.csv")
 results_100 = results_100.sort_values(by=['Nash Sutcliff'], ascending=False)
 

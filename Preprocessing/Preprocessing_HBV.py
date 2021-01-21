@@ -54,6 +54,7 @@ runoff = runoff.rename(columns={"value": "Q"})
 # Runoff conversion to mm with the catchment size
 runoff["Q"]= (runoff["Q"]*86400/3367000)*1000
 
+
 ##
 # Daily values
 era5_daily = era5.resample('D').agg({"T2":'mean',"RRR":'sum'})
