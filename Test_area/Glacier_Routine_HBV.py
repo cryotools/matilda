@@ -4,6 +4,7 @@
 from pathlib import Path; home = str(Path.home())
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 ## Files + Input
 working_directory = "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/"
 input = home + working_directory + "Glacier_Routine_Data/GlacierProfile.txt"
@@ -21,6 +22,9 @@ ai = glacier_profile["Area"] # ai is the glacier area of each elevation zone, st
 
 lookup_table = pd.DataFrame()
 lookup_table = lookup_table.append(initial_area, ignore_index=True)
+
+hi = pd.DataFrame()
+hi = hi.append(hi_initial, ignore_index=True)
 
 ## Pre-simulation
 # 1. calculate total glacier mass in mm water equivalent: M = sum(ai * hi)
@@ -55,11 +59,36 @@ else:
 glacier_profile["delta_h"] = (glacier_profile["norm_elevation"] + a)**y + (b*(glacier_profile["norm_elevation"] + a))+c
 
 ## Pre-simulation: LOOP
+ai_scaled = ai.copy()
 
-for _ in range(10):
+# for _ in range(68):
+#     # 4. scaling factor to scale dimensionless deltah
+#     # fs = deltaM / (sum(ai*deltahi)
+#     fs = deltaM / sum(ai_scaled * glacier_profile["delta_h"])
+#
+#     # 5. compute glacier geometry for reduced mass
+#     # hi,k+1 = hi,k + fs deltahi
+#     hi_k = hi_k + fs*glacier_profile["delta_h"]
+#     # 6. width scaling
+#     # ai scaled = ai * root(hi/hi initial)
+#     ai_scaled = ai * np.sqrt((hi_k/hi_initial))
+#     ai_scaled = pd.Series(np.where(np.isnan(ai_scaled), 0, ai_scaled))
+#     # 7. create lookup table
+#     # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
+#     lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
+#     hi = hi.append(hi_k, ignore_index=True)
+deltaM_add = (glacier_profile["delta_h"]/sum(glacier_profile["delta_h"]))*deltaM
+
+for _ in range(100):
+    # add remaining melt to deltaM when the elevation zone reaches 0
+    deltaM_zone = pd.Series((np.where(ai_scaled.isna(), deltaM_add, 0)))
+    deltaM_zone[0] = 0
+    #deltaM_zone = deltaM_add * ai
+    deltaM_zone1 = sum(deltaM_zone)
+
     # 4. scaling factor to scale dimensionless deltah
     # fs = deltaM / (sum(ai*deltahi)
-    fs = deltaM / sum(ai * glacier_profile["delta_h"])
+    fs = (deltaM + deltaM_zone1) / sum(ai * glacier_profile["delta_h"])
 
     # 5. compute glacier geometry for reduced mass
     # hi,k+1 = hi,k + fs deltahi
@@ -71,9 +100,10 @@ for _ in range(10):
     # 7. create lookup table
     # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
     lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
+    hi = hi.append(hi_k, ignore_index=True)
+# update the elevation zones: new sum of all the elevation bands in that zone
 
 lookup_table = lookup_table.fillna(0)
-# update the elevation zones: new sum of all the elevation bands in that zone
 ## Analysis
 lookup_table.columns = elevation_zones
 lookup_table.sum(axis=1)
@@ -96,3 +126,7 @@ lookup_table_elezones = round(lookup_table_elezones, 4)
 
 lookup_table_elezones.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
 
+#lookup_table_elezones["volume"] =
+
+#test = lookup_table_elezones.loc[0] - lookup_table_elezones.loc[1]
+#test2 = hi.loc[0] - hi.loc[1]
