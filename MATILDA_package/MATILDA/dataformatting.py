@@ -1,7 +1,7 @@
 import pandas as pd
 import xarray as xr
 import numpy as np
-from _datetime import date
+from datetime import date
 
 def data_preproc(df, cal_period_start, sim_period_end):
     if isinstance(df, xr.Dataset):

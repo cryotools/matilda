@@ -23,8 +23,8 @@ input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ER
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/"
 
 cosipy_nc = ""
-data_csv = "no182ERA5_Land_2018_2019_down.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
-observation_data = "runoff_bashkaindy_2019.csv" # Daily Runoff Observations in mm
+data_csv = "no182ERA5_Land_2006_2020_fitted.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
+observation_data = "runoff_bashkaindy_04_2019-11_2020.csv" # Daily Runoff Observations in mm
 
 # output
 output_path = working_directory + "Output/" + data_csv[:-9] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
@@ -36,7 +36,7 @@ cal_period_start = '2018-01-01 00:00:00' # beginning of  period
 cal_period_end = '2019-12-31 23:00:00' # end of period: one year is recommended
 # Time period of the model simulation
 sim_period_start = '2018-01-01 00:00:00' # beginning of simulation period
-sim_period_end = '2019-12-31 23:00:00'
+sim_period_end = '2020-12-31 23:00:00'
 
 glacier_area = 2.566
 catchment_area = 46.232
@@ -44,10 +44,11 @@ catchment_area = 46.232
 # Downscaling the temperature and precipitation to glacier altitude for the DDM
 lapse_rate_temperature = -0.006 # K/m
 lapse_rate_precipitation = 0
-height_diff = 682 # height difference between AWS (4025) and glacier (4036) in m
+height_diff_catchment = -504 # height data is 3864 m, catchment mean is 3360 glacier mean is 4042m
+height_diff_glacier = 178
 
 cal_exclude = False # Include or exclude the calibration period
-plot_frequency = "M" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
+plot_frequency = "D" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
 plot_frequency_long = "Daily" # Daily, Weekly, Monthly or Yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = False  # usage of COSIPY input
@@ -71,7 +72,8 @@ obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
 obs = obs.tz_localize('Asia/Bishkek')
 
 # Downscaling the dataframe to the glacier height
-df_DDM = dataformatting.glacier_downscaling(df, height_diff=height_diff, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
+df_DDM = dataformatting.glacier_downscaling(df, height_diff=height_diff_glacier, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
+df = dataformatting.glacier_downscaling(df, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
 
 ## DDM model
 print("Running the degree day model")
@@ -99,7 +101,7 @@ print("Running the HBV model")
 output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-1) # output in mm, individual parameters can be set here
 print("Finished running the HBV")
 ## Output postprocessing
-output_hbv["Q_HBV"] = output_hbv["Q_HBV"] - (output_DDM["DDM_snow_melt_rate"]*(glacier_area/catchment_area))
+#output_hbv["Q_HBV"] = output_hbv["Q_HBV"] - (output_DDM["DDM_snow_melt_rate"]*(glacier_area/catchment_area))
 output = dataformatting.output_postproc(output_hbv, output_DDM, obs)
 
 nash_sut = stats.NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model efficiency coefficient
@@ -185,27 +187,3 @@ else:
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
 print('---')
-
-
-## Tests
-import numpy as np
-obs.loc[obs['temp'] > 50, 'temp'] = np.nan
-
-
-plt.plot(plot_data.index.to_pydatetime(), (plot_data["T2"]), c="#d7191c")
-plt.plot(obs.index.to_pydatetime(), obs["temp"], c="#008837")
-plt.xlabel("Date", fontsize=9)
-plt.show()
-
-minikin = pd.read_csv("/home/ana/Downloads/cognac_glacier_minikin_18_19.csv")
-minikin.columns = ['datetime', 'G', 'temp', 'hum']
-minikin.set_index(pd.to_datetime(minikin.datetime), inplace=True)
-minikin = minikin.drop(['datetime'], axis=1)
-minikin = minikin.shift(-2, axis=0)
-minikin = minikin.resample(plot_frequency).agg({"temp": "mean"})
-
-df_DDM = df_DDM.resample(plot_frequency).agg({"T2":"mean"})
-plt.plot(df_DDM.index.to_pydatetime(), (df_DDM["T2"]), c="#d7191c")
-plt.plot(minikin.index.to_pydatetime(), minikin["temp"], c="#008837")
-plt.xlabel("Date", fontsize=9)
-plt.show()
