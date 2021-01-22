@@ -6,9 +6,9 @@ import sys
 import glob
 home = str(Path.home())
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
-#from Preprocessing_functions import *
-working_directory = home + '/Seafile/Tianshan_data/'
-
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/')
+from Preprocessing_functions import *
+working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
 
 ## General settings
 time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel sensor
@@ -33,6 +33,7 @@ minikin_up = minikin_up.shift(-2, axis=0)  # Only -2h timeshift results in the c
 minikin_up = minikin_up.tz_localize('Asia/Bishkek')
 minikin_up.temp = minikin_up.temp + 273.15
 minikin_up = minikin_up[time_start: time_end]
+minikin_up.to_csv(working_directory+"/Minikin/Cognac_glacier/cognac_glacier_minikin_18_19.csv")
 
 minikin_down = pd.read_csv(working_directory + 'Minikin/Bash_Kaindy/80_2019_09_12_refin.csv', sep=';', decimal=',',
                            usecols=range(0, 4))
@@ -52,7 +53,7 @@ for file in sorted(glob.glob(path + 'atbs*.csv')):
 aws = round(pd.concat(data_list, axis=1), 2)
 aws.columns = ['temp', 'rh', 'prec', 'ws', 'wd']
 aws.temp = aws.temp + 273.15
-#aws.to_csv(working_directory + 'AWS_atbs/atbs_met-data_2017-2020.csv')
+aws.to_csv(working_directory + 'AWS_atbs/atbs_met-data_2017-2020.csv')
 
 ## Apply preprocessing on HOBO-temphum timeseries
 path1 = working_directory + 'HOBO_temphum/HOBO1.csv'
