@@ -11,8 +11,8 @@ working_directory = home + '/Seafile/Ana-Lena_Phillip/data/'
 shape_file = working_directory + 'input_output/static/Shapefiles/rgi_glacierno1.shp'
 era5_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/global/ERA5_global_z.nc'
 
-era5_file = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_1981_2019.nc'
-output_csv = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2018_2019_down.csv'
+era5_file = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2020.nc'
+output_csv = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2020.csv'
 
 target_altitude = 3360
 margin = 0.2
@@ -20,8 +20,8 @@ z0 = 0.00212                                # (m) mean between roughness firn 4 
 lapse_rate_temperature = -0.006             # K/m  temperature lapse rate
 
 #Time slice
-time_start = '2018-01-01T00:00'
-time_end = '2019-12-31T23:00'
+time_start = '2020-01-01T00:00'
+time_end = '2020-12-31T23:00'
 
 era5_static = salem.open_xr_dataset(era5_static_file)
 shape_grid = salem.read_shapefile_to_grid(shape_file,grid=salem.grid_from_dataset(era5_static))
@@ -45,8 +45,8 @@ era5 = era5.sel(time=slice(time_start, time_end))
 # latitude = float(era5_static.lat[idx_lat].values)
 # longitude = float(era5_static.lon[idx_lon].values)
 
-latitude = 40.9
-longitude = 76.1
+latitude2 = 40.9
+longitude2 = 76.1
 
 # ### Select closest gridpoint in contrast to elevation
 # altitude_differences_gp = np.abs(era5_static.z/g - target_altitude)
@@ -61,7 +61,7 @@ longitude = 76.1
 # latitude = float(era5_static.where(era5_static == era5_static.min(), drop=True).lat)
 # longitude = float(era5_static.where(era5_static == era5_static.min(), drop=True).lon)
 
-era5 = era5.sel(lat=latitude, lon=longitude, method='nearest'); era5_static = era5_static.sel(lat=latitude,lon=longitude, method='nearest')
+era5 = era5.sel(latitude=latitude2, longitude=longitude2, method='nearest'); era5_static = era5_static.sel(lat=latitude2,lon=longitude2, method='nearest')
 height_diff = target_altitude - era5_static.z.values/g ; print("Height difference between target_altitude: ", height_diff)
 print('First timestamp: ', era5.time[0].values, ' last timestamp: ', era5.time[-1].values)
 print("Altitude of gridpoint ", era5_static.z.values/g)
