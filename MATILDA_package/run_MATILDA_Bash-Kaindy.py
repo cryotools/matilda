@@ -23,20 +23,20 @@ input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ER
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/"
 
 cosipy_nc = ""
-data_csv = "no182ERA5_Land_2006_2020_fitted.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
-observation_data = "runoff_bashkaindy_04_2019-11_2020.csv" # Daily Runoff Observations in mm
-
-# output
-output_path = working_directory + "Output/" + data_csv[:-9] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
-os.mkdir(output_path) # creates new folder for each model run with timestamp
+data_csv = "no182ERA5_Land_2000_2020_fitted.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
+observation_data = "runoff_bashkaindy_04_2019-11_2020_test.csv" # Daily Runoff Observations in mm
 
 # Additional information
 # Time period for the spin up
 cal_period_start = '2018-01-01 00:00:00' # beginning of  period
 cal_period_end = '2019-12-31 23:00:00' # end of period: one year is recommended
 # Time period of the model simulation
-sim_period_start = '2018-01-01 00:00:00' # beginning of simulation period
-sim_period_end = '2020-12-31 23:00:00'
+sim_period_start = '2019-01-01 00:00:00' # beginning of simulation period
+sim_period_end = '2020-11-01 23:00:00'
+
+# output
+output_path = working_directory + "Output/" + data_csv[:15] + sim_period_start[:4] + "_" + sim_period_end[:4] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
+#os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 glacier_area = 2.566
 catchment_area = 46.232
@@ -47,10 +47,10 @@ lapse_rate_precipitation = 0
 height_diff_catchment = -504 # height data is 3864 m, catchment mean is 3360 glacier mean is 4042m
 height_diff_glacier = 178
 
-cal_exclude = False # Include or exclude the calibration period
+cal_exclude = True # Include or exclude the calibration period
 plot_frequency = "D" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
 plot_frequency_long = "Daily" # Daily, Weekly, Monthly or Yearly
-plot_save = True # saves plot in folder, otherwise just shows it in Python
+plot_save = False # saves plot in folder, otherwise just shows it in Python
 cosipy = False  # usage of COSIPY input
 
 ## Data input preprocessing
@@ -69,7 +69,7 @@ print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_
 df = dataformatting.data_preproc(df, cal_period_start, sim_period_end) # formatting the input to right format
 #ds = dataformatting.data_preproc(ds, cal_period_start, sim_period_end)
 obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
-obs = obs.tz_localize('Asia/Bishkek')
+#obs = obs.tz_localize('Asia/Bishkek')
 
 # Downscaling the dataframe to the glacier height
 df_DDM = dataformatting.glacier_downscaling(df, height_diff=height_diff_glacier, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
@@ -113,10 +113,10 @@ else:
 print("Writing the output csv to disc")
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
+#output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
 parameter = dataformatting.output_parameter(parameter_HBV, parameter_DDM)
-parameter.to_csv(output_path + "model_parameter.csv")
+#parameter.to_csv(output_path + "model_parameter.csv")
 ## Statistical analysis
 # Calibration period included in the statistical analysis
 if cal_exclude == True:
@@ -125,10 +125,10 @@ else:
     output_calibration = output.copy()
 
 # Daily, weekly, monthly or yearly output
-plot_data = dataformatting.plot_data(output, plot_frequency, cal_period_start, sim_period_end)
+plot_data = dataformatting.plot_data(output, plot_frequency, sim_period_start, sim_period_end)
 
 stats_output = stats.create_statistics(output_calibration)
-stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
+#stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
 print("Output overview")
 print(stats_output[["T2", "RRR", "PE", "Q_DDM", "Qobs", "Q_Total"]])
 ## Cosipy comparison
@@ -187,3 +187,4 @@ else:
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")
 print('---')
+

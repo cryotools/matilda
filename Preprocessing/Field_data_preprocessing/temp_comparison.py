@@ -187,3 +187,43 @@ df = df[time_start: time_end]
 df3 = pd.merge(df, compare_slim, left_index=True, right_index=True)
 #df3.to_csv("/home/ana/Desktop/compare_slim.csv")
 
+##
+
+era5 = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_lat41.0_lon75.9_alt3839.6_1981-2019.csv", sep=";")
+era5.set_index('time', inplace=True)
+era5.index = pd.to_datetime(era5.index, utc=True)
+#era5.index = era5.index.tz_localize('Asia/Bishkek')
+era5 = era5.loc['2000-11-01 01:00:00':'2019-12-31 23:00:00']
+era5 = era5.sort_index()
+
+total_precipitation = era5.tp.values #+ height_diff * lapse_rate_total_precipitation))         ### convert from m to mm
+total_precipitation[total_precipitation < 0] = era5.tp.values[total_precipitation < 0]
+total_precipitation[total_precipitation < 0] = 0
+total_precipitation = total_precipitation * 1000
+era5["tp"] = total_precipitation
+
+time_start = '2018-10-07 18:00:00'  # longest timeseries of waterlevel sensor
+time_end = '2018-10-14 03:00:00'
+minikin_up_small = minikin_up[time_start: time_end]
+
+minikin_up = minikin_up.tz_convert('UTC')
+minikin_up_small2 = minikin_up[time_start: time_end]
+
+era5_small = era5.loc[time_start: time_end]
+era5_small = era5_small.sort_index()
+
+plt.plot(era5_small.index.to_pydatetime(), (minikin_up_small["temp"]), c="#d7191c", label="minikin_up local")
+plt.plot(era5_small.index.to_pydatetime(), minikin_up_small2["temp"], color="#008837", label="minikin up UTC")
+plt.plot(era5_small.index.to_pydatetime(), era5_small["t2m"], color="#2c7bb6", label="ERA5")
+plt.legend()
+plt.show()
+
+#era5 = era5.resample("D").agg({"t2m":"mean", "tp":"sum"})
+time_start = '2019-01-01'  # longest timeseries of waterlevel sensor
+time_end = '2019-12-31'
+era_subset = era5.copy()
+era_subset = era_subset[time_start:time_end]
+era_subset = era_subset.sort_index()
+
+plt.plot(era_subset["t2m"])
+plt.show()
