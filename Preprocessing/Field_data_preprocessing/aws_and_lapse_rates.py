@@ -29,7 +29,7 @@ minikin_up = pd.read_csv(working_directory + 'Minikin/Cognac_glacier/cognac_glac
 minikin_up.columns = ['datetime', 'G', 'temp', 'hum']
 minikin_up.set_index(pd.to_datetime(minikin_up.datetime), inplace=True)
 minikin_up = minikin_up.drop(['datetime'], axis=1)
-minikin_up = minikin_up.shift(-2, axis=0)  # Only -2h timeshift results in the correct curves. BUT WHY????
+#minikin_up = minikin_up.shift(-2, axis=0)  # Only -2h timeshift results in the correct curves. BUT WHY????
 minikin_up = minikin_up.tz_localize('Asia/Bishkek')
 minikin_up.temp = minikin_up.temp + 273.15
 minikin_up = minikin_up[time_start: time_end]
