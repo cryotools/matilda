@@ -8,11 +8,11 @@ from fundamental_physical_constants import g, M, R, teten_a1, teten_a3, teten_a4
 from misc_functions.calculate_parameters import calculate_ew; import matplotlib.pyplot as plt
 
 working_directory = home + '/Seafile/Ana-Lena_Phillip/data/'
-shape_file = "Seafile/Masterarbeit/Bash_Kaindy/Delineation/rgi_glacierno1.shp'
+shape_file = "Seafile/Masterarbeit/Bash_Kaindy/Delineation/rgi_glacierno1.shp"
 era5_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/global/ERA5_global_z.nc'
 
-era5_file = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_1981_2019.nc'
-output_csv = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2001.csv'
+era5_file = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/new_grib_conversion/no182_ERA5_Land_2000_202011_no182.nc'
+output_csv = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182_ERA5_Land_2000_202011_no182_41_75.9.csv'
 
 target_altitude = 3360
 margin = 0.2
@@ -20,8 +20,8 @@ z0 = 0.00212                                # (m) mean between roughness firn 4 
 lapse_rate_temperature = -0.006             # K/m  temperature lapse rate
 
 #Time slice
-time_start = '2001-01-01T00:00'
-time_end = '2005-12-31T23:00'
+time_start = '2000-01-01T00:00'
+time_end = '2020-12-31T23:00'
 
 era5_static = salem.open_xr_dataset(era5_static_file)
 shape_grid = salem.read_shapefile_to_grid(shape_file,grid=salem.grid_from_dataset(era5_static))
@@ -45,8 +45,8 @@ era5 = era5.sel(time=slice(time_start, time_end))
 # latitude = float(era5_static.lat[idx_lat].values)
 # longitude = float(era5_static.lon[idx_lon].values)
 
-latitude2 = 40.9
-longitude2 = 76.1
+latitude2 = 41
+longitude2 = 75.9
 
 # ### Select closest gridpoint in contrast to elevation
 # altitude_differences_gp = np.abs(era5_static.z/g - target_altitude)
@@ -93,3 +93,4 @@ raw_data = {'TIMESTAMP': time_local, 'T2': temperature, 'RRR': total_precipitati
 df = pd.DataFrame(raw_data, columns = ['TIMESTAMP', 'T2',  'RRR'])
 df.to_csv(output_csv,index=False)
 print("CSV file has been stored to disc")
+
