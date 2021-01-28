@@ -36,7 +36,7 @@ sim_period_end = '2020-11-01 23:00:00'
 
 # output
 output_path = working_directory + "Output/" + data_csv[:15] + sim_period_start[:4] + "_" + sim_period_end[:4] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
-os.mkdir(output_path) # creates new folder for each model run with timestamp
+#os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 glacier_area = 2.566
 catchment_area = 46.232
@@ -50,7 +50,7 @@ height_diff_glacier = 178
 cal_exclude = True # Include or exclude the calibration period
 plot_frequency = "D" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
 plot_frequency_long = "Daily" # Daily, Weekly, Monthly or Yearly
-plot_save = True # saves plot in folder, otherwise just shows it in Python
+plot_save = False # saves plot in folder, otherwise just shows it in Python
 cosipy = False  # usage of COSIPY input
 
 ## Data input preprocessing
