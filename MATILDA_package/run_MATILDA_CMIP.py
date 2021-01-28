@@ -13,6 +13,7 @@ from MATILDA import DDM # importing the DDM model functions
 from MATILDA import HBV # importing the HBV model function
 from MATILDA import stats, plots # importing functions for statistical analysis and plotting
 
+
 ## Model configuration
 # Directories
 working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/"
@@ -44,10 +45,6 @@ lapse_rate_precipitation = 0
 height_diff_catchment = -504 # height data is 3864 m, catchment mean is 3360 glacier mean is 4042m
 height_diff_glacier = 178
 
-cal_exclude = True # Include or exclude the calibration period
-plot_frequency = "M" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
-plot_frequency_long = "Monthly" # Daily, Weekly, Monthly or Yearly
-plot_save = False # saves plot in folder, otherwise just shows it in Python
 
 ## Data input preprocessing
 print('---')
@@ -192,45 +189,66 @@ for i in list_cmip_60:
     output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
     cmip_output_glacier[i.name]= output["Q_Total"]
 
-# CMIP 8.5 2060-2080
-df_DDM = dataformatting.glacier_downscaling(df_85_2080, height_diff=286, lapse_rate_temperature=lapse_rate_temperature,
+
+# 2060-2080
+list_cmip_80 = [df_26_2080, df_45_2080, df_85_2080]
+
+for i in list_cmip_80:
+    df_DDM = dataformatting.glacier_downscaling(i, height_diff=286, lapse_rate_temperature=lapse_rate_temperature,
                                             lapse_rate_precipitation=lapse_rate_precipitation)
-df = dataformatting.glacier_downscaling(df_85_2080, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature,
+    df = dataformatting.glacier_downscaling(i, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature,
                                         lapse_rate_precipitation=lapse_rate_precipitation)
 
-degreedays_ds = DDM.calculate_PDD(df_DDM)
-output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
-output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.4) / catchment_area)  # scaling glacier melt to glacier area
-output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150,parUZL=60)  # output in mm, individual parameters can be set here
+    degreedays_ds = DDM.calculate_PDD(df_DDM)
+    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
+    output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.4) / catchment_area)  # scaling glacier melt to glacier area
+    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150,parUZL=60)  # output in mm, individual parameters can be set here
 
-output = pd.concat([output_hbv, output_DDM], axis=1)
-output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-cmip_output_glacier["df_85_2080"] = output["Q_Total"]
+    output = pd.concat([output_hbv, output_DDM], axis=1)
+    output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
+    cmip_output_glacier[i.name] = output["Q_Total"]
 
-# CMIP 8.5 2080-2100
-df_DDM = dataformatting.glacier_downscaling(df_85_2100, height_diff=336, lapse_rate_temperature=lapse_rate_temperature,
+# 2080-2100
+list_cmip_2100 = [df_26_2100, df_45_2100, df_85_2100]
+
+for i in list_cmip_2100:
+    df_DDM = dataformatting.glacier_downscaling(i, height_diff=336, lapse_rate_temperature=lapse_rate_temperature,
                                             lapse_rate_precipitation=lapse_rate_precipitation)
-df = dataformatting.glacier_downscaling(df_85_2100, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature,
+    df = dataformatting.glacier_downscaling(i, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature,
                                         lapse_rate_precipitation=lapse_rate_precipitation)
 
-degreedays_ds = DDM.calculate_PDD(df_DDM)
-output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
-output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.3) / catchment_area)  # scaling glacier melt to glacier area
-output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150,parUZL=60)  # output in mm, individual parameters can be set here
+    degreedays_ds = DDM.calculate_PDD(df_DDM)
+    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
+    output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.3) / catchment_area)  # scaling glacier melt to glacier area
+    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150,parUZL=60)  # output in mm, individual parameters can be set here
 
-output = pd.concat([output_hbv, output_DDM], axis=1)
-output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-cmip_output_glacier["df_85_2100"] = output["Q_Total"]
+    output = pd.concat([output_hbv, output_DDM], axis=1)
+    output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
+    cmip_output_glacier[i.name] = output["Q_Total"]
 
 cmip_output_glacier.to_csv("/home/ana/Desktop/cmip_output_glacier.csv")
 
-## Plots
+## Plot data
+cmip_output = pd.read_csv("/home/ana/Desktop/cmip_output.csv")
+cmip_output = cmip_output.set_index("TIMESTAMP")
+cmip_output.index = pd.to_datetime(cmip_output.index)
+
+cmip_output_glacier = pd.read_csv("/home/ana/Desktop/cmip_output_glacier.csv")
+cmip_output_glacier = cmip_output_glacier.set_index("TIMESTAMP")
+cmip_output_glacier.index = pd.to_datetime(cmip_output_glacier.index)
+
 cmip_output_monthly = cmip_output.resample("M").agg("sum")
 cmip_output_monthly["month"] = cmip_output_monthly.index.month
 cmip_output_monthly_mean = cmip_output_monthly.groupby(["month"]).mean()
 cmip_output_monthly_mean["month"] = cmip_output_monthly_mean.index
+cmip_output_monthly_mean["month2"] = cmip_output_monthly_mean["month"] - 0.25
 
+cmip_output_glacier_monthly = cmip_output_glacier.resample("M").agg("sum")
+cmip_output_glacier_monthly["month"] = cmip_output_glacier_monthly.index.month
+cmip_output_glacier_monthly_mean = cmip_output_glacier_monthly.groupby(["month"]).mean()
+cmip_output_glacier_monthly_mean["month"] = cmip_output_glacier_monthly_mean.index
 
+## Line plots
 
 fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharey=True, figsize=(10, 6))
 gs = gridspec.GridSpec(2, 2)
@@ -259,36 +277,13 @@ ax1.xaxis.set_ticks(np.arange(2, 12, 2)), ax2.xaxis.set_ticks(np.arange(2, 12, 2
 fig.subplots_adjust(top=0.9, left=0.1, right=0.9, bottom=0.12)
 ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=4)
 ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9), ax4.set_ylabel("[mm]", fontsize=9)
-ax1.set_title("Period of 2020 - 2040", fontsize=9)
-ax2.set_title("Period of 2040 - 2060", fontsize=9)
-ax3.set_title("Period of 2060 - 2080", fontsize=9)
-ax4.set_title("Period of 2080 - 2100", fontsize=9)
+ax1.set_title("Period of 2021 - 2040", fontsize=9)
+ax2.set_title("Period of 2041 - 2060", fontsize=9)
+ax3.set_title("Period of 2061 - 2080", fontsize=9)
+ax4.set_title("Period of 2081 - 2100", fontsize=9)
 #plt.show()
 plt.savefig("/home/ana/Desktop/CMIP_mean_monthly_runoff.png")
 
-
-output_19_20 = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/Output/no182_ERA5_Land2019_2020_2021-01-27_16:14:34/model_output_2018-2020.csv")
-output_19_20 = output_19_20.set_index("TIMESTAMP")
-output_19_20.index = pd.to_datetime(output_19_20.index)
-output_19_20 = output_19_20["2019-01-01":"2020-12-31"]
-output_19_20["plot"] = 0
-
-
-plt.figure(figsize=(10,6))
-plt.plot(output_19_20.index.to_pydatetime(), output_19_20["Qobs"], c="#D55E00", label="Observations", linewidth=1)
-plt.plot(output_19_20.index.to_pydatetime(), output_19_20["Q_Total"], c="k", label="MATILDA", linewidth=0.5)
-plt.fill_between(output_19_20.index.to_pydatetime(), output_19_20["plot"], output_19_20["Q_HBV"],color='#009E73',alpha=.5, label=" MATILDA HBV")
-plt.fill_between(output_19_20.index.to_pydatetime(), output_19_20["Q_HBV"], output_19_20["Q_Total"],color='#CC79A7',alpha=.5, label="MATILDA DDM")
-plt.legend()
-plt.ylabel("[mm]", fontsize=9)
-#plt.show()
-plt.savefig("/home/ana/Desktop/MATILDA_output_2019-20.png")
-
-
-cmip_output_glacier_monthly = cmip_output_glacier.resample("M").agg("sum")
-cmip_output_glacier_monthly["month"] = cmip_output_glacier_monthly.index.month
-cmip_output_glacier_monthly_mean = cmip_output_glacier_monthly.groupby(["month"]).mean()
-cmip_output_glacier_monthly_mean["month"] = cmip_output_glacier_monthly_mean.index
 
 plt.figure(figsize=(10,6))
 plt.plot(cmip_output_glacier_monthly_mean["month"], cmip_output_glacier_monthly_mean["df_26_2060"], c="#0072B2", label="RCP 2.6 - 2040-2060")
@@ -301,12 +296,107 @@ plt.ylabel("[mm]", fontsize=9)
 #plt.show()
 plt.savefig("/home/ana/Desktop/glacier_loss_runs.png")
 
-fig, ax = plt.subplots()
-ax.bar(cmip_output_glacier_monthly_mean["month"], cmip_output_glacier_monthly_mean["df_26_2060"], label="RCP 2.6 - 2040-2060")
-ax.bar(cmip_output_glacier_monthly_mean["month"], cmip_output_glacier_monthly_mean["df_45_2060"], label="RCP 4.5 - 2040-2060")
-ax.bar(cmip_output_glacier_monthly_mean["month"], cmip_output_glacier_monthly_mean["df_85_2060"], label="RCP 8.5 - 2040-2060")
-ax.bar(cmip_output_glacier_monthly_mean["month"], cmip_output_glacier_monthly_mean["df_85_2080"],  label="RCP 8.5 - 2060-2080")
-ax.bar(cmip_output_glacier_monthly_mean["month"], cmip_output_glacier_monthly_mean["df_85_2100"], label="RCP 8.5 - 2080-2100")
+## Best MATILDA output plot
+output_19_20 = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/Output/no182_ERA5_Land2019_2020_2021-01-27_16:14:34/model_output_2018-2020.csv")
+output_19_20 = output_19_20.set_index("TIMESTAMP")
+output_19_20.index = pd.to_datetime(output_19_20.index)
+output_19_20 = output_19_20["2019-01-01":"2020-12-31"]
+output_19_20["plot"] = 0
+
+
+plt.figure(figsize=(10,6))
+plt.plot(output_19_20.index.to_pydatetime(), output_19_20["Qobs"], c="#E69F00", label="Observations", linewidth=1)
+plt.plot(output_19_20.index.to_pydatetime(), output_19_20["Q_Total"], c="k", label="MATILDA total runoff", linewidth=0.75, alpha=0.75)
+plt.fill_between(output_19_20.index.to_pydatetime(), output_19_20["plot"], output_19_20["Q_HBV"],color='#56B4E9',alpha=.75, label="MATILDA catchment runoff")
+plt.fill_between(output_19_20.index.to_pydatetime(), output_19_20["Q_HBV"], output_19_20["Q_Total"],color='#CC79A7',alpha=.75, label="MATILDA glacial runoff")
 plt.legend()
-plt.ylabel("[mm]", fontsize=9)
-plt.show()
+plt.ylabel("Runoff [mm]", fontsize=10)
+#plt.show()
+plt.savefig("/home/ana/Desktop/MATILDA_output_2019-20.png", dpi=700)
+
+##
+def mystep(x,y, ax=None, where='post', **kwargs):
+    assert where in ['post', 'pre']
+    x = np.array(x)
+    y = np.array(y)
+    if where=='post': y_slice = y[:-1]
+    if where=='pre': y_slice = y[1:]
+    X = np.c_[x[:-1],x[1:],x[1:]]
+    Y = np.c_[y_slice, y_slice, np.zeros_like(x[:-1])*np.nan]
+    if not ax: ax=plt.gca()
+    return ax.plot(X.flatten(), Y.flatten(), **kwargs)
+
+barWidth = 0.2
+fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, figsize=(10, 6))
+gs = gridspec.GridSpec(3, 2)
+ax1 = plt.subplot(gs[0, 0])
+# Set position of bar on X axis
+br1 = np.arange(len(cmip_output_monthly_mean["df_26_2060"]))
+br2 = [x + barWidth for x in br1]
+br3 = [x + barWidth for x in br2]
+br4 = [x + barWidth for x in br3]
+# Make the plot
+ax1.bar(br1, cmip_output_monthly_mean["df_hist"], color='#2b2d2f', width=barWidth, edgecolor='grey')
+ax1.bar(br2, cmip_output_monthly_mean["df_26_2060"], color='#88CCEE', width=barWidth, edgecolor='grey')
+ax1.bar(br3, cmip_output_monthly_mean["df_26_2080"], color='#DDCC77', width=barWidth, edgecolor='grey')
+ax1.bar(br4, cmip_output_monthly_mean["df_26_2100"], color='#CC6677', width=barWidth, edgecolor='grey')
+#mystep(cmip_output_monthly_mean["month2"], cmip_output_monthly_mean["df_hist"], ax=ax1, color="k", linewidth=0.5)
+ax1.set_title("No glacier loss", fontsize=10)
+plt.ylabel('Runoff [mm]')
+ax1.text(0.02, 0.95, 'RCP 2.6', transform=ax1.transAxes, fontsize=8, verticalalignment='top')
+plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
+# Adding Xticks
+ax2 = plt.subplot(gs[1, 0], sharey=ax1)
+# Make the plot
+ax2.bar(br1, cmip_output_monthly_mean["df_hist"], color='#2b2d2f', width=barWidth,edgecolor='grey')
+ax2.bar(br2, cmip_output_monthly_mean["df_45_2060"], color='#88CCEE', width=barWidth, edgecolor='grey')
+ax2.bar(br3, cmip_output_monthly_mean["df_45_2080"], color='#DDCC77', width=barWidth, edgecolor='grey')
+ax2.bar(br4, cmip_output_monthly_mean["df_45_2100"], color='#CC6677', width=barWidth, edgecolor='grey')
+plt.ylabel('Runoff [mm]')
+ax2.text(0.02, 0.95, 'RCP 4.5', transform=ax2.transAxes, fontsize=8, verticalalignment='top')
+plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
+ax3 = plt.subplot(gs[2, 0], sharey=ax1)
+# Make the plot
+ax3.bar(br1, cmip_output_monthly_mean["df_hist"], color='#2b2d2f', width=barWidth,edgecolor='grey', label='2001-2020 (Reference period)')
+ax3.bar(br2, cmip_output_monthly_mean["df_85_2060"], color='#88CCEE', width=barWidth,
+        edgecolor='grey', label="2041 - 2060 (GAL 50%)")
+ax3.bar(br3, cmip_output_monthly_mean["df_85_2080"], color='#DDCC77', width=barWidth,
+        edgecolor='grey', label="2061 - 2080 (GAL 60%)")
+ax3.bar(br4, cmip_output_monthly_mean["df_85_2100"], color='#CC6677', width=barWidth,
+        edgecolor='grey', label="2081 - 2100 (GAL 70%)")
+# Adding Xticks
+plt.xlabel('Month')
+plt.ylabel('Runoff [mm]')
+ax3.text(0.02, 0.95, 'RCP 8.5', transform=ax3.transAxes, fontsize=8, verticalalignment='top')
+plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
+#Glacier
+ax4 = plt.subplot(gs[0, 1], sharey=ax1)
+# Make the plot
+ax4.bar(br1, cmip_output_monthly_mean["df_hist"], color='#2b2d2f', width=barWidth,edgecolor='grey')
+ax4.bar(br2, cmip_output_glacier_monthly_mean["df_26_2060"], color='#88CCEE', width=barWidth, edgecolor='grey')
+ax4.bar(br3, cmip_output_glacier_monthly_mean["df_26_2080"], color='#DDCC77', width=barWidth, edgecolor='grey')
+ax4.bar(br4, cmip_output_glacier_monthly_mean["df_26_2100"], color='#CC6677', width=barWidth, edgecolor='grey')
+ax4.set_title("Including glacier loss",  fontsize=10)
+ax4.text(0.02, 0.95, 'RCP 2.6', transform=ax4.transAxes, fontsize=8, verticalalignment='top')
+plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
+ax5 = plt.subplot(gs[1, 1], sharey=ax1)
+# Make the plot
+ax5.bar(br1, cmip_output_monthly_mean["df_hist"], color='#2b2d2f', width=barWidth,edgecolor='grey')
+ax5.bar(br2, cmip_output_glacier_monthly_mean["df_45_2060"], color='#88CCEE', width=barWidth, edgecolor='grey')
+ax5.bar(br3, cmip_output_glacier_monthly_mean["df_45_2080"], color='#DDCC77', width=barWidth, edgecolor='grey')
+ax5.bar(br4, cmip_output_glacier_monthly_mean["df_45_2100"], color='#CC6677', width=barWidth, edgecolor='grey')
+plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
+ax5.text(0.02, 0.95, 'RCP 4.5', transform=ax5.transAxes, fontsize=8, verticalalignment='top')
+ax6 = plt.subplot(gs[2, 1], sharey=ax1)
+# Make the plot
+ax6.bar(br1, cmip_output_monthly_mean["df_hist"], color='#2b2d2f', width=barWidth,edgecolor='grey')
+ax6.bar(br2, cmip_output_glacier_monthly_mean["df_85_2060"], color='#88CCEE', width=barWidth, edgecolor='grey')
+ax6.bar(br3, cmip_output_glacier_monthly_mean["df_85_2080"], color='#DDCC77', width=barWidth, edgecolor='grey')
+ax6.bar(br4, cmip_output_glacier_monthly_mean["df_85_2100"], color='#CC6677', width=barWidth, edgecolor='grey')
+plt.xlabel('Month')
+ax6.text(0.02, 0.95, 'RCP 8.5', transform=ax6.transAxes, fontsize=8, verticalalignment='top')
+plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
+ax3.legend(loc='upper center', bbox_to_anchor=(1.5, -0.5),fancybox=False, shadow=False, ncol=2)
+plt.tight_layout()
+#plt.show()
+plt.savefig("/home/ana/Desktop/CMIP_scenarios_runoff2.png", dpi=700)
