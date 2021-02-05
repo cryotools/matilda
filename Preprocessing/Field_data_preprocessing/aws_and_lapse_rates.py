@@ -8,7 +8,7 @@ home = str(Path.home())
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/')
 from Preprocessing_functions import *
-working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
+working_directory = home + '/Seafile/Tianshan_data/'
 
 ## General settings
 time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel sensor

@@ -20,8 +20,8 @@ z0 = 0.00212                                # (m) mean between roughness firn 4 
 lapse_rate_temperature = -0.006             # K/m  temperature lapse rate
 
 #Time slice
-time_start = '2000-01-01T00:00'
-time_end = '2020-12-31T23:00'
+time_start = '2017-06-02T15:00'
+time_end = '2020-09-29T14:00'
 
 era5_static = salem.open_xr_dataset(era5_static_file)
 shape_grid = salem.read_shapefile_to_grid(shape_file,grid=salem.grid_from_dataset(era5_static))
@@ -46,7 +46,7 @@ era5 = era5.sel(time=slice(time_start, time_end))
 # longitude = float(era5_static.lon[idx_lon].values)
 
 latitude2 = 41
-longitude2 = 75.9
+longitude2 = 76
 
 # ### Select closest gridpoint in contrast to elevation
 # altitude_differences_gp = np.abs(era5_static.z/g - target_altitude)
@@ -90,7 +90,23 @@ check(temperature,'T2',316.16,225.16)
 check(total_precipitation,'TP',25.0,0.0)
 
 raw_data = {'TIMESTAMP': time_local, 'T2': temperature, 'RRR': total_precipitation}
-df = pd.DataFrame(raw_data, columns = ['TIMESTAMP', 'T2',  'RRR'])
-df.to_csv(output_csv,index=False)
+df_41_76 = pd.DataFrame(raw_data, columns = ['TIMESTAMP', 'T2',  'RRR'])
+#df.to_csv(output_csv,index=False)
 print("CSV file has been stored to disc")
 
+aws = pd.read_csv("/home/ana/Seafile/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv")
+aws.rename({'datetime': 'TIMESTAMP'}, axis=1, inplace=True)
+aws = aws.drop([0, 29160, 29161, 29162, 29163, 29164, 29165, 29166, 29167, 29168, 29169, 29170])
+aws = aws.reset_index()
+
+data_all = pd.DataFrame(aws, columns=["TIMESTAMP", "prec"])
+data_all["df_41_76"] = df_41_76["RRR"]
+data_all["df_411_76"] = df_411_76["RRR"]
+data_all["df_411_759"] = df_411_759["RRR"]
+data_all["df_41_759"] = df_41_759["RRR"]
+
+stats = data_all.describe()
+sum = pd.DataFrame(data_all.sum())
+sum.columns = ["sum"]
+sum = sum.transpose()
+stats = stats.append(sum)
