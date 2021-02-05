@@ -161,9 +161,9 @@ for i in list_cmip:
     df = dataformatting.glacier_downscaling(i, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
 
     degreedays_ds = DDM.calculate_PDD(df_DDM)
-    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5) # output in mm, parameter adjustment possible
+    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5) # output in mm, parameter adjustment possible
     output_DDM["Q_DDM"] = output_DDM["Q_DDM"]*(glacier_area/catchment_area) # scaling glacier melt to glacier area
-    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150, parUZL=60) # output in mm, individual parameters can be set here
+    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2) # output in mm, individual parameters can be set here
 
     output = pd.concat([output_hbv, output_DDM], axis=1)
     output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
@@ -181,9 +181,9 @@ for i in list_cmip_60:
     df = dataformatting.glacier_downscaling(i, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
 
     degreedays_ds = DDM.calculate_PDD(df_DDM)
-    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5) # output in mm, parameter adjustment possible
+    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5) # output in mm, parameter adjustment possible
     output_DDM["Q_DDM"] = output_DDM["Q_DDM"]*((glacier_area*0.5)/catchment_area) # scaling glacier melt to glacier area
-    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150, parUZL=60) # output in mm, individual parameters can be set here
+    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2) # output in mm, individual parameters can be set here
 
     output = pd.concat([output_hbv, output_DDM], axis=1)
     output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
@@ -200,9 +200,9 @@ for i in list_cmip_80:
                                         lapse_rate_precipitation=lapse_rate_precipitation)
 
     degreedays_ds = DDM.calculate_PDD(df_DDM)
-    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
+    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
     output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.4) / catchment_area)  # scaling glacier melt to glacier area
-    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150,parUZL=60)  # output in mm, individual parameters can be set here
+    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2)  # output in mm, individual parameters can be set here
 
     output = pd.concat([output_hbv, output_DDM], axis=1)
     output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
@@ -218,9 +218,9 @@ for i in list_cmip_2100:
                                         lapse_rate_precipitation=lapse_rate_precipitation)
 
     degreedays_ds = DDM.calculate_PDD(df_DDM)
-    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
+    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
     output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.3) / catchment_area)  # scaling glacier melt to glacier area
-    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150,parUZL=60)  # output in mm, individual parameters can be set here
+    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2)  # output in mm, individual parameters can be set here
 
     output = pd.concat([output_hbv, output_DDM], axis=1)
     output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
@@ -297,7 +297,7 @@ plt.ylabel("[mm]", fontsize=9)
 plt.savefig("/home/ana/Desktop/glacier_loss_runs.png")
 
 ## Best MATILDA output plot
-output_19_20 = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/Output/no182_ERA5_Land2019_2020_2021-01-27_16:14:34/model_output_2018-2020.csv")
+output_19_20 = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/Output/no182_ERA5_Land2019_2020_2021-01-29_14:24:13/model_output_2018-2020.csv")
 output_19_20 = output_19_20.set_index("TIMESTAMP")
 output_19_20.index = pd.to_datetime(output_19_20.index)
 output_19_20 = output_19_20["2019-01-01":"2020-12-31"]
@@ -305,12 +305,15 @@ output_19_20["plot"] = 0
 
 
 plt.figure(figsize=(10,6))
-plt.plot(output_19_20.index.to_pydatetime(), output_19_20["Qobs"], c="#E69F00", label="Observations", linewidth=1)
+plt.plot(output_19_20.index.to_pydatetime(), output_19_20["Qobs"], c="#E69F00", label="Observations", linewidth=1.2)
 plt.plot(output_19_20.index.to_pydatetime(), output_19_20["Q_Total"], c="k", label="MATILDA total runoff", linewidth=0.75, alpha=0.75)
 plt.fill_between(output_19_20.index.to_pydatetime(), output_19_20["plot"], output_19_20["Q_HBV"],color='#56B4E9',alpha=.75, label="MATILDA catchment runoff")
 plt.fill_between(output_19_20.index.to_pydatetime(), output_19_20["Q_HBV"], output_19_20["Q_Total"],color='#CC79A7',alpha=.75, label="MATILDA glacial runoff")
+#plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+#          fancybox=False, shadow=False, ncol=5)
 plt.legend()
 plt.ylabel("Runoff [mm]", fontsize=10)
+plt.title("NS coeff 0.72")
 #plt.show()
 plt.savefig("/home/ana/Desktop/MATILDA_output_2019-20.png", dpi=700)
 
@@ -396,7 +399,7 @@ ax6.bar(br4, cmip_output_glacier_monthly_mean["df_85_2100"], color='#CC6677', wi
 plt.xlabel('Month')
 ax6.text(0.02, 0.95, 'RCP 8.5', transform=ax6.transAxes, fontsize=8, verticalalignment='top')
 plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
-ax3.legend(loc='upper center', bbox_to_anchor=(1.5, -0.5),fancybox=False, shadow=False, ncol=2)
+#ax3.legend(loc='upper center', bbox_to_anchor=(1.5, -0.5),fancybox=False, shadow=False, ncol=2)
 plt.tight_layout()
 #plt.show()
-plt.savefig("/home/ana/Desktop/CMIP_scenarios_runoff2.png", dpi=700)
+plt.savefig("/home/ana/Desktop/CMIP_scenarios_runoff.png", dpi=700)
