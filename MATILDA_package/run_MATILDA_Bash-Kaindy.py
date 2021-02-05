@@ -36,7 +36,7 @@ sim_period_end = '2020-11-01 23:00:00'
 
 # output
 output_path = working_directory + "Output/" + data_csv[:15] + sim_period_start[:4] + "_" + sim_period_end[:4] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
-#os.mkdir(output_path) # creates new folder for each model run with timestamp
+os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 glacier_area = 2.566
 catchment_area = 46.232
@@ -50,7 +50,7 @@ height_diff_glacier = 178
 cal_exclude = True # Include or exclude the calibration period
 plot_frequency = "D" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
 plot_frequency_long = "Daily" # Daily, Weekly, Monthly or Yearly
-plot_save = False # saves plot in folder, otherwise just shows it in Python
+plot_save = True # saves plot in folder, otherwise just shows it in Python
 cosipy = False  # usage of COSIPY input
 
 ## Data input preprocessing
@@ -70,6 +70,7 @@ df = dataformatting.data_preproc(df, cal_period_start, sim_period_end) # formatt
 #ds = dataformatting.data_preproc(ds, cal_period_start, sim_period_end)
 obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
 #obs = obs.tz_localize('Asia/Bishkek')
+
 
 # Downscaling the dataframe to the glacier height
 df_DDM = dataformatting.glacier_downscaling(df, height_diff=height_diff_glacier, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
@@ -91,14 +92,16 @@ degreedays_ds = DDM.calculate_PDD(df_DDM)
 print("Calculating melt with the DDM")
 # include either downscaled glacier dataframe or dataset with mask
 # Calculating runoff and melt
-output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=5.5, pdd_factor_ice=8.5, temp_snow=-0.5) # output in mm, parameter adjustment possible
+output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5) # output in mm, parameter adjustment possible
 output_DDM["Q_DDM"] = output_DDM["Q_DDM"]*(glacier_area/catchment_area) # scaling glacier melt to glacier area
+smb_2019 = (output_DDM["DDM_smb"]["2018-09-01":"2019-08-31"].sum())/1000*0.9
+smb_2020 = (output_DDM["DDM_smb"]["2019-09-01":"2020-08-31"].sum())/1000*0.9
 print("Finished running the DDM")
 
 ## HBV model
 print("Running the HBV model")
 # Runoff calculations for the catchment with the HBV model
-output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parPERC=2.5, parFC=150, parUZL=60) # output in mm, individual parameters can be set here
+output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2) # output in mm, individual parameters can be set here
 print("Finished running the HBV")
 ## Output postprocessing
 #output_hbv["Q_HBV"] = output_hbv["Q_HBV"] - (output_DDM["DDM_snow_melt_rate"]*(glacier_area/catchment_area))
@@ -113,14 +116,14 @@ else:
 print("Writing the output csv to disc")
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-#output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
+output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
 
 parameter = dataformatting.output_parameter(parameter_HBV, parameter_DDM)
-#parameter.to_csv(output_path + "model_parameter.csv")
+parameter.to_csv(output_path + "model_parameter.csv")
 ## Statistical analysis
 # Calibration period included in the statistical analysis
 if cal_exclude == True:
-    output_calibration = output[~(output.index < cal_period_end)]
+    output_calibration = output[sim_period_start: sim_period_end]
 else:
     output_calibration = output.copy()
 
@@ -128,9 +131,11 @@ else:
 plot_data = dataformatting.plot_data(output, plot_frequency, sim_period_start, sim_period_end)
 
 stats_output = stats.create_statistics(output_calibration)
-#stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
+stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
 print("Output overview")
-print(stats_output[["T2", "RRR", "PE", "Q_DDM", "Qobs", "Q_Total"]])
+print(stats_output[["T2", "RRR", "PE", "Q_DDM", "Q_HBV", "Qobs", "Q_Total"]])
+print("Yearly MB in 2019 " + str(round(smb_2019,2)))
+print("Yearly MB in 2020 " + str(round(smb_2020,2)))
 ## Cosipy comparison
 if cosipy == True:
     output_cosipy = dataformatting.output_cosipy(output, ds)
