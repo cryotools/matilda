@@ -19,6 +19,7 @@ obs = pd.read_csv(input_path_observations + observation_data)
 
 parameter = pd.Series({"cal_period_start": '2018-01-01 00:00:00', "cal_period_end":'2019-12-31 23:00:00',
                        "sim_period_start": '2019-01-01 00:00:00', "sim_period_end": '2020-11-01 23:00:00',
+                       "plot_frequency": "D", "plot_frequency_long": "Daily",
                        "catchment_area":46.232, "glacier_area":2.566,
                        "elevation_data":3864, "elevation_glacier": 4042, "elevation_catchment":3360,
                        "lapse_rate_temperature":-0.006, "lapse_rate_precipitation":0,
@@ -30,3 +31,10 @@ parameter = pd.Series({"cal_period_start": '2018-01-01 00:00:00', "cal_period_en
 df, obs = data_preproc(df, obs, parameter) # Data preprocessing
 
 output_MATILDA = MATILDA(df, obs, parameter) # MATILDA model run + downscaling
+
+fig1 = plots.plot_meteo(output_MATILDA[0], plot_frequency_long)
+
+fig1, fig2, fig3 = plot_MATILDA(output_MATILDA[0], parameter)
+
+
+fig2.show()
