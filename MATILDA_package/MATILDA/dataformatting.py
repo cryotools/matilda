@@ -53,19 +53,17 @@ def output_parameter(parameter_HBV, parameter_DDM):
     return parameter
 
 
-def plot_data(output, plot_frequency, cal_period_start, sim_period_end):
+def plot_data(output, plot_frequency):
     obs = output["Qobs"].resample(plot_frequency).agg(pd.DataFrame.sum, skipna=False)
     plot_data = output.resample(plot_frequency).agg(
         {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
          "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
          "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
     plot_data["Qobs"] = obs
-    plot_data = plot_data[cal_period_start: sim_period_end]
     return plot_data
 
-def plot_data_cosipy(output_cosipy, plot_frequency, cal_period_start, sim_period_end):
+def plot_data_cosipy(output_cosipy, plot_frequency):
     plot_data_cosipy = output_cosipy.resample(plot_frequency).agg(
         {"Qobs": "sum", "Q_Total": "sum", "Q_COSIPY": "sum", "DDM_smb": "sum", "DDM_total_melt": "sum", \
          "COSIPY_smb": "sum", "COSIPY_melt": "sum"})
-    plot_data_cosipy = plot_data_cosipy[cal_period_start: sim_period_end]
     return plot_data_cosipy
