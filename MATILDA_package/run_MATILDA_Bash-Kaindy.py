@@ -18,7 +18,7 @@ from MATILDA import stats, plots # importing functions for statistical analysis 
 
 ## Model configuration
 # Directories
-working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package/"
+working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/"
 input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/"
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/"
 
@@ -35,7 +35,7 @@ sim_period_start = '2019-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2020-11-01 23:00:00'
 
 # output
-output_path = working_directory + "Output/" + data_csv[:15] + sim_period_start[:4] + "_" + sim_period_end[:4] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
+output_path = working_directory + "input_output/output/" + data_csv[:15] + sim_period_start[:4] + "_" + sim_period_end[:4] + "_" + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + "/"
 os.mkdir(output_path) # creates new folder for each model run with timestamp
 
 glacier_area = 2.566
@@ -113,25 +113,23 @@ if nash_sut == "error":
 else:
     print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
 
+# Calibration period included or excluded
+if cal_exclude == True:
+    output = output[sim_period_start: sim_period_end]
+
 print("Writing the output csv to disc")
 output_csv = output.copy()
 output_csv = output_csv.fillna(0)
-output_csv.to_csv(output_path + "model_output_" +str(cal_period_start[:4])+"-"+str(sim_period_end[:4]+".csv"))
-
+output_csv.to_csv(output_path + "model_output_" + str(output_csv.index.values[1])[:4]+"-"+str(output_csv.index.values[-1])[:4]+".csv")
 parameter = dataformatting.output_parameter(parameter_HBV, parameter_DDM)
 parameter.to_csv(output_path + "model_parameter.csv")
 ## Statistical analysis
-# Calibration period included in the statistical analysis
-if cal_exclude == True:
-    output_calibration = output[sim_period_start: sim_period_end]
-else:
-    output_calibration = output.copy()
 
 # Daily, weekly, monthly or yearly output
-plot_data = dataformatting.plot_data(output, plot_frequency, sim_period_start, sim_period_end)
+plot_data = dataformatting.plot_data(output, plot_frequency)
 
-stats_output = stats.create_statistics(output_calibration)
-stats_output.to_csv(output_path + "model_stats_" +str(output_calibration.index.values[1])[:4]+"-"+str(output_calibration.index.values[-1])[:4]+".csv")
+stats_output = stats.create_statistics(output)
+stats_output.to_csv(output_path + "model_stats_" +str(output.index.values[1])[:4]+"-"+str(output.index.values[-1])[:4]+".csv")
 print("Output overview")
 print(stats_output[["T2", "RRR", "PE", "Q_DDM", "Q_HBV", "Qobs", "Q_Total"]])
 print("Yearly MB in 2019 " + str(round(smb_2019,2)))
@@ -144,8 +142,8 @@ if cosipy == True:
     nash_sut_cosipy = stats.NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
 
     stats_cosipy = stats.create_statistics(output_cosipy)
-    stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output_calibration.index.values[1])[:4] + "-" + str(
-        output_calibration.index.values[-1])[:4] + ".csv")
+    stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output.index.values[1])[:4] + "-" + str(
+        output.index.values[-1])[:4] + ".csv")
     plot_data_cosipy = dataformatting.plot_data_cosipy(output_cosipy, plot_frequency, cal_period_start, sim_period_end)
 
     fig3 = plots.plot_cosipy(plot_data_cosipy, plot_frequency_long, nash_sut, nash_sut_cosipy)
@@ -153,10 +151,10 @@ if cosipy == True:
         plt.show()
     else:
         if str(plot_data_cosipy.index.values[1])[:4] == str(plot_data_cosipy.index.values[-1])[:4]:
-            plt.savefig(output_path + "COSIPY_output_" + + str(plot_data_cosipy.index.values[-1])[:4] + ".png")
+            plt.savefig(output_path + "COSIPY_output_" + + str(plot_data_cosipy.index.values[-1])[:4] + ".png", dpi=fig3.dpi)
         else:
             plt.savefig(output_path + "COSIPY_output_" + str(plot_data_cosipy.index.values[1])[:4] + "-" + str(
-            plot_data_cosipy.index.values[-1])[:4] + ".png")
+            plot_data_cosipy.index.values[-1])[:4] + ".png", dpi=fig3.dpi)
 
 ## Plotting the output data
 # Plot the meteorological data
@@ -165,9 +163,9 @@ if plot_save == False:
 	plt.show()
 else:
     if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
-        plt.savefig(output_path + "meteorological_data_" + str(plot_data.index.values[-1])[:4]+".png")
+        plt.savefig(output_path + "meteorological_data_" + str(plot_data.index.values[-1])[:4]+".png", dpi=fig.dpi)
     else:
-	    plt.savefig(output_path + "meteorological_data_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
+	    plt.savefig(output_path + "meteorological_data_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png", dpi=fig.dpi)
 
 # Plot the runoff data
 fig1 = plots.plot_runoff(plot_data, plot_frequency_long, nash_sut)
@@ -175,9 +173,9 @@ if plot_save == False:
 	plt.show()
 else:
     if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
-        plt.savefig(output_path + "model_runoff_" + str(plot_data.index.values[-1])[:4]+".png")
+        fig1.savefig(output_path + "model_runoff_" + str(plot_data.index.values[-1])[:4]+".png", dpi=fig1.dpi)
     else:
-	    plt.savefig(output_path + "model_runoff_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
+	    fig1.savefig(output_path + "model_runoff_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png", dpi=fig1.dpi)
 
 # Plot the HBV paramters
 fig2 = plots.plot_hbv(plot_data, plot_frequency_long)
@@ -185,9 +183,9 @@ if plot_save == False:
 	plt.show()
 else:
     if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
-        plt.savefig(output_path + "HBV_output_" + str(plot_data.index.values[-1])[:4]+".png")
+        plt.savefig(output_path + "HBV_output_" + str(plot_data.index.values[-1])[:4]+".png", dpi=fig.dpi)
     else:
-	    plt.savefig(output_path + "HBV_output_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png")
+	    plt.savefig(output_path + "HBV_output_"+str(plot_data.index.values[1])[:4]+"-"+str(plot_data.index.values[-1])[:4]+".png", dpi=fig.dpi)
 
 print('Saved plots of meteorological and runoff data to disc')
 print("End of model run")

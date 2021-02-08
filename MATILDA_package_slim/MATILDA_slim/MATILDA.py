@@ -476,5 +476,7 @@ def MATILDA(df, obs, parameter):
     print(stats)
     print("End of the MATILDA simulation")
     print("---")
-    return output_MATILDA
+
+    output_all = [output_MATILDA, nash_sut, stats]
+    return output_all
 
