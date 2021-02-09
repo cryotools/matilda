@@ -27,9 +27,9 @@ data_csv = "no182_ERA5_Land_2000_202011_no182_41_75.9_fitted.csv" # dataframe wi
 observation_data = "runoff_bashkaindy_04_2019-11_2020_test.csv" # Daily Runoff Observations in mm
 
 # Additional information
-# Time period for the spin up
-cal_period_start = '2018-01-01 00:00:00' # beginning of  period
-cal_period_end = '2019-12-31 23:00:00' # end of period: one year is recommended
+# Warming up period to get appropriate initial values for various variables (e.g. GW level etc.)
+set_up_start = '2018-01-01 00:00:00' # beginning of  period
+set_up_end = '2019-12-31 23:00:00' # end of period: one year is recommended
 # Time period of the model simulation
 sim_period_start = '2019-01-01 00:00:00' # beginning of simulation period
 sim_period_end = '2020-11-01 23:00:00'
@@ -47,7 +47,6 @@ lapse_rate_precipitation = 0
 height_diff_catchment = -504 # height data is 3864 m, catchment mean is 3360 glacier mean is 4042m
 height_diff_glacier = 178
 
-cal_exclude = True # Include or exclude the calibration period
 plot_frequency = "D" # possible options are "D" (daily), "W" (weekly), "M" (monthly) or "Y" (yearly)
 plot_frequency_long = "Daily" # Daily, Weekly, Monthly or Yearly
 plot_save = True # saves plot in folder, otherwise just shows it in Python
@@ -64,11 +63,11 @@ print('Read observation data %s' % (observation_data))
 df = pd.read_csv(input_path_data + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 
-print("Spin up period between " + str(cal_period_start) + " and "  + str(cal_period_end))
+print("Set up period between " + str(set_up_start) + " and "  + str(set_up_end) + " to get appropriate initial values")
 print("Simulation period between " + str(sim_period_start) + " and "  + str(sim_period_end))
-df = dataformatting.data_preproc(df, cal_period_start, sim_period_end) # formatting the input to right format
-#ds = dataformatting.data_preproc(ds, cal_period_start, sim_period_end)
-obs = dataformatting.data_preproc(obs, cal_period_start, sim_period_end)
+df = dataformatting.data_preproc(df, set_up_start, sim_period_end) # formatting the input to right format
+#ds = dataformatting.data_preproc(ds, set_up_start, sim_period_end)
+obs = dataformatting.data_preproc(obs, set_up_start, sim_period_end)
 #obs = obs.tz_localize('Asia/Bishkek')
 
 
@@ -101,11 +100,12 @@ print("Finished running the DDM")
 ## HBV model
 print("Running the HBV model")
 # Runoff calculations for the catchment with the HBV model
-output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2) # output in mm, individual parameters can be set here
+output_hbv, parameter_HBV = HBV.hbv_simulation(df, set_up_start, set_up_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2) # output in mm, individual parameters can be set here
 print("Finished running the HBV")
 ## Output postprocessing
 #output_hbv["Q_HBV"] = output_hbv["Q_HBV"] - (output_DDM["DDM_snow_melt_rate"]*(glacier_area/catchment_area))
 output = dataformatting.output_postproc(output_hbv, output_DDM, obs)
+output = output[sim_period_start: sim_period_end]
 
 nash_sut = stats.NS(output["Qobs"], output["Q_Total"]) # Nash–Sutcliffe model efficiency coefficient
 if nash_sut == "error":
@@ -113,9 +113,6 @@ if nash_sut == "error":
 else:
     print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
 
-# Calibration period included or excluded
-if cal_exclude == True:
-    output = output[sim_period_start: sim_period_end]
 
 print("Writing the output csv to disc")
 output_csv = output.copy()
@@ -124,7 +121,6 @@ output_csv.to_csv(output_path + "model_output_" + str(output_csv.index.values[1]
 parameter = dataformatting.output_parameter(parameter_HBV, parameter_DDM)
 parameter.to_csv(output_path + "model_parameter.csv")
 ## Statistical analysis
-
 # Daily, weekly, monthly or yearly output
 plot_data = dataformatting.plot_data(output, plot_frequency)
 
@@ -137,14 +133,14 @@ print("Yearly MB in 2020 " + str(round(smb_2020,2)))
 ## Cosipy comparison
 if cosipy == True:
     output_cosipy = dataformatting.output_cosipy(output, ds)
-    output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(cal_period_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
+    output_cosipy.to_csv(output_path + "cosipy_comparison_output_" + str(set_up_start[:4]) + "-" + str(sim_period_end[:4] + ".csv"))
 
     nash_sut_cosipy = stats.NS(output_cosipy["Qobs"], output_cosipy["Q_COSIPY"])
 
     stats_cosipy = stats.create_statistics(output_cosipy)
     stats_cosipy.to_csv(output_path + "cosipy_comparison_stats_" + str(output.index.values[1])[:4] + "-" + str(
         output.index.values[-1])[:4] + ".csv")
-    plot_data_cosipy = dataformatting.plot_data_cosipy(output_cosipy, plot_frequency, cal_period_start, sim_period_end)
+    plot_data_cosipy = dataformatting.plot_data_cosipy(output_cosipy, plot_frequency, set_up_start, sim_period_end)
 
     fig3 = plots.plot_cosipy(plot_data_cosipy, plot_frequency_long, nash_sut, nash_sut_cosipy)
     if plot_save == False:

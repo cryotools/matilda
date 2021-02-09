@@ -8,19 +8,18 @@ def MATILDA(df, obs, parameter):
     print('Starting the MATILDA simulation')
     # Downscaling of dataframe to mean catchment and glacier elevation
     def glacier_downscaling(df, parameter):
-        height_diff_glacier = parameter.elevation_glacier - parameter.elevation_data
-        height_diff_catchment = parameter.elevation_catchment - parameter.elevation_data
+        height_diff_glacier = parameter.ele_glac - parameter.ele_dat
+        height_diff_catchment = parameter.ele_cat - parameter.ele_dat
 
         df_glacier = df.copy()
         df_glacier["T2"] = np.where(df_glacier["T2"] <= 100, df_glacier["T2"] + 273.15, df_glacier["T2"])
-        df_glacier["T2"] = df_glacier["T2"] + height_diff_glacier * float(parameter.lapse_rate_temperature)
-        df_glacier["RRR"] = df_glacier["RRR"] + height_diff_glacier * float(parameter.lapse_rate_precipitation)
+        df_glacier["T2"] = df_glacier["T2"] + height_diff_glacier * float(parameter.lr_temp)
+        df_glacier["RRR"] = df_glacier["RRR"] + height_diff_glacier * float(parameter.lr_prec)
 
         df_catchment = df.copy()
         df_catchment["T2"] = np.where(df_catchment["T2"] <= 100, df_catchment["T2"] + 273.15, df_catchment["T2"])
-        df_catchment["T2"] = df_catchment["T2"] + height_diff_catchment * float(parameter.lapse_rate_temperature)
-        df_catchment["RRR"] = df_catchment["RRR"] + height_diff_catchment * float(
-            parameter.lapse_rate_precipitation)
+        df_catchment["T2"] = df_catchment["T2"] + height_diff_catchment * float(parameter.lr_temp)
+        df_catchment["RRR"] = df_catchment["RRR"] + height_diff_catchment * float(parameter.lr_prec)
         return df_glacier, df_catchment
 
     df_glacier, df_catchment = glacier_downscaling(df, parameter)
@@ -144,7 +143,7 @@ def MATILDA(df, obs, parameter):
         DDM_results = glacier_melt.to_dataframe()
         DDM_results = DDM_results.round(3)
         # scaling glacier melt to glacier area
-        DDM_results["Q_DDM"] = DDM_results["Q_DDM"] * (parameter.glacier_area / parameter.catchment_area)
+        DDM_results["Q_DDM"] = DDM_results["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
         print("Finished running the DDM")
         return DDM_results
 
@@ -184,9 +183,9 @@ def MATILDA(df, obs, parameter):
 
         # 2. Calibration period:
         # 2.1 meteorological forcing preprocessing
-        Temp_cal = Temp[parameter.cal_period_start:parameter.cal_period_end]
-        Prec_cal = Prec[parameter.cal_period_start:parameter.cal_period_end]
-        Evap_cal = Evap[parameter.cal_period_start:parameter.cal_period_end]
+        Temp_cal = Temp[parameter.set_up_start:parameter.set_up_end]
+        Prec_cal = Prec[parameter.set_up_start:parameter.set_up_end]
+        Evap_cal = Evap[parameter.set_up_start:parameter.set_up_end]
         # overall correction factor
         Prec_cal = parameter.PCORR * Prec_cal
         # precipitation separation
@@ -282,7 +281,7 @@ def MATILDA(df, obs, parameter):
 
             # last soil moisture updating
             SM_cal[t] = SM_cal[t] - ETact_cal[t]
-        print("HBV Spin up fished")
+        print("Finished spin up for initital parameters for the HBV model")
 
         # 3. meteorological forcing preprocessing for simulation
         # overall correction factor
@@ -446,7 +445,7 @@ def MATILDA(df, obs, parameter):
         return output
 
     output_MATILDA = output_postproc(output_HBV, output_DDM, obs)
-    output_MATILDA = output_MATILDA[parameter.sim_period_start:parameter.sim_period_end]
+    output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
 
     # Nash–Sutcliffe model efficiency coefficient
     def NS(output_MATILDA, obs):

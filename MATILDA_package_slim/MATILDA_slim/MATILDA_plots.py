@@ -44,11 +44,11 @@ def plot_runoff(plot_data, plot_frequency_long='', nash_sut=None):
         plt.title(plot_frequency_long + " MATILDA simulation for the period "+ str(plot_data.index.values[1])[
                                                                                     :4] + "-" + str(
             plot_data.index.values[-1])[:4], size=14)
-    if nash_sut is not None:
-        if nash_sut == "error":
+    if output_MATILDA[1] is not None:
+        if output_MATILDA[1] == "error":
                 plt.text(0.77, 0.9, 'NS coeff exceeds boundaries', fontsize=8, transform=fig.transFigure)
         else:
-                plt.text(0.85, 0.9, 'NS coeff ' + str(round(nash_sut,2)), fontsize=8, transform=fig.transFigure)
+                plt.text(0.85, 0.9, 'NS coeff ' + str(round(output_MATILDA[1],2)), fontsize=8, transform=fig.transFigure)
     plt.tight_layout()
     fig.set_size_inches(10, 6)
     return fig
@@ -83,7 +83,8 @@ def plot_hbv(plot_data, plot_frequency_long=''):
 
 def plot_MATILDA(output_MATILDA, parameter):
     plot_frequency_long = parameter.plot_frequency_long
-    fig1 = plot_meteo(output_MATILDA, plot_frequency_long)
-    fig2 = plot_runoff(output_MATILDA, plot_frequency_long)
-    fig3 = plot_hbv(output_MATILDA, plot_frequency_long)
-    return fig1, fig2, fig3
+    fig1 = plot_meteo(output_MATILDA[0], plot_frequency_long)
+    fig2 = plot_runoff(output_MATILDA[0], plot_frequency_long)
+    fig3 = plot_hbv(output_MATILDA[0], plot_frequency_long)
+    output_MATILDA.extend([fig1, fig2, fig3])
+    return output_MATILDA

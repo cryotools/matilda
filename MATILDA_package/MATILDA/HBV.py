@@ -51,7 +51,7 @@ List of 16 HBV model parameters
 import pandas as pd
 import scipy.signal as ss
 import numpy as np
-def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.15,  parFC=250, parK0=0.055, parK1=0.055, \
+def hbv_simulation(df, set_up_start, set_up_end, parBETA=1.0, parCET=0.15,  parFC=250, parK0=0.055, parK1=0.055, \
                    parK2=0.04, parLP=0.7, parMAXBAS=3.0, parPERC=1.5, parUZL=120, parPCORR=1.0, parTT=0.0, parTT_rain=2.0, parCFMAX=2.8, \
                    parSFCF=0.7, parCFR=0.05, parCWH=0.1):
 
@@ -86,9 +86,9 @@ def hbv_simulation(df, cal_period_start, cal_period_end, parBETA=1.0, parCET=0.1
 
     # 2. Calibration period:
     # 2.1 meteorological forcing preprocessing
-    Temp_cal = Temp[cal_period_start:cal_period_end]
-    Prec_cal = Prec[cal_period_start:cal_period_end]
-    Evap_cal = Evap[cal_period_start:cal_period_end]
+    Temp_cal = Temp[set_up_start:set_up_end]
+    Prec_cal = Prec[set_up_start:set_up_end]
+    Evap_cal = Evap[set_up_start:set_up_end]
     # overall correction factor
     Prec_cal = parPCORR * Prec_cal
     # precipitation separation
