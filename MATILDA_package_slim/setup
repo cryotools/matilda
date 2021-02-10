@@ -1,0 +1,10 @@
+from setuptools import setup, find_packages
+setup(name='MATILDA_sim',
+version='0.1',
+description='Testing installation of Package',
+url='#',
+author='ana',
+author_email='testr@gmail.com',
+license='MIT',
+packages=['MATILDA_slim'],
+zip_safe=False)
