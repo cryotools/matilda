@@ -3,7 +3,7 @@ import pandas as pd
 from MATILDA_slim import MATILDA_plots, MATILDA_simulation, MATILDA_preparation, MATILDA_submodules
 
 
-def MATILDA_simulation(df, obs, output = None, set_up_start = None, set_up_end = None, sim_start = None, sim_end = None, \
+def MATILDA_simulation(df, obs = None, output = None, set_up_start = None, set_up_end = None, sim_start = None, sim_end = None, \
                        freq = "D", area_cat = 0, area_glac = 0, ele_dat = 0, ele_glac = 0, ele_cat = 0, lr_temp = -0.006, \
                        lr_prec = 0, TT_snow = 0, TT_rain = 2, CFMAX_snow = 2.8, CFMAX_ice = 5.6, CFR_snow = 0.05, \
                        CFR_ice = 0.05, BETA = 1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
@@ -90,10 +90,14 @@ def MATILDA_simulation(df, obs, output = None, set_up_start = None, set_up_end =
     print("Parameter for the MATILDA simulation are set")
 
     # Data preprocessing with the MATILDA preparation script
-    df, obs = MATILDA_preparation.MATILDA_preproc(df, obs, parameter)
-
-    # Downscaling of data if necessary and the MATILDA simulation
-    output_MATILDA = MATILDA_submodules.MATILDA(df, obs, parameter)
+    if obs is None:
+        df = MATILDA_preparation.MATILDA_preproc(df, parameter)
+        # Downscaling of data if necessary and the MATILDA simulation
+        output_MATILDA = MATILDA_submodules.MATILDA(df, parameter)
+    else:
+        df, obs = MATILDA_preparation.MATILDA_preproc(df, parameter)
+        # Downscaling of data if necessary and the MATILDA simulation
+        output_MATILDA = MATILDA_submodules.MATILDA(df, obs, parameter)
 
     output_MATILDA = MATILDA_plots.MATILDA_plots(output_MATILDA, parameter)
     # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
