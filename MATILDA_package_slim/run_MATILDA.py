@@ -35,8 +35,10 @@ output_MATILDA = MATILDA_plots.MATILDA_plots(output_MATILDA, parameter)
 
 MATILDA_preparation.MATILDA_save_output(output_MATILDA, parameter, output_path)
 
+## This function is a standalone function to run the whole MATILDA simulation
 # If output = output_path in function, the output will be saved to a new folder
 output_MATILDA = MATILDA_simulation.MATILDA_simulation(df, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=46.232, area_glac=2.566,
-                       ele_dat=3864, ele_glac=4042, ele_cat=3360)
+                       ele_dat=3864, ele_glac=4042, ele_cat=3360, MAXBAS=1)
+
 

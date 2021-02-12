@@ -25,8 +25,9 @@ def MATILDA_simulation(df, obs = None, output = None, set_up_start = None, set_u
         print("WARNING: The parameter K2 exceeds boundaries.")
     if 0.3 > LP or LP > 1:
         print("WARNING: The parameter LP exceeds boundaries.")
-    if 1 > MAXBAS or MAXBAS > 7:
-        print("WARNING: The parameter MAXBAs exceeds boundaries.")
+    if 1 >= MAXBAS or MAXBAS > 7:
+        print("WARNING: The parameter MAXBAS exceeds boundaries.")
+        return
     if 0 > PERC or PERC > 3:
         print("WARNING: The parameter PERC exceeds boundaries.")
     if 0 > UZL or UZL > 500:
