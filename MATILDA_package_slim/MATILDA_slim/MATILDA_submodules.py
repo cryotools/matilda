@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import scipy.signal as ss
 
-def MATILDA(df, obs, parameter):
+def MATILDA(df, parameter, obs=None):
     print('---')
     print('Starting the MATILDA simulation')
     # Downscaling of dataframe to mean catchment and glacier elevation
@@ -438,13 +438,11 @@ def MATILDA(df, obs, parameter):
     output_HBV = hbv_simulation(df_catchment, parameter)
 
     # Output postprocessing
-    def output_postproc(output_HBV, output_DDM, obs):
-        output = pd.concat([output_HBV, output_DDM], axis=1)
-        output = pd.concat([output, obs], axis=1)
-        output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-        return output
+    output_MATILDA = pd.concat([output_HBV, output_DDM], axis=1)
+    if obs is not None:
+        output_MATILDA = pd.concat([output_MATILDA, obs], axis=1)
+    output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM"]
 
-    output_MATILDA = output_postproc(output_HBV, output_DDM, obs)
     output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
 
     # Nash–Sutcliffe model efficiency coefficient
@@ -454,12 +452,15 @@ def MATILDA(df, obs, parameter):
             nash_sut = "error"
         return nash_sut
 
-    nash_sut = NS(output_MATILDA, obs)
+    if obs is not None:
+        nash_sut = NS(output_MATILDA, obs)
 
-    if nash_sut == "error":
-        print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
-    else:
-        print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
+        if nash_sut == "error":
+            print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
+        else:
+            print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
+    if obs is None:
+        nash_sut = str("No observations available to calculate the Nash–Sutcliffe model efficiency coefficient")
 
     def create_statistics(output_MATILDA):
         stats = output_MATILDA.describe()
@@ -470,7 +471,7 @@ def MATILDA(df, obs, parameter):
         stats = stats.round(3)
         return stats
 
-    stats =  create_statistics(output_MATILDA)
+    stats = create_statistics(output_MATILDA)
 
     print(stats)
     print("End of the MATILDA simulation")
@@ -478,4 +479,3 @@ def MATILDA(df, obs, parameter):
 
     output_all = [output_MATILDA, nash_sut, stats]
     return output_all
-
