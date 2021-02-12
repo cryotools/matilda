@@ -28,7 +28,8 @@ def plot_meteo(plot_data, freq_long=''):
 def plot_runoff(plot_data, freq_long='', nash_sut=None):
     plot_data["plot"] = 0
     fig = plt.figure(figsize=(10, 6))
-    plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00", label="Observations", linewidth=1.2)
+    if 'Qobs' in plot_data:
+        plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00", label="Observations", linewidth=1.2)
     plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], c="k", label="MATILDA total runoff",
              linewidth=0.75, alpha=0.75)
     plt.fill_between(plot_data.index.to_pydatetime(), plot_data["plot"], plot_data["Q_HBV"], color='#56B4E9',
@@ -46,7 +47,7 @@ def plot_runoff(plot_data, freq_long='', nash_sut=None):
             plot_data.index.values[-1])[:4], size=14)
     if nash_sut == "error":
             plt.text(0.77, 0.9, 'NS coeff exceeds boundaries', fontsize=8, transform=fig.transFigure)
-    else:
+    elif isinstance(nash_sut, float):
             plt.text(0.85, 0.9, 'NS coeff ' + str(round(nash_sut, 2)), fontsize=8, transform=fig.transFigure)
     plt.tight_layout()
     fig.set_size_inches(10, 6)

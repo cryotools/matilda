@@ -89,7 +89,7 @@ def MATILDA_parameter(df, set_up_start = None, set_up_end = None, sim_start = No
     print("Parameter for the MATILDA simulation are set")
     return parameter
 
-def MATILDA_preproc(df, obs, parameter):
+def MATILDA_preproc(df, parameter, obs=None):
     print("---")
     print("Reading in the data")
     print("Set up period between " + str(parameter.set_up_start) + " and " + str(parameter.set_up_end) + " to get appropriate initial values")
@@ -102,18 +102,22 @@ def MATILDA_preproc(df, obs, parameter):
         df.set_index('TIMESTAMP', inplace=True)
         df.index = pd.to_datetime(df.index)
         df = df[parameter.set_up_start: parameter.sim_end]
-    obs.set_index('Date', inplace=True)
-    obs.index = pd.to_datetime(obs.index)
-    obs = obs[parameter.set_up_start: parameter.sim_end]
-    obs = obs.resample("D").sum()
-    # expanding the observation period to the whole one year, filling the NAs with 0
-    idx_first = obs.index.year[1]
-    idx_last = obs.index.year[-1]
-    idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs.index.name)
-    obs = obs.reindex(idx)
-    obs = obs.fillna(0)
+    if obs is not None:
+        obs.set_index('Date', inplace=True)
+        obs.index = pd.to_datetime(obs.index)
+        obs = obs[parameter.set_up_start: parameter.sim_end]
+        obs = obs.resample("D").sum()
+        # expanding the observation period to the whole one year, filling the NAs with 0
+        idx_first = obs.index.year[1]
+        idx_last = obs.index.year[-1]
+        idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs.index.name)
+        obs = obs.reindex(idx)
+        obs = obs.fillna(0)
 
-    return df, obs
+    if obs is not None:
+        return df, obs
+    if obs is None:
+        return df
 
 
 def MATILDA_save_output(output_MATILDA, parameter, output_path):
