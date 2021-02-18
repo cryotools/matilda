@@ -19,24 +19,26 @@ def MATILDA_parameter(df, set_up_start = None, set_up_end = None, sim_start = No
                       TT_rain = 2, CFMAX_snow = 2.8, CFMAX_ice = 5.6, CFR_snow = 0.05, CFR_ice = 0.05, BETA = 1.0, \
                       CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL = 120, PCORR = 1.0, \
                       SFCF = 0.7, CWH = 0.1):
+
     print("Reading in the parameter for the MATILDA simulation.")
     # Checking the parameters to set the catchment properties and simulation
     if area_cat is None:
         print("WARNING: No catchment area is specified. Please provide the catchment area in km2.")
-        return parameter
+        return
     if area_glac > area_cat:
         print("WARNING: The glacier area is bigger than the overall catchment area.")
     if ele_dat is not None and ele_cat is None:
         print("WARNING: Only the elevation for the data is given, not for the catchment.")
-    if area_glac is not None and area_glac > 0 and ele_glac is None and ele_dat is not None:
-        print("WARNING: Only the elevation for the data is given, not for glacier.")
+    if area_glac is not None or area_glac > 0:
+        if ele_glac is None and ele_dat is not None:
+            print("WARNING: Only the elevation for the data is given, not for glacier.")
 
-    if set_up_end and sim_start is not None:
+    if set_up_end is not None and sim_start is not None:
         if set_up_end > sim_start:
             print("WARNING: The set up period exceeds the start of the simulation period.")
-    if set_up_start is None:
+    if set_up_start is None and sim_start is None:
         set_up_start = df["TIMESTAMP"].iloc[0]
-    if set_up_end is None:
+    if set_up_end is None and sim_end is None:
         set_up_end = pd.to_datetime(df["TIMESTAMP"].iloc[0])
         set_up_end = set_up_end + pd.DateOffset(years=1)
         set_up_end = str(set_up_end)
@@ -44,6 +46,14 @@ def MATILDA_parameter(df, set_up_start = None, set_up_end = None, sim_start = No
         sim_start = df["TIMESTAMP"].iloc[0]
     if sim_end is None:
         sim_end = df["TIMESTAMP"].iloc[-1]
+    if set_up_start is None and sim_start is not None:
+        if sim_start == df["TIMESTAMP"].iloc[0]:
+            set_up_start = sim_start
+        else:
+            set_up_start = pd.to_datetime(sim_start) + pd.DateOffset(years=-1)
+        set_up_end = pd.to_datetime(set_up_start) + pd.DateOffset(years=1) + pd.DateOffset(days=-1)
+        set_up_start = str(set_up_start)
+        set_up_end = str(set_up_end)
 
     freq_long = ""
     if freq == "D":
@@ -74,8 +84,8 @@ def MATILDA_parameter(df, set_up_start = None, set_up_end = None, sim_start = No
     if 0.3 > LP or LP > 1:
         print("WARNING: The parameter LP exceeds boundaries [0.3, 1].")
     if 1 >= MAXBAS or MAXBAS > 7:
-        print("WARNING: The parameter MAXBAS exceeds boundaries [2, 7].")
-        return parameter
+        print("WARNING: The parameter MAXBAS exceeds boundaries [2, 7]. Please choose a suitable value.")
+        return
     if 0 > PERC or PERC > 3:
         print("WARNING: The parameter PERC exceeds boundaries [0, 3].")
     if 0 > UZL or UZL > 500:
@@ -84,7 +94,7 @@ def MATILDA_parameter(df, set_up_start = None, set_up_end = None, sim_start = No
         print("WARNING: The parameter PCORR exceeds boundaries [0.5, 2].")
     if TT_snow > TT_rain:
         print("WARNING: TT_snow is higher than TT_rain.")
-    if -1.5 > TT_snow or TT_snow < 2.5:
+    if -1.5 > TT_snow or TT_snow > 2.5:
         print("WARNING: The parameter TT_snow exceeds boundaries [-1.5, 2.5].")
     if -1.5 > TT_rain or TT_rain > 2.5:
         print("WARNING: The parameter TT_rain exceeds boundaries [-1.5, 2.5].")
@@ -203,19 +213,6 @@ def MATILDA_submodules(df, parameter, obs=None):
 
         pdd_ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
                        xr.DataArray(temp_max, name="temp_max"), xr.DataArray(prec)])
-
-        # calculate the hydrological year
-        def calc_hydrological_year(time):
-            water_year = []
-            for i in time:
-                if 10 <= i["time.month"] <= 12:
-                    water_year.append(i["time.year"] + 1)
-                else:
-                    water_year.append(i["time.year"])
-            return np.asarray(water_year)
-
-        # water_year = calc_hydrological_year(time)
-        # pdd_ds = pdd_ds.assign_coords(water_year = water_year)
 
         # calculate the positive degree days
         pdd_ds["pdd"] = xr.where(pdd_ds["temp_mean"] > 0, pdd_ds["temp_mean"], 0)
@@ -785,6 +782,10 @@ def MATILDA_simulation(df, obs = None, output = None, set_up_start = None, set_u
                            TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, CFR_snow=CFR_snow, \
                            CFR_ice=CFR_ice, BETA=BETA,  CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP,  \
                            MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH)
+
+    if parameter is None:
+        return
+
 
     # Data preprocessing with the MATILDA preparation script
     if obs is None:
