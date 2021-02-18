@@ -93,8 +93,11 @@ print("Calculating melt with the DDM")
 # Calculating runoff and melt
 output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5) # output in mm, parameter adjustment possible
 output_DDM["Q_DDM"] = output_DDM["Q_DDM"]*(glacier_area/catchment_area) # scaling glacier melt to glacier area
-smb_2019 = (output_DDM["DDM_smb"]["2018-09-01":"2019-08-31"].sum())/1000*0.9
-smb_2020 = (output_DDM["DDM_smb"]["2019-09-01":"2020-08-31"].sum())/1000*0.9
+# Calculating the mass balance
+output_DDM["water_year"] = np.where((output_DDM.index.month) >= 9, output_DDM.index.year +1, output_DDM.index.year)
+yearly_smb = output_DDM.groupby("water_year")["DDM_smb"].sum()/1000*0.9
+print("The yearly mass balance (period from September to August)")
+print(pd.DataFrame(yearly_smb))
 print("Finished running the DDM")
 
 ## HBV model
