@@ -87,7 +87,7 @@ for _ in range(100):
     deltaM_zone1 = sum(deltaM_zone)
 
     # 4. scaling factor to scale dimensionless deltah
-    # fs = deltaM / (sum(ai*deltahi)
+    #fs = deltaM / (sum(ai_scaled*glacier_profile["delta_h"]))
     fs = (deltaM + deltaM_zone1) / sum(ai * glacier_profile["delta_h"])
 
     # 5. compute glacier geometry for reduced mass
@@ -96,7 +96,7 @@ for _ in range(100):
     # 6. width scaling
     # ai scaled = ai * root(hi/hi initial)
     ai_scaled = ai * np.sqrt((hi_k/hi_initial))
-    #ai = pd.Series(np.where(np.isnan(ai), 0, ai))
+    #ai_scaled = pd.Series(np.where(np.isnan(ai_scaled), 0, ai_scaled))
     # 7. create lookup table
     # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
     lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
@@ -123,10 +123,9 @@ elezones_inital = lookup_table_elezones.iloc[0]
 
 lookup_table_elezones = lookup_table_elezones / elezones_inital
 lookup_table_elezones = round(lookup_table_elezones, 4)
+lookup_table_elezones.iloc[-1] = 0
 
-lookup_table_elezones.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
+#lookup_table_elezones.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
 
-#lookup_table_elezones["volume"] =
+##
 
-#test = lookup_table_elezones.loc[0] - lookup_table_elezones.loc[1]
-#test2 = hi.loc[0] - hi.loc[1]
