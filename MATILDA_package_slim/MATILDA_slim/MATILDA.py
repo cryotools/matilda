@@ -297,6 +297,18 @@ def MATILDA_submodules(df, parameter, obs=None):
 
     output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
+
+    """ Implementing a glacier melt routine baseon the deltaH approach"""
+    output_DDM["water_year"] = np.where((output_DDM.index.month) >= 9, output_DDM.index.year + 1, output_DDM.index.year)
+    yearly_smb = output_DDM.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9
+
+    # necessary steps:
+    # calculating the smb after each year, then getting the correct row from the lookup table according to the melted mass
+    # updating the glacier area (getting the new area percentages and calculating the whole area)
+    # continuing the model with the new mass
+    # this has to be done in a loop? or at least before the scaling to the glacier area
+
+
     """
     Compute the runoff from the catchment with the HBV model
     Python Code from the LHMP and adjusted to our needs (github.com/hydrogo/LHMP -
