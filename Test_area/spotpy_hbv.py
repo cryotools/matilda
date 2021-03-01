@@ -1,8 +1,7 @@
 import numpy as np
 import scipy.signal as ss
 
-def hbv_simulation(Temp, Prec, Evap, TT_snow, TT_rain, CFMAX_snow, CFMAX_ice, CFR_snow, CFR_ice, BETA, CET, FC, K0, \
-                   K1, K2, LP, MAXBAS, PERC, UZL, PCORR, SFCF, CWH):
+def hbv_simulation(Temp, Prec, Evap, BETA, CET, FC, K0, K1, K2, LP, MAXBAS, PERC, UZL, PCORR, TT_snow, TT_rain, CFMAX_snow, SFCF, CFR_snow, CWH):
     print("Running the HBV model")
     # 3. meteorological forcing preprocessing for simulation
     # overall correction factor
@@ -30,13 +29,11 @@ def hbv_simulation(Temp, Prec, Evap, TT_snow, TT_rain, CFMAX_snow, CFMAX_ice, CF
     # 4. initialize boxes and initial conditions after calibration
     # snowpack box
     SNOWPACK = np.zeros(len(Prec))
-    SNOWPACK[0] = SNOWPACK_cal[-1]
     # meltwater box
     MELTWATER = np.zeros(len(Prec))
     MELTWATER[0] = 0.0001
     # soil moisture box
     SM = np.zeros(len(Prec))
-    SM[0] = SM_cal[-1]
     # soil upper zone box
     SUZ = np.zeros(len(Prec))
     SUZ[0] = 0.0001

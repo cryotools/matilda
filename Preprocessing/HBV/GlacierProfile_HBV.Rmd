@@ -1,0 +1,75 @@
+---
+title: "GlacierProfile"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(readxl)
+library(tidyr)
+
+home <- "C:\\Users\\flore\\Seafile\\Ana-Lena_Phillip\\data\\scripts\\HBV_Light\\HBV-light_data\\Glacier_No.1\\Glacier_Routine_Data\\"
+```
+
+```{r}
+east_branch <- read_excel(paste0(home, "East_Branch.xlsx"))
+west_branch <- read_excel(paste0(home, "West_Branch.xlsx"))
+catchment <- read_excel(paste0(home, "Catchment.xlsx"))
+
+east <-east_branch %>% 
+  group_by(fid) %>% 
+  summarise(area=mean(Area), area_km2 = mean(`Area km2`), ice_thickness=mean(Thickness), Elevation=mean(ELEV))
+east <- na.omit(east)
+
+# 80 percent quantile
+east1 <-east_branch %>% 
+  group_by(fid) %>% 
+  summarise(area=mean(Area), area_km2 = mean(`Area km2`), ice_thickness=quantile(Thickness, probs = 0.8, na.rm = TRUE), Elevation=mean(ELEV))
+
+west <-west_branch %>% 
+  group_by(fid) %>% 
+  summarise(area=mean(Area), area_km2 = mean(`Area km2`), ice_thickness=mean(`Ice Thickn`), Elevation=mean(ELEV))
+west <- na.omit(west)
+
+catchment <- catchment %>% 
+  group_by(Elevation) %>% 
+  summarise(Area=sum(Area), `Area km2`=sum(`Area km2`))
+
+glacier <- merge(west, east, by="Elevation",all=TRUE)
+glacier[is.na(glacier)] <- 0
+glacier$glacier_area <- glacier$area.x + glacier$area.y
+glacier$glacier_area_km2 <- glacier$area_km2.x + glacier$area_km2.y
+glacier$ice_thickness <- (glacier$ice_thickness.x + glacier$ice_thickness.y) / 2
+glacier <- glacier[-c(2:9)]
+glacier <- glacier %>% 
+  group_by(Elevation) %>% 
+  summarise(glacier_area=sum(glacier_area), glacier_area_km2=sum(glacier_area_km2), ice_thickness=mean(ice_thickness))
+
+catchment_glacier<- merge(glacier, catchment, by="Elevation", all=TRUE)
+catchment_glacier[is.na(catchment_glacier)] <- 0
+catchment_glacier$nonglac_area <- catchment_glacier$Area - catchment_glacier$glacier_area
+catchment_glacier$nonglac_areakm2 <- catchment_glacier$`Area km2` - catchment_glacier$glacier_area_km2
+catchment_glacier <- catchment_glacier[-c(11),]
+catchment_glacier$EleZone <- c(3700, 3800, 3900, 3900, 4000, 4000, 4100, 4100, 4200, 4200, 4400)
+catchment_glacier$fraction_glacier <- catchment_glacier$glacier_area_km2/3.367
+catchment_glacier$fraction_noglacier <- catchment_glacier$nonglac_areakm2/3.367
+
+glacier_profile <- data.frame(Elevation=catchment_glacier$Elevation, Area = catchment_glacier$glacier_area_km2/sum(catchment_glacier$`Area km2`), WE=catchment_glacier$ice_thickness*0.908*1000, EleZone=catchment_glacier$Elevation)
+glacier_profile <- glacier_profile
+
+glacier_profile$EleZone <- c(3700, 3800, 3900, 3900, 4000, 4000, 4100, 4100, 4200, 4200, 4400)
+```
+
+```{r}
+write.table(catchment_glacier, paste0(home, "Catchment_Glacier_Area.txt"), sep="\t", row.names=FALSE)
+write.table(glacier_profile, paste0(home, "GlacierProfile.txt"), sep="\t", row.names=FALSE)
+```
+
+```{r}
+multi_era <- read.csv("C:\\Users\\flore\\Seafile\\Ana-Lena_Phillip\\data\\scripts\\HBV_Model\\HBV-light_data\\Glacier_No.1\\ERA5\\Results\\Multi.txt", sep = "\t", dec = ".", header = TRUE)
+gap_era <- read.csv("C:\\Users\\flore\\Seafile\\Ana-Lena_Phillip\\data\\scripts\\HBV_Model\\HBV-light_data\\Glacier_No.1\\ERA5\\Results\\GA_best1.txt", sep = "\t", dec = ".", header = TRUE)
+
+multi_obs <- read.csv("C:\\Users\\flore\\Seafile\\Ana-Lena_Phillip\\data\\scripts\\HBV_Model\\HBV-light_data\\Glacier_No.1\\Observations\\Results\\Multi.txt", sep = "\t", dec = ".", header = TRUE)
+
+```
+

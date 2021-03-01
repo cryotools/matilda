@@ -1,0 +1,191 @@
+---
+title: "Preprocessing"
+output: html_document 
+---
+
+```{r}
+options(scipen = 999)    
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(ggpubr)
+
+home <- "C:\\Users\\flore\\Seafile\\Ana-Lena_Phillip\\data\\"
+```
+# Meteorological Data from ERA5
+```{r}
+# Temperature and Precipitation, Units: Temp in K and Prec in mm
+era5_met <- read.csv(paste0(home, "input_output\\input\\best_cosipyrun_no1\\best_cosipyrun_no1_2011-18\\best_cosipy_input_no1_2011-18.csv"), dec=".", sep = ",", header=TRUE)
+era5_met <- era5_met[c(1,2,7)]
+
+era5_met$Date <- ymd_hms(era5_met$TIMESTAMP)
+era5_met <- era5_met[era5_met$Date >= "2011-01-01" & era5_met$Date <= "2018-12-31",]
+
+# Unit Conversion
+era5_met$t2m <- era5_met$T2 - 273.15 # now °C
+
+# Daily values
+era5_met_daily <- mutate(era5_met, Date = floor_date(Date, "day")) %>%
+group_by(Date) %>%
+summarize(tp = sum(RRR), t2m = mean(t2m))
+#era5_met_daily <- era5_met_daily[-c(1),] #keine Ahnung warum der letzte Tag von 2010 noch dabei war...
+era5_met_daily$Date <- as.Date(era5_met_daily$Date)
+
+# Calculating PE with the formula from Oudin et al. -> unit is mm / day
+solar_constant = (1376 * 1000000) / 86400 # from 1376 J/m2s to MJm2d
+latent_heat_flux = 2.45
+water_density = 1000
+extra_rad = 27.086217947590317
+era5_met_daily$PE_calc <- ifelse((era5_met_daily$t2m + 5 > 0), (((extra_rad/(water_density*latent_heat_flux))*((era5_met_daily$t2m+5)/100))), 0)
+
+# # Runoff and PE from ERA5, both in mm, PE already downscaled and converted by -1
+# era_evap_run <- read.csv(paste0(home, "input_output/input/20200405_Umrumqi_ERA5_2011_2018.csv"))
+# era_evap_run <- era_evap_run[-c(1,2)]
+# era_evap_run$Date <- ymd_hms(era_evap_run$Date)
+# 
+# # Daily values 
+# era_evap_run_daily <- mutate(era_evap_run, Date = floor_date(Date, "day")) %>%
+# group_by(Date) %>%
+# summarize(PE = sum(PE), PE_scaled=sum(PE_scaled), Runoff = sum(Runoff))
+# era_evap_run_daily$Date <- as.Date(era_evap_run_daily$Date)
+# 
+# era5 <- inner_join(era5_met, era_evap_run, by="Date")
+# era5_daily <- inner_join(era5_met_daily, era_evap_run_daily, by="Date")
+```
+# Runoff Observations
+```{r}
+# # Runoff observations in m3/s
+# runoff_2011_18 <- data.frame(Date=numeric(),
+#                   Day=numeric(),
+#                   Month=numeric(),
+#                   Year=numeric(),
+#                   Q=numeric())
+# 
+# for (i in 1:8) {
+#   runoff_data <- read_excel(paste0(home,"observations/glacierno1/hydro/dailyrunoff_2011-18_glacierno1.xls"), sheet = i)
+#   runoff_data <- runoff_data[-c(12:13, 24:25,37:42),]
+#   if (i == 1) {runoff_data <- runoff_data[-c(14:16)]
+#   } 
+#   names(runoff_data) <- lapply(runoff_data[1, ], as.character)
+#   runoff_data <- runoff_data[-1,] 
+#   colnames(runoff_data)[1] <- c("Day")
+#   runoff_data<- gather(runoff_data, "Month","Q", -Day) 
+#   runoff_data$Year <- 2010 + i
+#   runoff_data$Date <- with(runoff_data, ymd(paste(Year, Month, Day, sep= ' ')))
+#   runoff_2011_18 <- rbind(runoff_2011_18, runoff_data)
+# }
+# 
+# runoff_2011_18 <- runoff_2011_18 %>% drop_na(Date)
+# runoff_2011_18$Date <- as.Date(runoff_2011_18$Date)
+# runoff_2011_18 <- runoff_2011_18[-c(1,2,4)]
+# 
+# # Runoff unit conversion from m3/s to mm with catchment size of 3.367km2
+# runoff_2011_18$Q <- (((as.numeric(runoff_2011_18$Q)*86400)/3367000)*1000)
+
+runoff_2011_18 <- read.csv(paste0(home, "input_output\\input\\observations\\glacierno1\\hydro\\daily_observations_2011-18.csv"))
+runoff_2011_18$Date <- ymd(runoff_2011_18$Date)
+```
+# Preparation for HBV Model
+```{r}
+# Era5 Data with Runoff Observations
+ptq_obs <- subset(era5_met_daily, select=c("Date", "tp", "t2m"))
+ptq_obs <- inner_join(ptq_obs, runoff_2011_18, by="Date")
+colnames(ptq_obs) <- c("Date", "P", "T", "Q")
+
+
+ptq_obs$Date <- as.character(ptq_obs$Date)
+ptq_obs$Date <- gsub("-", "", ptq_obs$Date)
+ptq_obs$Date <- as.numeric(ptq_obs$Date)
+ptq_obs[is.na(ptq_obs)] <- as.integer(-9999)
+
+# # Era5 Data with ERA5 runoff
+# ptq_era <- subset(era5_daily, select=c("Date", "tp", "t2m", "Runoff"))
+# colnames(ptq_era) <- c("Date", "P", "T", "Q")
+# ptq_era$Date <- as.character(ptq_era$Date)
+# ptq_era$Date <- gsub("-", "", ptq_era$Date)
+# ptq_era$Date <- as.numeric(ptq_era$Date)
+
+# evap_era <- mutate(era5_daily, month=month(Date), day=day(Date)) %>% 
+#   group_by(month, day) %>% 
+#   summarize(PE_scaled = mean(PE_scaled, na.rm = TRUE))
+# evap_era <- evap_era[!(evap_era$day=="29" & evap_era$month==2),]
+# evap_era <- evap_era[-c(1,2)]
+# colnames(evap_era) <- c("Pot. evap")
+
+
+evap_calc <- mutate(era5_met_daily, month=month(Date), day=day(Date)) %>% 
+  group_by(month, day) %>% 
+  summarize(PE_calc = mean(PE_calc, na.rm = TRUE))
+evap_calc <- evap_calc[!(evap_calc$day=="29" & evap_calc$month==2),]
+evap_calc <- evap_calc[-c(1,2)]
+colnames(evap_calc) <- c("Pot. evap")
+```
+# Output for HBV
+```{r}
+setwd("C:\\Users\\flore\\Seafile\\Ana-Lena_Phillip\\data\\HBV-Light\\HBV-light_data\\Glacier_No.1\\")
+write.table(ptq_obs, "Python\\Data\\ptq.txt", sep="\t", row.names=FALSE)
+write.table(evap_calc, "Python\\Data\\evap.txt", sep="\t", row.names=FALSE)
+
+```
+# Comparison
+```{r}
+comparison <- inner_join(era5_daily, runoff_2011_18, by="Date")
+
+comparison_monthly <- mutate(comparison, date = floor_date(Date, "month")) %>%
+group_by(date) %>%
+summarize(tp = sum(tp), t2m = mean(t2m), Runoff=sum(Runoff), Q=sum(Q), PE_calc=sum(PE_calc), PE_scaled=sum(PE_scaled))
+
+comparison_yearly <- mutate(comparison, date = floor_date(Date, "year")) %>%
+group_by(date) %>%
+summarize(tp = sum(tp), t2m = mean(t2m), Runoff=sum(Runoff), Q=sum(Q), PE_calc=sum(PE_calc), PE_scaled=sum(PE_scaled))
+
+t2m <- ggplot(comparison_monthly) + 
+  geom_line(mapping = aes(x=date, y=t2m)) +
+  labs(y="[°C]", title = "Air Temperature (2m, monthly mean)")+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.title = element_text(size=8),
+        axis.title.y = element_text(size=8))
+tp <- ggplot(comparison_monthly) + 
+  geom_col(mapping = aes(x=date, y=tp)) +
+  labs(y="[mm]", title = "Precipitation (monthly sum from daily values") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.title = element_text(size=8),
+        axis.title.y = element_text(size=8))
+Runoff <- ggplot(comparison_monthly) + 
+  geom_col(mapping = aes(x=date, y=Runoff)) +
+  labs(y="[mm]", title = "Runoff (ERA5, monthly sum from daily values)")+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        plot.title = element_text(size=8),
+        axis.title.y = element_text(size=8))
+Q <- ggplot(comparison_monthly) + 
+  labs(y="[mm]", title = "Runoff (Observations, monthly sum from daily values)")+
+  geom_col(mapping = aes(x=date, y=Q))+
+  theme(plot.title = element_text(size=8),
+        axis.title.x = element_text(size=8),
+        axis.title.y = element_text(size=8))
+PE_scaled <- ggplot(comparison_monthly) + 
+  geom_line(mapping = aes(x=date, y=PE_scaled)) +
+  labs(y="[mm]", title = "Potential Evapotranspiration (ERA5 scaled, monthly sum from daily values)")+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.title = element_text(size=8),
+        axis.title.y = element_text(size=8))
+PE_calc <- ggplot(comparison_monthly) + 
+  geom_line(mapping = aes(x=date, y=PE_calc)) +
+  labs(y="[mm]", title = "Calculated PE from ERA Temp (Monthly sum)")+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.title = element_text(size=8),
+        axis.title.y = element_text(size=8)) 
+
+figure <- ggarrange(t2m, tp, PE_scaled, PE_calc, Q, Runoff, ncol = 1, nrow = 6)
+```
+
