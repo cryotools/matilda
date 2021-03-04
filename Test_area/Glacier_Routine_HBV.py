@@ -15,7 +15,8 @@ area = pd.read_csv(input, sep="\t", nrows=1, header=None) # Area of catchment an
 elevation_zones = glacier_profile["Elevation"].values.tolist()
 
 # Preparing the variables
-initial_area = glacier_profile["Area"]
+initial_area = glacier_profile["Area"] # per elevation band
+initial_area_zones = glacier_profile.groupby("EleZone")["Area"].sum()
 hi_initial = glacier_profile["WE"] # initial water equivalent of each elevation band
 hi_k = glacier_profile["WE"] # hi_k is the updated water equivalent for each elevation zone, starts with initial values
 ai = glacier_profile["Area"] # ai is the glacier area of each elevation zone, starts with initial values
