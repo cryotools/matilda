@@ -11,6 +11,7 @@ import scipy.signal as ss
 from datetime import date, datetime
 import os
 import matplotlib.pyplot as plt
+glacier_profile = None # How do we pass over the glacier profile?
 
 
 # Setting the parameter for the MATILDA simulation
@@ -298,10 +299,116 @@ def MATILDA_submodules(df, parameter, obs=None):
     output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
 
-    """ Implementing a glacier melt routine baseon the deltaH approach"""
-    output_DDM["water_year"] = np.where((output_DDM.index.month) >= 9, output_DDM.index.year + 1, output_DDM.index.year)
-    yearly_smb = output_DDM.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9
+    """ Implementing a glacier melt routine baseon the deltaH approach based on Seibert et al. (2018) and 
+    Huss and al.(2010)"""
+    def create_lookup_table(glacier_profile, parameter):
+        initial_area = glacier_profile["Area"]  # per elevation band
+        hi_initial = glacier_profile["WE"]  # initial water equivalent of each elevation band
+        hi_k = glacier_profile["WE"]  # hi_k is the updated water equivalent for each elevation zone, starts with initial values
+        ai = glacier_profile["Area"]  # ai is the glacier area of each elevation zone, starts with initial values
 
+        lookup_table = pd.DataFrame()
+        lookup_table = lookup_table.append(initial_area, ignore_index=True)
+
+        # Pre-simulation
+        # 1. calculate total glacier mass in mm water equivalent: M = sum(ai * hi)
+        m = sum(glacier_profile["Area"] * glacier_profile["WE"])
+
+        # melt the glacier in steps of 1 percent
+        deltaM = -m / 100
+
+        # 2. Normalize glacier elevations: Einorm = (Emax-Ei)/(Emax-Emin)
+        glacier_profile["norm_elevation"] = (glacier_profile["Elevation"].max() - glacier_profile["Elevation"]) / \
+                                            (glacier_profile["Elevation"].max() - glacier_profile["Elevation"].min())
+        # 3. Apply deltaH parameterization: deltahi = (Einorm+a)^y + b*(Einorm+a) + c
+        # deltahi is the normalized (dimensionless) ice thickness change of elevation band i
+        # choose one of the three parameterizations from Huss et al. (2010) depending on glacier size
+        if parameter.area_glac < 5:
+            a = -0.3
+            b = 0.6
+            c = 0.09
+            y = 2
+        elif  parameter.area_glac < 20:
+            a = -0.05
+            b = 0.19
+            c = 0.01
+            y = 4
+        else:
+            a = -0.02
+            b = 0.12
+            c = 0
+            y = 6
+
+        glacier_profile["delta_h"] = (glacier_profile["norm_elevation"] + a) ** y + (b * (glacier_profile["norm_elevation"] + a)) + c
+
+        ai_scaled = ai.copy()
+        deltaM_add = (glacier_profile["delta_h"] / sum(glacier_profile["delta_h"])) * deltaM
+
+        for _ in range(100):
+            # add remaining melt to deltaM when the elevation zone reaches 0
+            deltaM_zone = pd.Series((np.where(ai_scaled.isna(), deltaM_add, 0)))
+            deltaM_zone[0] = 0
+            # deltaM_zone = deltaM_add * ai
+            deltaM_zone1 = sum(deltaM_zone)
+
+            # 4. scaling factor to scale dimensionless deltah
+            # fs = deltaM / (sum(ai_scaled*glacier_profile["delta_h"]))
+            fs = (deltaM + deltaM_zone1) / sum(ai * glacier_profile["delta_h"])
+
+            # 5. compute glacier geometry for reduced mass
+            # hi,k+1 = hi,k + fs deltahi
+            hi_k = hi_k + fs * glacier_profile["delta_h"]
+            # 6. width scaling
+            # ai scaled = ai * root(hi/hi initial)
+            ai_scaled = ai * np.sqrt((hi_k / hi_initial))
+            # ai_scaled = pd.Series(np.where(np.isnan(ai_scaled), 0, ai_scaled))
+            # 7. create lookup table
+            # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
+            lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
+        # update the elevation zones: new sum of all the elevation bands in that zone
+        lookup_table = lookup_table.fillna(0)
+
+        lookup_table.columns = glacier_profile["EleZone"]
+        lookup_table = lookup_table.groupby(level=0, axis=1).sum()
+
+        elezones_inital = lookup_table.iloc[0]
+
+        lookup_table = lookup_table / elezones_inital
+        lookup_table = round(lookup_table, 4)
+        lookup_table.iloc[-1] = 0
+        return lookup_table
+
+    # calculating the new glacier area for each hydrological year
+    def glacier_change(output_DDM, lookup_table, glacier_profile):
+        #determining from when to when the hydrological year is
+        output_DDM["water_year"] = np.where((output_DDM.index.month) >= 9, output_DDM.index.year + 1, output_DDM.index.year)
+        # initial smb from the glacier routine script in m w.e.
+        m = sum(glacier_profile["Area"]*glacier_profile["WE"])
+        initial_smb = m / 1000
+        # initial area
+        initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
+        # dataframe with the smb change per hydrological year in m w.e.
+        glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9}).reset_index()  # do we have to scale this?
+        # adding the changes to get the whole change in comparison to the initial area
+        glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
+        # percentage of how much of the initial mass melted
+        glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / initial_smb) * 100)
+
+        output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"]
+        for i in range(len(glacier_change)):
+            year = glacier_change["water_year"][i]
+            smb = int(-glacier_change["smb_percentage"][i])
+            # getting the right column from the lookup table depending on the smb
+            area_melt = lookup_table.iloc[smb]
+            # getting the new glacier area by multiplying the initial area with the area changes
+            new_area = np.nansum(area_melt.values * (initial_area.values))
+            # multiplying the output with the fraction of the new area
+            output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])
+
+        return output_DDM
+    if glacier_profile is not None:
+        lookup_table = create_lookup_table(glacier_profile, parameter)
+        output_DDM = glacier_change(output_DDM, lookup_table, glacier_profile)
     # necessary steps:
     # calculating the smb after each year, then getting the correct row from the lookup table according to the melted mass
     # updating the glacier area (getting the new area percentages and calculating the whole area)
