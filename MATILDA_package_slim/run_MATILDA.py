@@ -5,6 +5,7 @@ This file may use the input files created by the COSIPY-utility "aws2cosipy" as 
 """
 ## import of necessary packages
 import pandas as pd
+from MATILDA_slim import MATILDA
 
 ## Setting file paths and parameters
 working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/"
@@ -23,14 +24,14 @@ obs["Qobs"] = obs["Qobs"] / 86400*(46.232*1000000)/1000 # in der Datei sind die 
 
 #area_cat=46.232
 ## Running MATILDA
-parameter = MATILDA_parameter(df, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=46.232, area_glac=2.566,
                        ele_dat=3864, ele_glac=4042, ele_cat=3360)
-df, obs = MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
+df, obs = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
-output_MATILDA = MATILDA_submodules(df, parameter, obs=obs) # MATILDA model run + downscaling
+output_MATILDA = MATILDA.MATILDA_submodules(df, parameter, obs=obs) # MATILDA model run + downscaling
 
-output_MATILDA = MATILDA_plots(output_MATILDA, parameter)
+output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
 # adding them to the output
 
@@ -38,23 +39,7 @@ output_MATILDA = MATILDA_plots(output_MATILDA, parameter)
 
 ## This function is a standalone function to run the whole MATILDA simulation
 # If output = output_path in function, the output will be saved to a new folder
-output_MATILDA = MATILDA_simulation(df, obs=obs, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=46.232, area_glac=2.566,
                        ele_dat=3864, ele_glac=4042, ele_cat=3360, TT_snow=0, TT_rain=2)
 #output_MATILDA[4].show()
-##
-a=2
-def test(a, b=None):
-    def add(a, b=None):
-        if b is None:
-            return
-        c = a + b
-        return c
-
-    c = add(a)
-    if not c:
-        return
-
-blub = test(a)
-
-not blub
