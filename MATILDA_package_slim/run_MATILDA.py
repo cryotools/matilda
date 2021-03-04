@@ -12,7 +12,7 @@ input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ER
 input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/"
 
 data_csv = "no182_ERA5_Land_2000_202011_no182_41_75.9_fitted.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
-observation_data = "runoff_bashkaindy_04_2019-11_2020_test.csv" # Daily Runoff Observations in mm
+observation_data = "runoff_bashkaindy_04_2019-11_2020_temp_limit.csv" # Daily Runoff Observations in mm
 
 output_path = working_directory + "input_output/output/" + data_csv[:15]
 
