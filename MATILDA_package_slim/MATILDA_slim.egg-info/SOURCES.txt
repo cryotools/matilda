@@ -1,0 +1,8 @@
+setup.py
+MATILDA_slim/MATILDA.py
+MATILDA_slim.egg-info/PKG-INFO
+MATILDA_slim.egg-info/SOURCES.txt
+MATILDA_slim.egg-info/dependency_links.txt
+MATILDA_slim.egg-info/not-zip-safe
+MATILDA_slim.egg-info/requires.txt
+MATILDA_slim.egg-info/top_level.txt
