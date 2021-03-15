@@ -29,9 +29,9 @@ obs["Qobs"] = obs["Qobs"] / 86400*(46.232*1000000)/1000 # in der Datei sind die 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=46.232, area_glac=2.566,
                        ele_dat=3864, ele_glac=4042, ele_cat=3360)
-df, obs = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
+df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
-output_MATILDA = MATILDA.MATILDA_submodules(df, parameter, obs=obs) # MATILDA model run + downscaling
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc) # MATILDA model run + downscaling
 
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
@@ -45,3 +45,6 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, set_up_start='2018-01-0
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=46.232, area_glac=2.566,
                        ele_dat=3864, ele_glac=4042, ele_cat=3360, TT_snow=0, TT_rain=2)
 output_MATILDA[4].show()
+
+##
+
