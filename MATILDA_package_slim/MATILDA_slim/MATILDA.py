@@ -11,8 +11,6 @@ import scipy.signal as ss
 from datetime import date, datetime
 import os
 import matplotlib.pyplot as plt
-glacier_profile = None # How do we pass over the glacier profile?
-
 
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start = None, set_up_end = None, sim_start = None, sim_end = None, freq = "D", area_cat = None, \
@@ -160,7 +158,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
 
 """The main MATILDA simulation. It consists of a linear downscaling of the data if elevations for data, catchment and glacier
 are given. Then the DDM and HBV model are run."""
-def MATILDA_submodules(df_preproc, parameter, obs=None):
+def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print('---')
     print('Starting the MATILDA simulation')
     # Downscaling of dataframe to mean catchment and glacier elevation
@@ -293,8 +291,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None):
         # making the final dataframe
         DDM_results = glacier_melt.to_dataframe()
         DDM_results = DDM_results.round(3)
-        # scaling glacier melt to glacier area
-        DDM_results["Q_DDM"] = DDM_results["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
         print("Finished running the DDM")
         return DDM_results
 
@@ -411,14 +407,15 @@ def MATILDA_submodules(df_preproc, parameter, obs=None):
             output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])
 
         return output_DDM
+
+
     if glacier_profile is not None:
         lookup_table = create_lookup_table(glacier_profile, parameter)
         output_DDM = glacier_change(output_DDM, lookup_table, glacier_profile)
-    # necessary steps:
-    # calculating the smb after each year, then getting the correct row from the lookup table according to the melted mass
-    # updating the glacier area (getting the new area percentages and calculating the whole area)
-    # continuing the model with the new mass
-    # this has to be done in a loop? or at least before the scaling to the glacier area
+    else:
+        # scaling glacier melt to glacier area
+        output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
+        lookup_table = str("No lookup table generated")
 
 
     """
@@ -748,19 +745,29 @@ def MATILDA_submodules(df_preproc, parameter, obs=None):
     print(stats)
     print("End of the MATILDA simulation")
     print("---")
+    output_all = [output_MATILDA, nash_sut, stats, lookup_table]
 
-    output_all = [output_MATILDA, nash_sut, stats]
     return output_all
 
 """ MATILDA plotting function to plot the input data, runoff output and HBV parameters."""
 
 def MATILDA_plots(output_MATILDA, parameter):
+    # resampling the output to the specified frequency
+    def plot_data(output_MATILDA, parameter):
+        obs = output_MATILDA[0]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
+        plot_data = output_MATILDA[0].resample(parameter.freq).agg(
+            {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
+             "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+             "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+        plot_data["Qobs"] = obs
+        return plot_data
+
     # Plotting the meteorological parameters
-    def plot_meteo(output_MATILDA, parameter):
+    def plot_meteo(plot_data, parameter):
         fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10, 6))
-        ax1.plot(output_MATILDA[0].index.to_pydatetime(), (output_MATILDA[0]["T2"]), c="#d7191c")
-        ax2.bar(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["RRR"], width=10, color="#2c7bb6")
-        ax3.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["PE"], c="#008837")
+        ax1.plot(plot_data.index.to_pydatetime(), (plot_data["T2"]), c="#d7191c")
+        ax2.bar(plot_data.index.to_pydatetime(), plot_data["RRR"], width=10, color="#2c7bb6")
+        ax3.plot(plot_data.index.to_pydatetime(), plot_data["PE"], c="#008837")
         plt.xlabel("Date", fontsize=9)
         ax1.grid(linewidth=0.25), ax2.grid(linewidth=0.25), ax3.grid(linewidth=0.25)
         ax1.set_title("Mean temperature", fontsize=9)
@@ -769,47 +776,47 @@ def MATILDA_plots(output_MATILDA, parameter):
         ax1.set_ylabel("[°C]", fontsize=9)
         ax2.set_ylabel("[mm]", fontsize=9)
         ax3.set_ylabel("[mm]", fontsize=9)
-        if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
+        if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
             fig.suptitle(
-                parameter.freq_long + " meteorological input parameters in " + str(output_MATILDA[0].index.values[-1])[
+                parameter.freq_long + " meteorological input parameters in " + str(plot_data.index.values[-1])[
                                                                                :4],
                 size=14)
         else:
             fig.suptitle(
-                parameter.freq_long + " meteorological input parameters in " + str(output_MATILDA[0].index.values[1])[
+                parameter.freq_long + " meteorological input parameters in " + str(plot_data.index.values[1])[
                                                                                :4] + "-" + str(
-                    output_MATILDA[0].index.values[-1])[:4], size=14)
+                    plot_data.index.values[-1])[:4], size=14)
         plt.tight_layout()
         fig.set_size_inches(10, 6)
         return fig
 
-    def plot_runoff(output_MATILDA, parameter):
-        output_MATILDA[0]["plot"] = 0
+    def plot_runoff(plot_data, parameter):
+        plot_data["plot"] = 0
         fig = plt.figure(figsize=(10, 6))
-        if 'Qobs' in output_MATILDA[0]:
-            plt.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["Qobs"], c="#E69F00",
+        if 'Qobs' in plot_data:
+            plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00",
                      label="Observations", linewidth=1.2)
-        plt.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["Q_Total"], c="k",
+        plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], c="k",
                  label="MATILDA total runoff",
                  linewidth=0.75, alpha=0.75)
-        plt.fill_between(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["plot"], output_MATILDA[0]["Q_HBV"],
+        plt.fill_between(plot_data.index.to_pydatetime(), plot_data["plot"], plot_data["Q_HBV"],
                          color='#56B4E9',
                          alpha=.75, label="MATILDA catchment runoff")
-        plt.fill_between(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["Q_HBV"],
-                         output_MATILDA[0]["Q_Total"],
+        plt.fill_between(plot_data.index.to_pydatetime(), plot_data["Q_HBV"],
+                         plot_data["Q_Total"],
                          color='#CC79A7', alpha=.75, label="MATILDA glacial runoff")
         plt.legend()
         plt.ylabel("Runoff [mm]", fontsize=9)
-        if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
+        if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
             plt.title(
-                parameter.freq_long + " MATILDA simulation for the period " + str(output_MATILDA[0].index.values[-1])[
+                parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[-1])[
                                                                               :4],
                 size=14)
         else:
             plt.title(
-                parameter.freq_long + " MATILDA simulation for the period " + str(output_MATILDA[0].index.values[1])[
+                parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[1])[
                                                                               :4] + "-" + str(
-                    output_MATILDA[0].index.values[-1])[:4], size=14)
+                    plot_data.index.values[-1])[:4], size=14)
         if output_MATILDA[1] == "error":
             plt.text(0.77, 0.9, 'NS coeff exceeds boundaries', fontsize=8, transform=fig.transFigure)
         elif isinstance(output_MATILDA[1], float):
@@ -819,13 +826,13 @@ def MATILDA_plots(output_MATILDA, parameter):
         return fig
 
     # Plotting the HBV output parameters
-    def plot_hbv(output_MATILDA, parameter):
+    def plot_hbv(plot_data, parameter):
         fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, sharex=True, figsize=(10, 6))
-        ax1.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["HBV_AET"], "k")
-        ax2.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["HBV_soil_moisture"], "k")
-        ax3.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["HBV_snowpack"], "k")
-        ax4.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["HBV_upper_gw"], "k")
-        ax5.plot(output_MATILDA[0].index.to_pydatetime(), output_MATILDA[0]["HBV_lower_gw"], "k")
+        ax1.plot(plot_data.index.to_pydatetime(), plot_data["HBV_AET"], "k")
+        ax2.plot(plot_data.index.to_pydatetime(), plot_data["HBV_soil_moisture"], "k")
+        ax3.plot(plot_data.index.to_pydatetime(), plot_data["HBV_snowpack"], "k")
+        ax4.plot(plot_data.index.to_pydatetime(), plot_data["HBV_upper_gw"], "k")
+        ax5.plot(plot_data.index.to_pydatetime(), plot_data["HBV_lower_gw"], "k")
         ax1.set_title("Actual evapotranspiration", fontsize=9)
         ax2.set_title("Soil moisture", fontsize=9)
         ax3.set_title("Water in snowpack", fontsize=9)
@@ -834,22 +841,23 @@ def MATILDA_plots(output_MATILDA, parameter):
         plt.xlabel("Date", fontsize=9)
         ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9)
         ax4.set_ylabel("[mm]", fontsize=9), ax5.set_ylabel("[mm]", fontsize=9)
-        if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
+        if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
             fig.suptitle(parameter.freq_long + " output from the HBV model in the period " + str(
-                output_MATILDA[0].index.values[-1])[:4],
+                plot_data.index.values[-1])[:4],
                          size=14)
         else:
             fig.suptitle(parameter.freq_long + " output from the HBV model in the period " + str(
-                output_MATILDA[0].index.values[1])[
+                plot_data.index.values[1])[
                                                                                              :4] + "-" + str(
-                output_MATILDA[0].index.values[-1])[:4], size=14)
+                plot_data.index.values[-1])[:4], size=14)
         plt.tight_layout()
         fig.set_size_inches(10, 6)
         return fig
 
-    fig1 = plot_meteo(output_MATILDA, parameter)
-    fig2 = plot_runoff(output_MATILDA, parameter)
-    fig3 = plot_hbv(output_MATILDA, parameter)
+    plot_data = plot_data(output_MATILDA, parameter)
+    fig1 = plot_meteo(plot_data, parameter)
+    fig2 = plot_runoff(plot_data, parameter)
+    fig3 = plot_hbv(plot_data, parameter)
     output_MATILDA.extend([fig1, fig2, fig3])
     return output_MATILDA
 
@@ -867,29 +875,29 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     parameter.to_csv(output_path + "model_parameter.csv")
 
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
-        output_MATILDA[3].savefig(
+        output_MATILDA[4].savefig(
             output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
-            dpi=output_MATILDA[3].dpi)
-    else:
-        output_MATILDA[3].savefig(
-            output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
-                output_MATILDA[0].index.values[-1])[:4] + ".png", dpi=output_MATILDA[3].dpi)
-    if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
-        output_MATILDA[4].savefig(output_path + "model_runoff_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
-                                  dpi=output_MATILDA[4].dpi)
+            dpi=output_MATILDA[4].dpi)
     else:
         output_MATILDA[4].savefig(
-            output_path + "model_runoff_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
-                output_MATILDA[0].index.values[-1])[:4] + ".png",
-            dpi=output_MATILDA[4].dpi)
+            output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
+                output_MATILDA[0].index.values[-1])[:4] + ".png", dpi=output_MATILDA[4].dpi)
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
-        output_MATILDA[5].savefig(output_path + "HBV_output_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
+        output_MATILDA[5].savefig(output_path + "model_runoff_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
                                   dpi=output_MATILDA[5].dpi)
     else:
         output_MATILDA[5].savefig(
-            output_path + "HBV_output_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
+            output_path + "model_runoff_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
                 output_MATILDA[0].index.values[-1])[:4] + ".png",
             dpi=output_MATILDA[5].dpi)
+    if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
+        output_MATILDA[6].savefig(output_path + "HBV_output_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
+                                  dpi=output_MATILDA[6].dpi)
+    else:
+        output_MATILDA[6].savefig(
+            output_path + "HBV_output_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
+                output_MATILDA[0].index.values[-1])[:4] + ".png",
+            dpi=output_MATILDA[6].dpi)
     print("---")
 
 """Function to run the whole MATILDA simulation in one function. """

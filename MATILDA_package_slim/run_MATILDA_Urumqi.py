@@ -4,6 +4,7 @@ MATILDA (Modeling wATer resources In gLacierizeD cAtchments) is a combination of
 This file may use the input files created by the COSIPY-utility "aws2cosipy" as forcing data and or a simple dataframe with temperature, precipitation and if possible evapotranspiration and additional observation runoff data to validate it.
 """
 ## import of necessary packages
+from pathlib import Path; home = str(Path.home())
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -11,40 +12,81 @@ import numpy as np
 from MATILDA_slim import MATILDA
 
 ## Setting file paths and parameters
-working_directory = "/home/ana/Seafile/Ana-Lena_Phillip/data/"
-input_path_data = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/"
-input_path_observations = "/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/"
+working_directory = home + "/Seafile/Ana-Lena_Phillip/data/"
+input_path_data = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/best_cosipyrun_no1/"
+input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/glacierno1/hydro/"
+glacier_profile = home + "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/Glacier_Routine_Data/GlacierProfile.txt"
 
 data_csv = "best_cosipy_input_no1_2000-20.csv" # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
+observations_csv = "daily_observations_2011-18.csv"
 
 output_path = working_directory + "input_output/output/" + data_csv[:15]
 
 
 df = pd.read_csv(input_path_data + data_csv)
+obs = pd.read_csv(input_path_observations + observations_csv)
+glacier_profile = pd.read_csv(glacier_profile, sep="\t", header=1) # Glacier Profile
+obs["Qobs"] = obs["Qobs"] / 86400*(3.367*1000000)/1000 # in der Datei sind die mm Daten, deswegen hier nochmal umgewandelt in m3/s
+
 
 ## Running MATILDA
-parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2001-12-31 23:00:00',
-                       sim_start='2001-01-01 00:00:00', sim_end='2099-11-01 23:00:00', freq="Y", area_cat=3.367, area_glac=1.581,
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
+                       sim_start='2001-01-01 00:00:00', sim_end='2019-12-31 23:00:00', freq="Y", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025)
-df = MATILDA.MATILDA_preproc(df, parameter) # Data preprocessing
+df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
-# # building a dataframe for the future
-# df_future = df.copy()
-# for i in range(4):
-#     df_add = df.copy()
-#     df_add.index = df_add.index + pd.offsets.DateOffset(years=((i+1)*20))
-#     df_add["T2"] = df_add["T2"] + ((i+1) * 0.5)
-#     df_add["period"] = (i+1) * 20
-#     df_future = df_future.append(df_add)
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
+output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
+#MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
 
-dfs_future = []
-future_years = range(20,120, 20)
-warming_decade = [0, 0.5, 1, 1.5, 2]
-for i, y in zip(future_years, warming_decade):
-    df_i = df.copy()
-    df_i["T2"] = df_i["T2"] + y
-    df_i["period"] = i
-    dfs_future.extend([df_i])
+output_MATILDA[5].show()
+
+##
+data = output_MATILDA[0][["T2", "RRR", "PE", "Qobs"]]
+data = data.rename(columns={"T2":"T", "RRR":"P", "Qobs":"Q"})
+data.index.names = ['Date']
+data["Date"] = data.index
+data["Date"] = data["Date"].apply(lambda x: x.strftime('%Y%m%d'))
+
+evap = data[["PE"]]
+data = data[["Date", "P", "T", "Q"]]
+data["Q"][np.isnan(data["Q"])] = int(-9999)
+
+#data.to_csv("/home/ana/Desktop/ptq.txt", sep="\t", index=None)
+#evap.to_csv("/home/ana/Desktop/evap.txt", index=None, header=False)
+hbv_light = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/Python/Python_Glac/Results/Results.txt", sep="\t")
+hbv_light["Date"] = hbv_light["Date"].apply(lambda x: pd.to_datetime(str(x), format='%Y%m%d'))
+hbv_light = hbv_light.set_index(hbv_light["Date"])
+
+plot_data = output_MATILDA[0].merge(hbv_light, left_index=True, right_index=True)
+plot_data = plot_data.resample("W").agg({"Q_Total":"sum", "Qobs_x":"sum", "Qsim":"sum"})
+
+plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"])
+plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs_x"])
+plt.plot(plot_data.index.to_pydatetime(), plot_data["Qsim"])
+plt.show()
+
+## Future
+# building a dataframe for the future
+df_future = df_preproc.copy()
+for i in range(4):
+    df_add = df_preproc.copy()
+    df_add.index = df_add.index + pd.offsets.DateOffset(years=((i+1)*20))
+    df_add["T2"] = df_add["T2"] + ((i+1) * 0.5)
+    df_add["period"] = (i+1) * 20
+    df_future = df_future.append(df_add)
+
+# dfs_future = []
+# future_years = range(20,120, 20)
+# warming_decade = [0, 0.5, 1, 1.5, 2]
+# for i, y in zip(future_years, warming_decade):
+#     df_i = df.copy()
+#     df_i["T2"] = df_i["T2"] + y
+#     df_i["period"] = i
+#     dfs_future.extend([df_i])
+##
+output_MATILDA = MATILDA.MATILDA_submodules(df_future, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
+
 
 ##
 future_runoff = pd.DataFrame(index=output_MATILDA[0].index)

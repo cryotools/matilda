@@ -102,7 +102,7 @@ lookup_table.iloc[-1] = 0
 
 hbv_light = pd.read_csv(home + working_directory + "Python/Glacier_Run/Results/GlacierAreaLookupTable.txt", sep="\t")
 
-#lookup_table_elezones.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
+#lookup_table.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
 
 ##
 
