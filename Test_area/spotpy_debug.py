@@ -55,7 +55,7 @@ water_density = 1000
 
 df["T2"] = df["T2"] - 273.15
 df["PE"] = np.where((df["T2"]) + 5 > 0, ((extra_rad / (water_density * latent_heat_flux)) * \
-                                          ((df["T2"]) + 5) / 100) * 1000, 0)
+                                         ((df["T2"]) + 5) / 100) * 1000, 0)
 
 
 ## Setting up SPOTPY
@@ -74,8 +74,8 @@ class spot_setup(object):
     PERC = Uniform(low=0, high=3)
     UZL = Uniform(low=0, high=500)
     PCORR = Uniform(low=0.5, high=2)
-    TT_snow = Uniform(low=-1.5, high=2.5)       # Gehen negative Werte?? Warum hier Celsius?
-    TT_rain = Uniform(low=-1.5, high=2.5)       # Gehen negative Werte?? Warum hier Celsius?
+    TT_snow = Uniform(low=-1.5, high=2.5)  # Gehen negative Werte?? Warum hier Celsius?
+    TT_rain = Uniform(low=-1.5, high=2.5)  # Gehen negative Werte?? Warum hier Celsius?
     CFMAX_snow = Uniform(low=1, high=10)
     SFCF = Uniform(low=0.4, high=1)
     CFR_snow = Uniform(low=0, high=0.1)
@@ -97,7 +97,7 @@ class spot_setup(object):
         return sim[366:]  # excludes the first year as a spinup period
 
     def evaluation(self):
-                                        
+
         return self.Qobs[366:]
 
     def objectivefunction(self, simulation, evaluation, params=None):
@@ -105,27 +105,96 @@ class spot_setup(object):
         # that define the performance of the model run
         if not self.obj_func:
             # This is used if not overwritten by user
-            like = nashsutcliffe(evaluation, simulation)        # In den Beispielen ist hier ein Minus davor?!
+            like = nashsutcliffe(evaluation, simulation)  # In den Beispielen ist hier ein Minus davor?!
         else:
             # Way to ensure flexible spot setup class
             like = self.obj_func(evaluation, simulation)
         return like
 
+
 # test = spot_setup(df)
 # spot_setup.simulation(test)
 ##
-rep = 1000
+rep = 10
 spot_setup = spot_setup(df)  # setting up the model. Normally the brackets should be empty but we need the df argument here     Was soll "normalerweise" heissen?
-sampler = spotpy.algorithms.mc(spot_setup, dbname='mc_hbv', dbformat='csv')  # links the setup to the Monte Carlo algorithm
+sampler = spotpy.algorithms.mc(spot_setup, dbname='mc_hbv',
+                               dbformat='csv')  # links the setup to the Monte Carlo algorithm
 sampler.sample(rep)  # runs the algorithm.
 
 results = sampler.getdata()  # Get the results of the sampler
 # spotpy.analyser.plot_parameterInteraction(results)
-posterior = spotpy.analyser.get_posterior(results, percentage=10)
+# posterior = spotpy.analyser.get_posterior(results, percentage=10)
 # spotpy.analyser.plot_parameterInteraction(posterior)
 print(spotpy.analyser.get_best_parameterset(results))
 
-res = pd.read_csv(
-    home + "/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/mc_hbv.csv")
+## Best Algorithm
 
-res = res.sort_values(['like1'])
+results = []
+spot_setup = spot_setup()
+rep = 10
+timeout = 10  # Given in Seconds
+
+parallel = "seq"
+dbformat = "csv"
+
+sampler = spotpy.algorithms.mc(spot_setup, parallel=parallel, dbname='RosenMC', dbformat=dbformat, sim_timeout=timeout)
+print(describe(sampler))
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.lhs(spot_setup, parallel=parallel, dbname='RosenLHS', dbformat=dbformat,
+                                sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.mle(spot_setup, parallel=parallel, dbname='RosenMLE', dbformat=dbformat,
+                                sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.mcmc(spot_setup, parallel=parallel, dbname='RosenMCMC', dbformat=dbformat,
+                                 sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.sceua(spot_setup, parallel=parallel, dbname='RosenSCEUA', dbformat=dbformat,
+                                  sim_timeout=timeout)
+sampler.sample(rep, ngs=4)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.sa(spot_setup, parallel=parallel, dbname='RosenSA', dbformat=dbformat, sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='RosenDEMCz', dbformat=dbformat,
+                                  sim_timeout=timeout)
+sampler.sample(rep, nChains=4)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.rope(spot_setup, parallel=parallel, dbname='RosenROPE', dbformat=dbformat,
+                                 sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.abc(spot_setup, parallel=parallel, dbname='RosenABC', dbformat=dbformat,
+                                sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.fscabc(spot_setup, parallel=parallel, dbname='RosenFSABC', dbformat=dbformat,
+                                   sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='RosenDEMCZ', dbformat=dbformat,
+                                  sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.dream(spot_setup, parallel=parallel, dbname='RosenDREAM', dbformat=dbformat,
+                                  sim_timeout=timeout)
+sampler.sample(rep)
+results.append(sampler.getdata())
+
+algorithms = ['mc', 'lhs', 'mle', 'mcmc', 'sceua', 'sa', 'demcz', 'rope', 'abc', 'fscabc', 'demcz', 'dream']
+spotpy.analyser.plot_parametertrace_algorithms(results, algorithms, spot_setup)
