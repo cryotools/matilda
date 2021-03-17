@@ -4,7 +4,6 @@
 from pathlib import Path; home = str(Path.home())
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 ## Files + Input
 working_directory = "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/"
 input = home + working_directory + "Glacier_Routine_Data/GlacierProfile.txt"
@@ -24,8 +23,6 @@ ai = glacier_profile["Area"] # ai is the glacier area of each elevation zone, st
 lookup_table = pd.DataFrame()
 lookup_table = lookup_table.append(initial_area, ignore_index=True)
 
-hi = pd.DataFrame()
-hi = hi.append(hi_initial, ignore_index=True)
 
 ## Pre-simulation
 # 1. calculate total glacier mass in mm water equivalent: M = sum(ai * hi)
@@ -59,74 +56,53 @@ else:
 
 glacier_profile["delta_h"] = (glacier_profile["norm_elevation"] + a)**y + (b*(glacier_profile["norm_elevation"] + a))+c
 
-## Pre-simulation: LOOP
-ai_scaled = ai.copy()
+## LOOP
 
-# for _ in range(68):
-#     # 4. scaling factor to scale dimensionless deltah
-#     # fs = deltaM / (sum(ai*deltahi)
-#     fs = deltaM / sum(ai_scaled * glacier_profile["delta_h"])
-#
-#     # 5. compute glacier geometry for reduced mass
-#     # hi,k+1 = hi,k + fs deltahi
-#     hi_k = hi_k + fs*glacier_profile["delta_h"]
-#     # 6. width scaling
-#     # ai scaled = ai * root(hi/hi initial)
-#     ai_scaled = ai * np.sqrt((hi_k/hi_initial))
-#     ai_scaled = pd.Series(np.where(np.isnan(ai_scaled), 0, ai_scaled))
-#     # 7. create lookup table
-#     # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
-#     lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
-#     hi = hi.append(hi_k, ignore_index=True)
-deltaM_add = (glacier_profile["delta_h"]/sum(glacier_profile["delta_h"]))*deltaM
+ai_scaled = ai.copy()  # setting ai_scaled with the initial values
 
-for _ in range(100):
-    # add remaining melt to deltaM when the elevation zone reaches 0
-    deltaM_zone = pd.Series((np.where(ai_scaled.isna(), deltaM_add, 0)))
-    deltaM_zone[0] = 0
-    #deltaM_zone = deltaM_add * ai
-    deltaM_zone1 = sum(deltaM_zone)
 
-    # 4. scaling factor to scale dimensionless deltah
-    #fs = deltaM / (sum(ai_scaled*glacier_profile["delta_h"]))
-    fs = (deltaM + deltaM_zone1) / sum(ai * glacier_profile["delta_h"])
+fs = deltaM / (sum(ai * glacier_profile["delta_h"]))  # a) initial ai
+
+for _ in range(99):
 
     # 5. compute glacier geometry for reduced mass
-    # hi,k+1 = hi,k + fs deltahi
-    hi_k = hi_k + fs*glacier_profile["delta_h"]
+
+    hi_k = hi_k + fs * glacier_profile["delta_h"]
+
+    leftover = sum(pd.Series(np.where(hi_k < 0, hi_k, 0)) * ai)  # Calculate leftover (i.e. the 'negative' glacier volume)
+
+    hi_k = pd.Series(np.where(hi_k < 0, np.nan, hi_k))  # Set those zones that have a negative weq to NaN to make sure they will be excluded from now on
+
     # 6. width scaling
-    # ai scaled = ai * root(hi/hi initial)
-    ai_scaled = ai * np.sqrt((hi_k/hi_initial))
-    #ai_scaled = pd.Series(np.where(np.isnan(ai_scaled), 0, ai_scaled))
+
+    ai_scaled = ai * np.sqrt((hi_k / hi_initial))
+
     # 7. create lookup table
+
     # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
+
     lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
-    hi = hi.append(hi_k, ignore_index=True)
-# update the elevation zones: new sum of all the elevation bands in that zone
+
+    if sum(pd.Series(np.where(np.isnan(ai_scaled), 0, ai)) * glacier_profile["delta_h"]) == 0:
+        ai_scaled = np.where(ai_scaled == 1, 1, 0)
+    else:
+        # Update fs (taking into account the leftover)
+        fs = (deltaM + leftover) / sum(pd.Series(np.where(np.isnan(ai_scaled), 0, ai)) * glacier_profile["delta_h"])
 
 lookup_table = lookup_table.fillna(0)
 ## Analysis
-lookup_table.columns = elevation_zones
-lookup_table.sum(axis=1)
+lookup_table.columns = glacier_profile["EleZone"]
+lookup_table = lookup_table.groupby(level=0, axis=1).sum()
+
+elezones_inital = lookup_table.iloc[0]
+
+lookup_table = lookup_table / elezones_inital
+lookup_table = round(lookup_table, 4)
+lookup_table.iloc[-1] = 0
 
 hbv_light = pd.read_csv(home + working_directory + "Python/Glacier_Run/Results/GlacierAreaLookupTable.txt", sep="\t")
 
-lookup_table_elezones = pd.DataFrame(columns=["3700", "3800", "3900", "4000", "4100", "4200", "4400"])
-lookup_table_elezones["3700"] = lookup_table.iloc[:,0]
-lookup_table_elezones["3800"] = lookup_table.iloc[:,1]
-lookup_table_elezones["3900"] = lookup_table.iloc[:,2] + lookup_table.iloc[:,3]
-lookup_table_elezones["4000"] = lookup_table.iloc[:,4] + lookup_table.iloc[:,5]
-lookup_table_elezones["4100"] = lookup_table.iloc[:,6] + lookup_table.iloc[:,7]
-lookup_table_elezones["4200"] = lookup_table.iloc[:,8] + lookup_table.iloc[:,9]
-lookup_table_elezones["4400"] = lookup_table.iloc[:,10]
-
-elezones_inital = lookup_table_elezones.iloc[0]
-
-lookup_table_elezones = lookup_table_elezones / elezones_inital
-lookup_table_elezones = round(lookup_table_elezones, 4)
-lookup_table_elezones.iloc[-1] = 0
-
-#lookup_table_elezones.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
+#lookup_table.to_csv(output + "lookup_python.txt", index=None, header=True, sep="\t")
 
 ##
 
