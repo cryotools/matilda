@@ -63,23 +63,33 @@ df["PE"] = np.where((df["T2"]) + 5 > 0, ((extra_rad / (water_density * latent_he
 # creating a spotpy setup class
 class spot_setup(object):
     # defining all parameters and the distribution
-    BETA = Uniform(low=1, high=6)
-    CET = Uniform(low=0, high=0.3)
-    FC = Uniform(low=50, high=500)
-    K0 = Uniform(low=0.01, high=0.4)
-    K1 = Uniform(low=0.01, high=0.4)
-    K2 = Uniform(low=0.001, high=0.15)
-    LP = Uniform(low=0.3, high=1)
-    MAXBAS = Uniform(low=2, high=7)
-    PERC = Uniform(low=0, high=3)
-    UZL = Uniform(low=0, high=500)
-    PCORR = Uniform(low=0.5, high=2)
-    TT_snow = Uniform(low=-1.5, high=2.5)  # Gehen negative Werte?? Warum hier Celsius?
-    TT_rain = Uniform(low=-1.5, high=2.5)  # Gehen negative Werte?? Warum hier Celsius?
-    CFMAX_snow = Uniform(low=1, high=10)
-    SFCF = Uniform(low=0.4, high=1)
-    CFR_snow = Uniform(low=0, high=0.1)
-    CWH = Uniform(low=0, high=0.2)
+    param = BETA, CET, FC, K0, K1, K2, LP, MAXBAS, PERC, UZL, PCORR, \
+            TT_snow, TT_rain, CFMAX_snow, SFCF, CFR_snow, CWH = [
+        Uniform(low=1, high=6),         # BETA
+        Uniform(low=0, high=0.3),       # CET
+        Uniform(low=50, high=500),      # FC
+        Uniform(low=0.01, high=0.4),    # K0
+        Uniform(low=0.01, high=0.4),    # K1
+        Uniform(low=0.001, high=0.15),  # K2
+        Uniform(low=0.3, high=1),       # LP
+        Uniform(low=2, high=7),         # MAXBAS
+        Uniform(low=0, high=3),         # PERC
+        Uniform(low=0, high=500),       # UZL
+        Uniform(low=0.5, high=2),       # PCORR
+        Uniform(low=-1.5, high=2.5),    # TT_snow
+        Uniform(low=-1.5, high=2.5),    # TT_rain
+        Uniform(low=1, high=10),        # CFMAX_snow
+        Uniform(low=0.4, high=1),       # SFCF
+        Uniform(low=0, high=0.1),       # CFR_snow
+        Uniform(low=0, high=0.2),       # CWH
+    ]
+
+    # Number of needed parameter iterations for parametrization and sensitivity analysis
+    M = 4                       # inference factor (default = 4)
+    d = 2                       # frequency step (default = 2)
+    k = len(param)              # number of parameters
+
+    par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
 
     # loading in all the data. Not 100% sure if this is correct
     def __init__(self, df, obj_func=None):
@@ -111,90 +121,98 @@ class spot_setup(object):
             like = self.obj_func(evaluation, simulation)
         return like
 
-
-# test = spot_setup(df)
-# spot_setup.simulation(test)
 ##
-rep = 10
-spot_setup = spot_setup(df)  # setting up the model. Normally the brackets should be empty but we need the df argument here     Was soll "normalerweise" heissen?
-sampler = spotpy.algorithms.mc(spot_setup, dbname='mc_hbv',
-                               dbformat='csv')  # links the setup to the Monte Carlo algorithm
-sampler.sample(rep)  # runs the algorithm.
+# rep = 10
+# spot_setup = spot_setup(df)
+# sampler = spotpy.algorithms.mc(spot_setup, dbname='mc_hbv',
+#                                dbformat='csv')  # links the setup to the Monte Carlo algorithm
+# sampler.sample(rep)  # runs the algorithm.
+#
+# results = sampler.getdata()  # Get the results of the sampler
+# # spotpy.analyser.plot_parameterInteraction(results)
+# # posterior = spotpy.analyser.get_posterior(results, percentage=10)
+# # spotpy.analyser.plot_parameterInteraction(posterior)
+# print(spotpy.analyser.get_best_parameterset(results))
 
-results = sampler.getdata()  # Get the results of the sampler
-# spotpy.analyser.plot_parameterInteraction(results)
-# posterior = spotpy.analyser.get_posterior(results, percentage=10)
-# spotpy.analyser.plot_parameterInteraction(posterior)
-print(spotpy.analyser.get_best_parameterset(results))
-
-## Best Algorithm
+## Find best Algorithm
 
 results = []
-spot_setup = spot_setup()
-rep = 10
+spot_setup = spot_setup(df)         # Kann man aus irgendeinem Grund nur einmal ausführen.
+rep = 10        # ideal number of iterations: spot_setup.par_iter
 timeout = 10  # Given in Seconds
 
 parallel = "seq"
-dbformat = "csv"
+dbformat = None
 
-sampler = spotpy.algorithms.mc(spot_setup, parallel=parallel, dbname='RosenMC', dbformat=dbformat, sim_timeout=timeout)
-print(describe(sampler))
+sampler = spotpy.algorithms.mc(spot_setup, parallel=parallel, dbname='HBV_MC', dbformat=dbformat, sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.lhs(spot_setup, parallel=parallel, dbname='RosenLHS', dbformat=dbformat,
+sampler = spotpy.algorithms.lhs(spot_setup, parallel=parallel, dbname='HBV_LHS', dbformat=dbformat,
                                 sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.mle(spot_setup, parallel=parallel, dbname='RosenMLE', dbformat=dbformat,
+sampler = spotpy.algorithms.mle(spot_setup, parallel=parallel, dbname='HBV_MLE', dbformat=dbformat,
                                 sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.mcmc(spot_setup, parallel=parallel, dbname='RosenMCMC', dbformat=dbformat,
+sampler = spotpy.algorithms.mcmc(spot_setup, parallel=parallel, dbname='HBV_MCMC', dbformat=dbformat,
                                  sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.sceua(spot_setup, parallel=parallel, dbname='RosenSCEUA', dbformat=dbformat,
+sampler = spotpy.algorithms.sceua(spot_setup, parallel=parallel, dbname='HBV_SCEUA', dbformat=dbformat,
                                   sim_timeout=timeout)
 sampler.sample(rep, ngs=4)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.sa(spot_setup, parallel=parallel, dbname='RosenSA', dbformat=dbformat, sim_timeout=timeout)
+sampler = spotpy.algorithms.sa(spot_setup, parallel=parallel, dbname='HBV_SA', dbformat=dbformat, sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='RosenDEMCz', dbformat=dbformat,
-                                  sim_timeout=timeout)
-sampler.sample(rep, nChains=4)
-results.append(sampler.getdata())
+# sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='HBV_DEMCz', dbformat=dbformat,
+#                                   sim_timeout=timeout)
+# sampler.sample(rep, nChains=4)
+# results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.rope(spot_setup, parallel=parallel, dbname='RosenROPE', dbformat=dbformat,
+sampler = spotpy.algorithms.rope(spot_setup, parallel=parallel, dbname='HBV_ROPE', dbformat=dbformat,
                                  sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.abc(spot_setup, parallel=parallel, dbname='RosenABC', dbformat=dbformat,
+sampler = spotpy.algorithms.abc(spot_setup, parallel=parallel, dbname='HBV_ABC', dbformat=dbformat,
                                 sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.fscabc(spot_setup, parallel=parallel, dbname='RosenFSABC', dbformat=dbformat,
+sampler = spotpy.algorithms.fscabc(spot_setup, parallel=parallel, dbname='HBV_FSABC', dbformat=dbformat,
                                    sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='RosenDEMCZ', dbformat=dbformat,
+# sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='HBV_DEMCZ', dbformat=dbformat,
+#                                   sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+
+sampler = spotpy.algorithms.dream(spot_setup, parallel=parallel, dbname='HBV_DREAM', dbformat=dbformat,
                                   sim_timeout=timeout)
 sampler.sample(rep)
 results.append(sampler.getdata())
 
-sampler = spotpy.algorithms.dream(spot_setup, parallel=parallel, dbname='RosenDREAM', dbformat=dbformat,
-                                  sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-algorithms = ['mc', 'lhs', 'mle', 'mcmc', 'sceua', 'sa', 'demcz', 'rope', 'abc', 'fscabc', 'demcz', 'dream']
+algorithms = ['mc', 'lhs', 'mle', 'mcmc', 'sceua', 'sa', 'rope', 'abc', 'fscabc', 'dream']  # 'demcz', , 'demcz'
 spotpy.analyser.plot_parametertrace_algorithms(results, algorithms, spot_setup)
+
+## Sensitivity Analysis
+spot_setup = spot_setup(df)     # only once
+
+sampler = spotpy.algorithms.fast(spot_setup,  dbname='HBV_FAST',  dbformat='csv')
+sampler.sample(spot_setup.par_iter)          # minimum 60 to run through,
+                            # ideal number of iterations: spot_setup.par_iter, immer wieder einzelne Zeilen "out of bounds"
+results = sampler.getdata()
+analyser.plot_fast_sensitivity(results, number_of_sensitiv_pars=2, fig_name="FAST_sensitivity_HBV.png")
+
+SI = spotpy.analyser.get_sensitivity_of_fast(results)  # Sensitivity indexes as dict
+
