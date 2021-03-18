@@ -46,5 +46,7 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, set_up_start='2018-01-0
                        ele_dat=3864, ele_glac=4042, ele_cat=3360, TT_snow=0, TT_rain=2)
 output_MATILDA[4].show()
 
+output_MATILDA[0].Q_Total
+
 ##
 
