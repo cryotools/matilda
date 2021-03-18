@@ -14,10 +14,10 @@ import matplotlib.pyplot as plt
 
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start = None, set_up_end = None, sim_start = None, sim_end = None, freq = "D", area_cat = None, \
-                      area_glac = None, ele_dat = None, ele_glac = None, ele_cat = None, lr_temp = -0.006, lr_prec = 0, TT_snow = 0, \
-                      TT_rain = 2, CFMAX_snow = 2.8, CFMAX_ice = 5.6, CFR_snow = 0.05, CFR_ice = 0.05, BETA = 1.0, \
-                      CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL = 120, PCORR = 1.0, \
-                      SFCF = 0.7, CWH = 0.1):
+                      area_glac = None, ele_dat = None, ele_glac = None, ele_cat = None, lr_temp = -0.006, lr_prec = 0, \
+                      hydro_year = 10, TT_snow = 0, TT_rain = 2, CFMAX_snow = 2.8, CFMAX_ice = 5.6, CFR_snow = 0.05,  \
+                      CFR_ice = 0.05, BETA = 1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
+                      PERC=1.5, UZL = 120, PCORR = 1.0, SFCF = 0.7, CWH = 0.1):
 
     print("Reading in the parameter for the MATILDA simulation.")
     # Checking the parameters to set the catchment properties and simulation
@@ -31,6 +31,8 @@ def MATILDA_parameter(input_df, set_up_start = None, set_up_end = None, sim_star
     if area_glac is not None or area_glac > 0:
         if ele_glac is None and ele_dat is not None:
             print("WARNING: Only the elevation for the data is given, not for glacier.")
+    if hydro_year > 12 and hydro_year < 1:
+        print("WARNING: The month which begins the hydrological year is out of bounds [1, 12]")
 
     if set_up_end is not None and sim_start is not None:
         if set_up_end > sim_start:
@@ -112,10 +114,11 @@ def MATILDA_parameter(input_df, set_up_start = None, set_up_end = None, sim_star
 
     parameter = pd.Series({"set_up_start":set_up_start, "set_up_end":set_up_end, "sim_start":sim_start, "sim_end":sim_end, \
                            "freq":freq, "freq_long":freq_long, "area_cat":area_cat, "area_glac":area_glac, "ele_dat":ele_dat, \
-                            "ele_glac":ele_glac, "ele_cat":ele_cat, "lr_temp":lr_temp, "lr_prec":lr_prec, "TT_snow":TT_snow, \
-                           "TT_rain":TT_rain, "CFMAX_snow":CFMAX_snow, "CFMAX_ice":CFMAX_ice, "CFR_snow":CFR_snow, \
-                           "CFR_ice":CFR_ice, "BETA":BETA,  "CET":CET, "FC":FC, "K0":K0, "K1":K1, "K2":K2, "LP":LP,  \
-                           "MAXBAS":MAXBAS, "PERC":PERC, "UZL":UZL, "PCORR":PCORR, "SFCF":SFCF, "CWH":CWH})
+                            "ele_glac":ele_glac, "ele_cat":ele_cat, "hydro_year": hydro_year, "lr_temp":lr_temp, \
+                           "lr_prec":lr_prec, "TT_snow":TT_snow, "TT_rain":TT_rain, "CFMAX_snow":CFMAX_snow, \
+                           "CFMAX_ice":CFMAX_ice, "CFR_snow":CFR_snow, "CFR_ice":CFR_ice, "BETA":BETA,  "CET":CET, \
+                           "FC":FC, "K0":K0, "K1":K1, "K2":K2, "LP":LP, "MAXBAS":MAXBAS, "PERC":PERC, "UZL":UZL, \
+                           "PCORR":PCORR, "SFCF":SFCF, "CWH":CWH})
     print("Parameter for the MATILDA simulation are set")
     return parameter
 
@@ -282,8 +285,8 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         inst_smb = accu_rate - runoff_rate
 
         glacier_melt = xr.merge(
-            [xr.DataArray(inst_smb, name="DDM_smb"), xr.DataArray(accu_rate, name="DDM_accumulation_rate"), \
-             xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"),
+            [xr.DataArray(inst_smb, name="DDM_smb"), xr.DataArray(pdd, name="pdd"), \
+             xr.DataArray(accu_rate, name="DDM_accumulation_rate"), xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"),
              xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"), \
              xr.DataArray(total_melt, name="DDM_total_melt"), xr.DataArray(runoff_rate, name="Q_DDM")])
         # glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
@@ -380,9 +383,9 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         return lookup_table
 
     # calculating the new glacier area for each hydrological year
-    def glacier_change(output_DDM, lookup_table, glacier_profile):
+    def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
         #determining from when to when the hydrological year is
-        output_DDM["water_year"] = np.where((output_DDM.index.month) >= 10, output_DDM.index.year + 1, output_DDM.index.year)
+        output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1, output_DDM.index.year)
         # initial smb from the glacier routine script in m w.e.
         m = sum(glacier_profile["Area"]*glacier_profile["WE"])
         initial_smb = m / 1000
@@ -399,10 +402,13 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         for i in range(len(glacier_change)):
             year = glacier_change["water_year"][i]
             smb = int(-glacier_change["smb_percentage"][i])
-            # getting the right row from the lookup table depending on the smb
-            area_melt = lookup_table.iloc[smb]
-            # getting the new glacier area by multiplying the initial area with the area changes
-            new_area = np.nansum(area_melt.values * (initial_area.values))
+            if smb <=99:
+                # getting the right row from the lookup table depending on the smb
+                area_melt = lookup_table.iloc[smb]
+                # getting the new glacier area by multiplying the initial area with the area changes
+                new_area = np.nansum(area_melt.values * (initial_area.values))
+            else:
+                new_area = 0
             # multiplying the output with the fraction of the new area
             output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])
 
@@ -411,7 +417,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     if glacier_profile is not None:
         lookup_table = create_lookup_table(glacier_profile, parameter)
-        output_DDM = glacier_change(output_DDM, lookup_table, glacier_profile)
+        output_DDM = glacier_change(output_DDM, lookup_table, glacier_profile, parameter)
     else:
         # scaling glacier melt to glacier area
         output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
@@ -754,12 +760,14 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 def MATILDA_plots(output_MATILDA, parameter):
     # resampling the output to the specified frequency
     def plot_data(output_MATILDA, parameter):
-        obs = output_MATILDA[0]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
+        if "Qobs" in output_MATILDA[0].columns:
+            obs = output_MATILDA[0]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
         plot_data = output_MATILDA[0].resample(parameter.freq).agg(
             {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
              "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
              "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
-        plot_data["Qobs"] = obs
+        if "Qobs" in output_MATILDA[0].columns:
+            plot_data["Qobs"] = obs
         return plot_data
 
     # Plotting the meteorological parameters
@@ -793,7 +801,7 @@ def MATILDA_plots(output_MATILDA, parameter):
     def plot_runoff(plot_data, parameter):
         plot_data["plot"] = 0
         fig = plt.figure(figsize=(10, 6))
-        if 'Qobs' in plot_data:
+        if 'Qobs' in plot_data.columns:
             plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00",
                      label="Observations", linewidth=1.2)
         plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], c="k",
@@ -901,16 +909,16 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     print("---")
 
 """Function to run the whole MATILDA simulation in one function. """
-def MATILDA_simulation(input_df, obs = None, output = None, set_up_start = None, set_up_end = None, sim_start = None, sim_end = None, \
-                       freq = "D", area_cat = None, area_glac = None, ele_dat = None, ele_glac = None, ele_cat = None, lr_temp = -0.006, \
-                       lr_prec = 0, TT_snow = 0, TT_rain = 2, CFMAX_snow = 2.8, CFMAX_ice = 5.6, CFR_snow = 0.05, \
-                       CFR_ice = 0.05, BETA = 1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
-                       PERC=1.5, UZL = 120, PCORR = 1.0, SFCF = 0.7, CWH = 0.1):
+def MATILDA_simulation(input_df, obs = None, output = None, set_up_start = None, set_up_end = None, sim_start = None, \
+                       sim_end = None, freq = "D", area_cat = None, area_glac = None, ele_dat = None, ele_glac = None, \
+                       ele_cat = None, hydro_year = 10, lr_temp = -0.006, lr_prec = 0, TT_snow = 0, TT_rain = 2, \
+                       CFMAX_snow = 2.8, CFMAX_ice = 5.6, CFR_snow = 0.05, CFR_ice = 0.05, BETA = 1.0, CET=0.15, FC=250, \
+                       K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL = 120, PCORR = 1.0, SFCF = 0.7, CWH = 0.1):
     print('---')
     print('MATILDA framework')
     parameter = MATILDA_parameter(input_df, set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end, \
                            freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
-                            ele_glac=ele_glac, ele_cat=ele_cat, lr_temp=lr_temp, lr_prec=lr_prec, TT_snow=TT_snow, \
+                            ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, lr_temp=lr_temp, lr_prec=lr_prec, TT_snow=TT_snow, \
                            TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, CFR_snow=CFR_snow, \
                            CFR_ice=CFR_ice, BETA=BETA,  CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP,  \
                            MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH)
