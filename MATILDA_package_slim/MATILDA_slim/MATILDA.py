@@ -179,7 +179,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             input_df_catchment = df_preproc.copy()
             input_df_catchment["T2"] = np.where(input_df_catchment["T2"] <= 100, input_df_catchment["T2"] + 273.15, input_df_catchment["T2"])
             input_df_catchment["T2"] = input_df_catchment["T2"] + height_diff_catchment * float(parameter.lr_temp)
-            input_df_catchment["RRR"] = input_df_catchment["RRR"] + height_diff_catchment * float(parameter.lr_prec)
+            input_df_catchment["RRR"] = input_df_catchment["RRR"] * height_diff_catchment * float(parameter.lr_prec)
         else:
             input_df_catchment = df_preproc.copy()
         return input_df_glacier, input_df_catchment
