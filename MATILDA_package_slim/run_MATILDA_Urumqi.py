@@ -29,18 +29,18 @@ obs["Qobs"] = obs["Qobs"] / 86400*(3.367*1000000)/1000 # in der Datei sind die m
 
 
 ## Running MATILDA
-parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
-                       sim_start='2001-01-01 00:00:00', sim_end='2099-12-31 23:00:00', freq="Y", area_cat=3.367, area_glac=1.581,
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2010-01-01 00:00:00', set_up_end='2010-12-31 23:00:00',
+                       sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="Y", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
 output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 #MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
-
 output_MATILDA[5].show()
 
-##
+
+## Preparing data to HBV Light
 data = output_MATILDA[0][["T2", "RRR", "PE", "Qobs"]]
 data = data.rename(columns={"T2":"T", "RRR":"P", "Qobs":"Q"})
 data.index.names = ['Date']
@@ -53,16 +53,22 @@ data["Q"][np.isnan(data["Q"])] = int(-9999)
 
 #data.to_csv("/home/ana/Desktop/ptq.txt", sep="\t", index=None)
 #evap.to_csv("/home/ana/Desktop/evap.txt", index=None, header=False)
+
+## Comparing HBV Light to MATILDA
 hbv_light = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Glacier_No.1/Python/Python_Glac/Results/Results.txt", sep="\t")
 hbv_light["Date"] = hbv_light["Date"].apply(lambda x: pd.to_datetime(str(x), format='%Y%m%d'))
 hbv_light = hbv_light.set_index(hbv_light["Date"])
 
 plot_data = output_MATILDA[0].merge(hbv_light, left_index=True, right_index=True)
-plot_data = plot_data.resample("W").agg({"Q_Total":"sum", "Qobs_x":"sum", "Qsim":"sum"})
+plot_data = plot_data.resample("D").agg({"Q_Total":"sum", "Qobs_x":"sum", "Qsim":"sum"})
 
-plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"])
-plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs_x"])
-plt.plot(plot_data.index.to_pydatetime(), plot_data["Qsim"])
+plt.figure(figsize=(10,6))
+plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], label="MATILDA")
+plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs_x"], label="Observations")
+plt.plot(plot_data.index.to_pydatetime(), plot_data["Qsim"], label="HBV Light")
+plt.title("Daily runoff in the Urumqi catchment")
+plt.xlabel("Date"), plt.ylabel("Runoff [mm]")
+plt.legend()
 plt.show()
 
 ## Future
@@ -84,10 +90,14 @@ for i in range(4):
 #     df_i["period"] = i
 #     dfs_future.extend([df_i])
 ##
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
+                       sim_start='2001-01-01 00:00:00', sim_end='2099-12-31 23:00:00', freq="Y", area_cat=3.367, area_glac=1.581,
+                       ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 output_MATILDA = MATILDA.MATILDA_submodules(df_future, parameter, glacier_profile=glacier_profile) # MATILDA model run + downscaling
-#output_MATILDA[0].to_csv("/home/ana/Desktop/Urumqi_future.csv")
+# output_MATILDA[0].to_csv("/home/ana/Desktop/Urumqi_future2.csv")
+# output_MATILDA[4].to_csv("/home/ana/Desktop/Urumqi_future_glacier.csv")
 
-yearly_runoff = output_MATILDA[0].resample("Y").agg({"Q_Total":"sum"})
+yearly_runoff = output_MATILDA[0].resample("Y").agg({"Q_Total":"sum", "Q_DDM":"sum", "Q_DDM_updated":"sum", "Q_HBV":"sum"})
 periods = [2020, 2040, 2060, 2080, 2100]
 output_MATILDA[0]["period"] = 0
 for i in periods:
