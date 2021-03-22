@@ -31,7 +31,7 @@ parameter = MATILDA.MATILDA_parameter(df, set_up_start='2018-01-01 00:00:00', se
                        ele_dat=3864, ele_glac=4042, ele_cat=3360)
 df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
-output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc) # MATILDA model run + downscaling
+output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs_preproc) # MATILDA model run + downscaling
 
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
