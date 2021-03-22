@@ -408,33 +408,26 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         # percentage of how much of the initial mass melted
         glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / initial_smb) * 100)
 
-        glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[parameter.area_glac]})
-
         output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"]
         for i in range(len(glacier_change)):
             year = glacier_change["water_year"][i]
             smb = int(-glacier_change["smb_percentage"][i])
-            if smb <=99:
-                # getting the right row from the lookup table depending on the smb
-                area_melt = lookup_table.iloc[smb]
-                # getting the new glacier area by multiplying the initial area with the area changes
-                new_area = np.nansum((area_melt.values * (initial_area.values))*parameter.area_cat)
-            else:
-                new_area = 0
+            # getting the right row from the lookup table depending on the smb
+            area_melt = lookup_table.iloc[smb]
+            # getting the new glacier area by multiplying the initial area with the area changes
+            new_area = np.nansum((area_melt.values * (initial_area.values))*parameter.area_cat)
             # multiplying the output with the fraction of the new area
-            glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area}, ignore_index=True)
             output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])
 
-        return output_DDM, glacier_change_area
+        return output_DDM
 
     if glacier_profile is not None:
         lookup_table = create_lookup_table(glacier_profile, parameter)
-        output_DDM, glacier_change_area = glacier_change(output_DDM, lookup_table, glacier_profile, parameter)
+        output_DDM = glacier_change(output_DDM, lookup_table, glacier_profile, parameter)
     else:
         # scaling glacier melt to glacier area
         output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
         lookup_table = str("No lookup table generated")
-        glacier_change_area = str("No glacier changes calculated")
 
     """
     Compute the runoff from the catchment with the HBV model
@@ -771,7 +764,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print(stats)
     print("End of the MATILDA simulation")
     print("---")
-    output_all = [output_MATILDA, nash_sut, stats, lookup_table, glacier_change_area]
+    output_all = [output_MATILDA, nash_sut, stats, lookup_table]
 
     return output_all
 
@@ -903,31 +896,29 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     parameter.to_csv(output_path + "model_parameter.csv")
 
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
-        output_MATILDA[5].savefig(
+        output_MATILDA[4].savefig(
             output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
-            dpi=output_MATILDA[5].dpi)
+            dpi=output_MATILDA[4].dpi)
+    else:
+        output_MATILDA[4].savefig(
+            output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
+                output_MATILDA[0].index.values[-1])[:4] + ".png", dpi=output_MATILDA[4].dpi)
+    if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
+        output_MATILDA[5].savefig(output_path + "model_runoff_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
+                                  dpi=output_MATILDA[5].dpi)
     else:
         output_MATILDA[5].savefig(
-            output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
-                output_MATILDA[0].index.values[-1])[:4] + ".png", dpi=output_MATILDA[5].dpi)
-
+            output_path + "model_runoff_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
+                output_MATILDA[0].index.values[-1])[:4] + ".png",
+            dpi=output_MATILDA[5].dpi)
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
-        output_MATILDA[6].savefig(output_path + "model_runoff_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
+        output_MATILDA[6].savefig(output_path + "HBV_output_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
                                   dpi=output_MATILDA[6].dpi)
     else:
         output_MATILDA[6].savefig(
-            output_path + "model_runoff_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
-                output_MATILDA[0].index.values[-1])[:4] + ".png",
-            dpi=output_MATILDA[6].dpi)
-
-    if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
-        output_MATILDA[7].savefig(output_path + "HBV_output_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
-                                  dpi=output_MATILDA[7].dpi)
-    else:
-        output_MATILDA[7].savefig(
             output_path + "HBV_output_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
                 output_MATILDA[0].index.values[-1])[:4] + ".png",
-            dpi=output_MATILDA[7].dpi)
+            dpi=output_MATILDA[6].dpi)
     print("---")
 
 
