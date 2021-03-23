@@ -145,7 +145,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         obs_preproc = obs.copy()
         obs_preproc.set_index('Date', inplace=True)
         obs_preproc.index = pd.to_datetime(obs_preproc.index)
-        obs_preproc = obs_preproc[parameter.set_up_start: parameter.sim_end]
+        obs_preproc = obs_preproc[parameter.sim_start: parameter.sim_end]
         # Changing the input unit from m/3 to mm.
         obs_preproc["Qobs"] = obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
         obs_preproc = obs_preproc.resample("D").sum()
@@ -229,9 +229,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
         return pdd_ds
 
-    input_df_glacier = input_df_glacier[parameter.sim_start:parameter.sim_end]
-    degreedays_ds = calculate_PDD(input_df_glacier)
-
     """
     Degree Day Model to calculate the accumulation, snow and ice melt and runoff rate from the glaciers.
     Model input rewritten and adjusted to our needs from the pypdd function (github.com/juseg/pypdd
@@ -306,7 +303,10 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         print("Finished running the DDM")
         return DDM_results
 
-    output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
+    input_df_glacier = input_df_glacier[parameter.sim_start:parameter.sim_end]
+    if parameter.area_glac > 0:
+        degreedays_ds = calculate_PDD(input_df_glacier)
+        output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
     """ Implementing a glacier melt routine baseon the deltaH approach based on Seibert et al. (2018) and 
     Huss and al.(2010)"""
@@ -418,7 +418,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
                 # getting the right row from the lookup table depending on the smb
                 area_melt = lookup_table.iloc[smb]
                 # getting the new glacier area by multiplying the initial area with the area changes
-                new_area = np.nansum((area_melt.values * (initial_area.values))*parameter.area_cat)
+                new_area = np.nansum((area_melt.values * (initial_area.values)))*parameter.area_cat
             else:
                 new_area = 0
             # multiplying the output with the fraction of the new area
@@ -426,13 +426,16 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])
 
         return output_DDM, glacier_change_area
-
-    if glacier_profile is not None:
-        lookup_table = create_lookup_table(glacier_profile, parameter)
-        output_DDM, glacier_change_area = glacier_change(output_DDM, lookup_table, glacier_profile, parameter)
+    if parameter.area_glac > 0:
+        if glacier_profile is not None:
+            lookup_table = create_lookup_table(glacier_profile, parameter)
+            output_DDM, glacier_change_area = glacier_change(output_DDM, lookup_table, glacier_profile, parameter)
+        else:
+            # scaling glacier melt to glacier area
+            output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
+            lookup_table = str("No lookup table generated")
+            glacier_change_area = str("No glacier changes calculated")
     else:
-        # scaling glacier melt to glacier area
-        output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
         lookup_table = str("No lookup table generated")
         glacier_change_area = str("No glacier changes calculated")
 
@@ -485,6 +488,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         SNOW_cal = snowfrac_cal * Prec_cal
         # snow correction factor
         SNOW_cal = parameter.SFCF * SNOW_cal
+        SNOW_cal =SNOW_cal * (1-(parameter.area_glac / parameter.area_cat))
         # evaporation correction
         # a. calculate long-term averages of daily temperature
         Temp_mean_cal = np.array([Temp_cal.loc[Temp_cal.index.dayofyear == x].mean() \
@@ -586,6 +590,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         SNOW = parameter.SFCF * SNOW
         # snow correction factor
         SNOW = parameter.SFCF * SNOW
+        SNOW = SNOW * (1-(parameter.area_glac / parameter.area_cat))
         # evaporation correction
         # a. calculate long-term averages of daily temperature
         Temp_mean = np.array([Temp.loc[Temp.index.dayofyear == x].mean() \
@@ -729,13 +734,21 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     output_HBV = output_HBV[parameter.sim_start:parameter.sim_end]
 
     # Output postprocessing
-    output_MATILDA = pd.concat([output_HBV, output_DDM], axis=1)
+    if parameter.area_glac > 0:
+        output_MATILDA = pd.concat([output_HBV, output_DDM], axis=1)
+    else:
+        output_MATILDA = output_HBV.copy()
+
     if obs is not None:
         output_MATILDA = pd.concat([output_MATILDA, obs], axis=1)
-    if glacier_profile is not None:
-        output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_updated"]
+
+    if parameter.area_glac > 0:
+        if glacier_profile is not None:
+            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_updated"]
+        else:
+            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM"]
     else:
-        output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM"]
+        output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"]
 
     output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
 
@@ -784,10 +797,16 @@ def MATILDA_plots(output_MATILDA, parameter):
     def plot_data(output_MATILDA, parameter):
         if "Qobs" in output_MATILDA[0].columns:
             obs = output_MATILDA[0]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
-        plot_data = output_MATILDA[0].resample(parameter.freq).agg(
-            {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
-             "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-             "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+        if "Q_DDM" in output_MATILDA[0].columns:
+            plot_data = output_MATILDA[0].resample(parameter.freq).agg(
+                {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
+                "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+                 "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+        else:
+            plot_data = output_MATILDA[0].resample(parameter.freq).agg(
+                {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
+                  "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+                 "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
         if "Qobs" in output_MATILDA[0].columns:
             plot_data["Qobs"] = obs
         return plot_data
@@ -826,12 +845,13 @@ def MATILDA_plots(output_MATILDA, parameter):
         if 'Qobs' in plot_data.columns:
             plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00",
                      label="Observations", linewidth=1.2)
-        plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], c="k", label="MATILDA total runoff",
-                 linewidth=0.75, alpha=0.75)
         plt.fill_between(plot_data.index.to_pydatetime(), plot_data["plot"], plot_data["Q_HBV"], color='#56B4E9',
                          alpha=.75, label="MATILDA catchment runoff")
-        plt.fill_between(plot_data.index.to_pydatetime(), plot_data["Q_HBV"], plot_data["Q_Total"],
-                         color='#CC79A7', alpha=.75, label="MATILDA glacial runoff")
+        if "Q_DDM" in plot_data.columns:
+            plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], c="k", label="MATILDA total runoff",
+                     linewidth=0.75, alpha=0.75)
+            plt.fill_between(plot_data.index.to_pydatetime(), plot_data["Q_HBV"], plot_data["Q_Total"],
+                            color='#CC79A7', alpha=.75, label="MATILDA glacial runoff")
         plt.legend()
         plt.ylabel("Runoff [mm]", fontsize=9)
         if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
@@ -934,8 +954,8 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
 """Function to run the whole MATILDA simulation in one function. """
 
 
-def MATILDA_simulation(input_df, obs=None, output=None, set_up_start=None, set_up_end=None, sim_start=None, \
-                       sim_end=None, freq="D", area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, \
+def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, set_up_start=None, set_up_end=None, \
+                       sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, \
                        ele_cat=None, hydro_year=10, lr_temp=-0.006, lr_prec=0, TT_snow=0, TT_rain=2, \
                        CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, \
                        K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
@@ -958,11 +978,17 @@ def MATILDA_simulation(input_df, obs=None, output=None, set_up_start=None, set_u
     if obs is None:
         df_preproc = MATILDA_preproc(input_df, parameter)
         # Downscaling of data if necessary and the MATILDA simulation
-        output_MATILDA = MATILDA_submodules(df_preproc, parameter)
+        if glacier_profile is not None:
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
+        else:
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter)
     else:
         df_preproc, obs_preproc = MATILDA_preproc(input_df, parameter, obs=obs)
         # Downscaling of data if necessary and the MATILDA simulation
-        output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc)
+        if glacier_profile is not None:
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
+        else:
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc)
 
     output_MATILDA = MATILDA_plots(output_MATILDA, parameter)
     # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
