@@ -30,14 +30,18 @@ obs["Qobs"] = obs["Qobs"] / 86400*(3.367*1000000)/1000 # in der Datei sind die m
 
 ## Running MATILDA
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2010-01-01 00:00:00', set_up_end='2010-12-31 23:00:00',
-                       sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="Y", area_cat=3.367, area_glac=1.581,
+                       sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="W", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
-output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
-output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
+output_MATILDA = MATILDA_simulation(df, obs=obs, glacier_profile=glacier_profile,  set_up_start='2010-01-01 00:00:00', set_up_end='2010-12-31 23:00:00',
+                       sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="W", area_cat=3.367, area_glac=1.581,
+                       ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
+
+#output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
+#output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 #MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
-output_MATILDA[5].show()
+output_MATILDA[6].show()
 
 
 ## Preparing data to HBV Light
@@ -97,13 +101,18 @@ output_MATILDA = MATILDA.MATILDA_submodules(df_future, parameter, glacier_profil
 # output_MATILDA[0].to_csv("/home/ana/Desktop/Urumqi_future2.csv")
 # output_MATILDA[4].to_csv("/home/ana/Desktop/Urumqi_future_glacier.csv")
 
-yearly_runoff = output_MATILDA[0].resample("Y").agg({"Q_Total":"sum", "Q_DDM":"sum", "Q_DDM_updated":"sum", "Q_HBV":"sum"})
-periods = [2020, 2040, 2060, 2080, 2100]
-output_MATILDA[0]["period"] = 0
-for i in periods:
-    output_MATILDA[0]["period"] = np.where((i - 19 <= output_MATILDA[0].index.year) & (output_MATILDA[0].index.year <= i), i, output_MATILDA[0]["period"])
+output_future = pd.read_csv("/home/ana/Desktop/Urumqi_future2.csv")
+output_future = output_future.set_index("TIMESTAMP")
+output_future.index = pd.to_datetime(output_future.index)
+glacier = pd.read_csv("/home/ana/Desktop/Urumqi_future_glacier.csv")
 
-monthly_mean = output_MATILDA[0].resample("M").agg({"Q_Total":"sum", "period":"mean"})
+yearly_runoff = output_future.resample("M").agg({"Q_Total":"sum", "Q_DDM":"sum", "Q_DDM_updated":"sum", "Q_HBV":"sum"})
+periods = [2020, 2040, 2060, 2080, 2100]
+output_future["period"] = 0
+for i in periods:
+    output_future["period"] = np.where((i - 19 <= output_future.index.year) & (output_future.index.year <= i), i, output_future["period"])
+
+monthly_mean = output_future.resample("Y").agg({"Q_Total":"sum", "period":"mean"})
 monthly_mean["month"] = monthly_mean.index.month
 monthly_mean = monthly_mean.groupby(["period", "month"]).mean()
 monthly_mean = monthly_mean.unstack(level='period')
@@ -112,7 +121,7 @@ monthly_mean = monthly_mean.reset_index()
 monthly_mean.columns = ["month", "runoff_20", "runoff_40", "runoff_60", "runoff_80", "runoff_100"]
 
 
-
+plt.figure(figsize=[10,6])
 plt.plot(yearly_runoff.index.to_pydatetime(), yearly_runoff["Q_Total"])
 plt.suptitle("Yearly runoff sum for 2001 - 2100 in the Urumqi catchment")
 plt.title("ERA5 data with a 0.5 degree warming per 20 years", size=10)
