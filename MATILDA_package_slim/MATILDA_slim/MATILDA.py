@@ -129,12 +129,12 @@ data is converted from m3/s to mm per day."""
 
 def MATILDA_preproc(input_df, parameter, obs=None):
     print("---")
-    print("Reading in the data")
-    print("Set up period between " + str(parameter.set_up_start) + " and " + str(parameter.set_up_end) + " to get appropriate initial values")
-    print("Simulation period between " + str(parameter.sim_start) + " and " + str(parameter.sim_end))
+    print("Reading data")
+    print("Set up period from " + str(parameter.set_up_start) + " to " + str(parameter.set_up_end) + " to get appropriate initial values")
+    print("Simulation period from " + str(parameter.sim_start) + " to " + str(parameter.sim_end))
     df_preproc = input_df.copy()
     if parameter.set_up_start > parameter.sim_start:
-        print("WARNING: Spin up period starts later than the simulation period")
+        print("WARNING: Spin up period starts after the simulation period")
     if isinstance(df_preproc, xr.Dataset):
         df_preproc = input_df.sel(time=slice(parameter.set_up_start, parameter.sim_end))
     else:
@@ -176,7 +176,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             input_df_glacier["T2"] = np.where(input_df_glacier["T2"] <= 100, input_df_glacier["T2"] + 273.15,
                                               input_df_glacier["T2"])
             input_df_glacier["T2"] = input_df_glacier["T2"] + height_diff_glacier * float(parameter.lr_temp)
-            input_df_glacier["RRR"] = input_df_glacier["RRR"] + height_diff_glacier * float(parameter.lr_prec)
+            input_df_glacier["RRR"] = input_df_glacier["RRR"] + (height_diff_glacier * float(parameter.lr_prec) * input_df_glacier["RRR"])
         else:
             input_df_glacier = df_preproc.copy()
         if parameter.ele_cat is not None:
@@ -956,7 +956,7 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
 
 def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, set_up_start=None, set_up_end=None, \
                        sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, \
-                       ele_cat=None, hydro_year=10, lr_temp=-0.006, lr_prec=0, TT_snow=0, TT_rain=2, \
+                       ele_cat=None, plots=True, hydro_year=10, lr_temp=-0.006, lr_prec=0, TT_snow=0, TT_rain=2, \
                        CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, \
                        K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
                        CWH=0.1):
@@ -989,8 +989,11 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, se
             output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
         else:
             output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc)
-
-    output_MATILDA = MATILDA_plots(output_MATILDA, parameter)
+    if plots:
+        output_MATILDA = MATILDA_plots(output_MATILDA, parameter)   # Option to suppress plots.
+        return output_MATILDA
+    else:
+        return output_MATILDA
     # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
     # adding them to the output
 
