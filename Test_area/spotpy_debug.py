@@ -61,7 +61,7 @@ df["PE"] = np.where((df["T2"]) + 5 > 0, ((extra_rad / (water_density * latent_he
 ## Setting up SPOTPY
 
 # creating a spotpy setup class
-class spot_setup(object):
+class spot_setup:
     # defining all parameters and the distribution
     param = BETA, CET, FC, K0, K1, K2, LP, MAXBAS, PERC, UZL, PCORR, \
             TT_snow, TT_rain, CFMAX_snow, SFCF, CFR_snow, CWH = [
@@ -122,11 +122,11 @@ class spot_setup(object):
         return like
 
 ##
-# rep = 10
-# spot_setup = spot_setup(df)
-# sampler = spotpy.algorithms.mc(spot_setup, dbname='mc_hbv',
-#                                dbformat='csv')  # links the setup to the Monte Carlo algorithm
-# sampler.sample(rep)  # runs the algorithm.
+rep = 10
+spot_setup = spot_setup(df)
+sampler = spotpy.algorithms.mc(spot_setup, dbname='mc_hbv',
+                               dbformat='csv')  # links the setup to the Monte Carlo algorithm
+sampler.sample(rep)  # runs the algorithm.
 #
 # results = sampler.getdata()  # Get the results of the sampler
 # # spotpy.analyser.plot_parameterInteraction(results)
