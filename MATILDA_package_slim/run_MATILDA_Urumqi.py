@@ -34,7 +34,7 @@ parameter = MATILDA.MATILDA_parameter(df, set_up_start='2010-01-01 00:00:00', se
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
-output_MATILDA = MATILDA_simulation(df, obs=obs, glacier_profile=glacier_profile,  set_up_start='2010-01-01 00:00:00', set_up_end='2010-12-31 23:00:00',
+output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, glacier_profile=glacier_profile,  set_up_start='2010-01-01 00:00:00', set_up_end='2010-12-31 23:00:00',
                        sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="W", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 
@@ -98,15 +98,21 @@ parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', se
                        sim_start='2001-01-01 00:00:00', sim_end='2099-12-31 23:00:00', freq="Y", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 output_MATILDA = MATILDA.MATILDA_submodules(df_future, parameter, glacier_profile=glacier_profile) # MATILDA model run + downscaling
-# output_MATILDA[0].to_csv("/home/ana/Desktop/Urumqi_future2.csv")
-# output_MATILDA[4].to_csv("/home/ana/Desktop/Urumqi_future_glacier.csv")
+#output_MATILDA[0].to_csv("/home/ana/Desktop/Urumqi_future2.csv")
+#output_MATILDA[4].to_csv("/home/ana/Desktop/Urumqi_future_glacier.csv")
 
 output_future = pd.read_csv("/home/ana/Desktop/Urumqi_future2.csv")
 output_future = output_future.set_index("TIMESTAMP")
 output_future.index = pd.to_datetime(output_future.index)
 glacier = pd.read_csv("/home/ana/Desktop/Urumqi_future_glacier.csv")
+glacier = glacier.iloc[1:]
+glacier["YEAR"] = glacier["time"]
+glacier["Date"] = pd.to_datetime(glacier[['YEAR']].assign(DAY=1, MONTH=1))
+glacier = glacier.set_index("Date")
 
-yearly_runoff = output_future.resample("M").agg({"Q_Total":"sum", "Q_DDM":"sum", "Q_DDM_updated":"sum", "Q_HBV":"sum"})
+
+
+yearly_runoff = output_future.resample("Y").agg({"Q_Total":"sum", "Q_DDM":"sum", "Q_DDM_updated":"sum", "Q_HBV":"sum"})
 periods = [2020, 2040, 2060, 2080, 2100]
 output_future["period"] = 0
 for i in periods:
@@ -125,6 +131,12 @@ plt.figure(figsize=[10,6])
 plt.plot(yearly_runoff.index.to_pydatetime(), yearly_runoff["Q_Total"])
 plt.suptitle("Yearly runoff sum for 2001 - 2100 in the Urumqi catchment")
 plt.title("ERA5 data with a 0.5 degree warming per 20 years", size=10)
+plt.ylabel("Runoff [mm]")
+plt.show()
+
+plt.figure(figsize=[10,6])
+plt.plot(glacier.index.to_pydatetime(), glacier["glacier_area"])
+plt.ylabel("Glacier area [km2]")
 plt.show()
 
 ##
@@ -136,7 +148,7 @@ for i, y in zip(dfs_future, future_years):
 #future_runoff.to_csv("/home/ana/Desktop/future_runoff.csv")
 
 ##
-future_runoff = pd.read_csv("/home/ana/Desktop/future_runoff.csv")
+future_runoff = pd.read_csv("/home/ana/Desktop/Urumqi_future2.csv")
 future_runoff = future_runoff.set_index("TIMESTAMP")
 future_runoff.index = pd.to_datetime(future_runoff.index)
 future_runoff_monthly = future_runoff.resample("M").agg("sum")
