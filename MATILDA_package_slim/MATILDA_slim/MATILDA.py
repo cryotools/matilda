@@ -19,24 +19,24 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
                       CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1):
 
-    print("Reading in the parameter for the MATILDA simulation.")
+    print("Reading parameters for MATILDA simulation")
     # Checking the parameters to set the catchment properties and simulation
     if area_cat is None:
-        print("WARNING: No catchment area is specified. Please provide the catchment area in km2.")
+        print("WARNING: No catchment area specified. Please provide catchment area in km2")
         return
     if area_glac > area_cat:
-        print("WARNING: The glacier area is bigger than the overall catchment area.")
+        print("WARNING: Glacier area exceeds overall catchment area")
     if ele_dat is not None and ele_cat is None:
-        print("WARNING: Only the elevation for the data is given, not for the catchment.")
+        print("WARNING: Catchment reference elevation is missing")
     if area_glac is not None or area_glac > 0:
         if ele_glac is None and ele_dat is not None:
-            print("WARNING: Only the elevation for the data is given, not for glacier.")
+            print("WARNING: Glacier reference elevation is missing")
     if hydro_year > 12 and hydro_year < 1:
-        print("WARNING: The month which begins the hydrological year is out of bounds [1, 12]")
+        print("WARNING: Beginning of hydrological year out of bounds [1, 12]")
 
     if set_up_end is not None and sim_start is not None:
         if set_up_end > sim_start:
-            print("WARNING: The set up period exceeds the start of the simulation period.")
+            print("WARNING: Set up period overlaps start of simulation period")
     if set_up_start is None and sim_start is None:
         set_up_start = input_df["TIMESTAMP"].iloc[0]
     if set_up_end is None and sim_end is None:
@@ -67,50 +67,50 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         freq_long = "Yearly"
     else:
         print(
-            "WARNING: Data frequency " + freq + " is not supported. Supported are D (daily), W (weekly), M (monthly) or Y (yearly).")
+            "WARNING: Data frequency " + freq + " is not supported. Choose either 'D' (daily), 'W' (weekly), 'M' (monthly) or 'Y' (yearly).")
 
     # Checking the model parameters
     if 1 > BETA or BETA > 6:
-        print("WARNING: The parameter BETA exceeds boundaries [1, 6].")
+        print("WARNING: Parameter BETA exceeds boundaries [1, 6].")
     if 0 > CET or CET > 0.3:
-        print("WARNING: The parameter CET exceeds boundaries [0, 0.3].")
+        print("WARNING: Parameter CET exceeds boundaries [0, 0.3].")
     if 50 > FC or FC > 500:
-        print("WARNING: The parameter FC exceeds boundaries [50, 500].")
+        print("WARNING: Parameter FC exceeds boundaries [50, 500].")
     if 0.01 > K0 or K0 > 0.4:
-        print("WARNING: The parameter K0 exceeds boundaries [0.01, 0.4].")
+        print("WARNING: Parameter K0 exceeds boundaries [0.01, 0.4].")
     if 0.01 > K1 or K1 > 0.4:
-        print("WARNING: The parameter K1 exceeds boundaries [0.01, 0.4].")
+        print("WARNING: Parameter K1 exceeds boundaries [0.01, 0.4].")
     if 0.001 > K2 or K2 > 0.15:
-        print("WARNING: The parameter K2 exceeds boundaries [0.001, 0.15].")
+        print("WARNING: Parameter K2 exceeds boundaries [0.001, 0.15].")
     if 0.3 > LP or LP > 1:
-        print("WARNING: The parameter LP exceeds boundaries [0.3, 1].")
+        print("WARNING: Parameter LP exceeds boundaries [0.3, 1].")
     if 1 >= MAXBAS or MAXBAS > 7:
-        print("WARNING: The parameter MAXBAS exceeds boundaries [2, 7]. Please choose a suitable value.")
+        print("WARNING: Parameter MAXBAS exceeds boundaries [2, 7]. Please choose a suitable value.")
         return
     if 0 > PERC or PERC > 3:
-        print("WARNING: The parameter PERC exceeds boundaries [0, 3].")
+        print("WARNING: Parameter PERC exceeds boundaries [0, 3].")
     if 0 > UZL or UZL > 500:
-        print("WARNING: The parameter UZL exceeds boundaries [0, 500].")
+        print("WARNING: Parameter UZL exceeds boundaries [0, 500].")
     if 0.5 > PCORR or PCORR > 2:
-        print("WARNING: The parameter PCORR exceeds boundaries [0.5, 2].")
+        print("WARNING: Parameter PCORR exceeds boundaries [0.5, 2].")
     if TT_snow > TT_rain:
         print("WARNING: TT_snow is higher than TT_rain.")
     if -1.5 > TT_snow or TT_snow > 2.5:
-        print("WARNING: The parameter TT_snow exceeds boundaries [-1.5, 2.5].")
+        print("WARNING: Parameter TT_snow exceeds boundaries [-1.5, 2.5].")
     if -1.5 > TT_rain or TT_rain > 2.5:
-        print("WARNING: The parameter TT_rain exceeds boundaries [-1.5, 2.5].")
+        print("WARNING: Parameter TT_rain exceeds boundaries [-1.5, 2.5].")
     if 1 > CFMAX_ice or CFMAX_ice > 10:
-        print("WARNING: The parameter CFMAX_ice exceeds boundaries [1, 10].")
+        print("WARNING: Parameter CFMAX_ice exceeds boundaries [1, 10].")
     if 1 > CFMAX_snow or CFMAX_snow > 10:
-        print("WARNING: The parameter CFMAX_snow exceeds boundaries [1, 10].")
+        print("WARNING: Parameter CFMAX_snow exceeds boundaries [1, 10].")
     if 0.4 > SFCF or SFCF > 1:
-        print("WARNING: The parameter SFCF exceeds boundaries [0.4, 1].")
+        print("WARNING: Parameter SFCF exceeds boundaries [0.4, 1].")
     if 0 > CFR_ice or CFR_ice > 0.1:
-        print("WARNING: The parameter CFR_ice exceeds boundaries [0, 0.1].")
+        print("WARNING: Parameter CFR_ice exceeds boundaries [0, 0.1].")
     if 0 > CFR_snow or CFR_snow > 0.1:
-        print("WARNING: The parameter CFR_snow exceeds boundaries [0, 0.1].")
+        print("WARNING: Parameter CFR_snow exceeds boundaries [0, 0.1].")
     if 0 > CWH or CWH > 0.2:
-        print("WARNING: The parameter CWH exceeds boundaries [0, 0.2].")
+        print("WARNING: Parameter CWH exceeds boundaries [0, 0.2].")
 
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end, \
@@ -130,11 +130,11 @@ data is converted from m3/s to mm per day."""
 def MATILDA_preproc(input_df, parameter, obs=None):
     print("---")
     print("Reading data")
-    print("Set up period from " + str(parameter.set_up_start) + " to " + str(parameter.set_up_end) + " to get appropriate initial values")
+    print("Set up period from " + str(parameter.set_up_start) + " to " + str(parameter.set_up_end) + " to set initial values")
     print("Simulation period from " + str(parameter.sim_start) + " to " + str(parameter.sim_end))
     df_preproc = input_df.copy()
     if parameter.set_up_start > parameter.sim_start:
-        print("WARNING: Spin up period starts after the simulation period")
+        print("WARNING: Spin up period starts after simulation period")
     if isinstance(df_preproc, xr.Dataset):
         df_preproc = input_df.sel(time=slice(parameter.set_up_start, parameter.sim_end))
     else:
@@ -167,7 +167,7 @@ are given. Then the DDM and HBV model are run."""
 
 def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print('---')
-    print('Starting the MATILDA simulation')
+    print('Initiating MATILDA simulation')
     # Downscaling of dataframe to mean catchment and glacier elevation
     def glacier_downscaling(df_preproc, parameter):
         if parameter.ele_glac is not None:
@@ -198,7 +198,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     # Calculation of the positive degree days
     def calculate_PDD(ds):
-        print("Calculating the positive degree days")
+        print("Calculating positive degree days")
         # masking the dataset to only get the glacier area
         if isinstance(ds, xr.Dataset):
             mask = ds.MASK.values
@@ -236,7 +236,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     """
 
     def calculate_glaciermelt(ds, parameter):
-        print("Calculating melt with the DDM")
+        print("Calculating glacial melt")
         temp = ds["temp_mean"]
         prec = ds["RRR"]
         pdd = ds["pdd"]
@@ -300,7 +300,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         # making the final dataframe
         DDM_results = glacier_melt.to_dataframe()
         DDM_results = DDM_results.round(3)
-        print("Finished running the DDM")
+        print("Finished Degree-Day Melt Routine")
         return DDM_results
 
     input_df_glacier = input_df_glacier[parameter.sim_start:parameter.sim_end]
@@ -448,7 +448,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     """
 
     def hbv_simulation(input_df_catchment, parameter):
-        print("Running the HBV model")
+        print("Running HBV routine")
         # 1. new temporary dataframe from input with daily values
         if "PE" in input_df_catchment.columns:
             input_df_hbv = input_df_catchment.resample("D").agg({"T2": 'mean', "RRR": 'sum', "PE": "sum"})
@@ -574,7 +574,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
             # last soil moisture updating
             SM_cal[t] = SM_cal[t] - ETact_cal[t]
-        print("Finished spin up for initital parameters for the HBV model")
+        print("Finished spin up for initital HBV parameters")
 
         # 3. meteorological forcing preprocessing for simulation
         # overall correction factor
@@ -727,7 +727,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             {"T2": Temp, "RRR": Prec, "PE": Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
              "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=input_df_hbv.index)
         hbv_results = hbv_results.round(3)
-        print("Finished running the HBV")
+        print("Finished HBV routine")
         return hbv_results
 
     output_HBV = hbv_simulation(input_df_catchment, parameter)
