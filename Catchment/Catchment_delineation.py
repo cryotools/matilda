@@ -1,4 +1,4 @@
-##
+## Packages
 from pathlib import Path; home = str(Path.home())
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,78 +9,62 @@ import gdal
 import warnings
 warnings.filterwarnings('ignore')
 
-def plotFigure(data, label, cmap='Blues'):
-    plt.figure(figsize=(12,10))
-    plt.imshow(data, extent=grid.extent, cmap=cmap)
-    plt.colorbar(label=label)
-    plt.grid()
+##
+# DEM_file = home + '/Seafile/Masterarbeit/Bash_Kaindy/Delineation/DEM_clipped.tif'
+DEM_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif'
+output_file = home + "/Seafile/Masterarbeit/Bash_Kaindy/Delineation/catchment_Urumqi.shp"
 
-#DEM_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif'
-DEM_file = home + '/Seafile/Masterarbeit/Bash_Kaindy/Delineation/DEM_clipped.tif'
+# Specify discharge point
+# x, y = 75.953079,41.125814 # Bash Kaindy
+x, y = 86.82151540, 43.11473921 # Urumqi
 
 ##
 grid = Grid.from_raster(DEM_file, data_name='dem')
-fig, ax = plt.subplots(figsize=(8,6))
-fig.patch.set_alpha(0)
 
-plt.imshow(grid.dem, extent=grid.extent, cmap='cubehelix', zorder=1)
-plt.colorbar(label='Elevation (m)')
-plt.grid(zorder=0)
-plt.title('Digital elevation map')
-plt.xlabel('Longitude')
-plt.ylabel('Latitude')
-plt.tight_layout()
-plt.show()
+#Define a function to plot the digital elevation model
+def plotFigure(data, label, cmap='Blues'):
+    plt.figure(figsize=(12,10))
+    plt.imshow(data, extent=grid.extent)
+    plt.colorbar(label=label)
+    plt.grid()
+#Minnor slicing on borders to enhance colobars
+elevDem=grid.dem[:-1,:-1]
+plotFigure(elevDem, 'Elevation (m)')
 
-grid.resolve_flats('dem', out_name='inflated_dem')
+# Detect depressions
+depressions = grid.detect_depressions('dem')
 
+# Plot depressions
+plt.imshow(depressions)
+# Fill depressions
+grid.fill_depressions(data='dem', out_name='flooded_dem')
+# Test result
+depressions = grid.detect_depressions('flooded_dem')
+plt.imshow(depressions)
+# Detect flats
+flats = grid.detect_flats('flooded_dem')
+
+# Plot flats
+plt.imshow(flats)
+grid.resolve_flats(data='flooded_dem', out_name='inflated_dem')
+plt.imshow(grid.inflated_dem[:-1,:-1])
+# Create a flow direction grid
 #N    NE    E    SE    S    SW    W    NW
 dirmap = (64,  128,  1,   2,    4,   8,    16,  32)
-
 grid.flowdir(data='inflated_dem', out_name='dir', dirmap=dirmap)
-
-fig = plt.figure(figsize=(8,6))
-fig.patch.set_alpha(0)
-
-plt.imshow(grid.dir, extent=grid.extent, cmap='viridis', zorder=2)
-boundaries = ([0] + sorted(list(dirmap)))
-plt.colorbar(boundaries= boundaries,
-             values=sorted(dirmap))
-plt.xlabel('Longitude')
-plt.ylabel('Latitude')
-plt.title('Flow direction grid')
-plt.grid(zorder=-1)
-plt.tight_layout()
-plt.show()
-
-# Specify pour point
-x, y = 75.953079, 41.125814
+plotFigure(grid.dir,'Flow Direction','viridis')
 
 # Delineate the catchment
 grid.catchment(data='dir', x=x, y=y, dirmap=dirmap, out_name='catch',
                recursionlimit=15000, xytype='label', nodata_out=0)
+# Clip the bounding box to the catchment
 grid.clip_to('catch')
-catch = grid.view('catch', nodata=np.nan)
-fig, ax = plt.subplots(figsize=(8,6))
-fig.patch.set_alpha(0)
-
-plt.grid('on', zorder=0)
-im = ax.imshow(catch, extent=grid.extent, zorder=1, cmap='viridis')
-plt.colorbar(im, ax=ax, boundaries=boundaries, values=sorted(dirmap), label='Flow Direction')
-plt.xlabel('Longitude')
-plt.ylabel('Latitude')
-plt.title('Delineated Catchment')
-plt.show()
-
-##
+# Get a view of the catchment
 demView = grid.view('dem', nodata=np.nan)
-plotFigure(demView, 'Elevation')
+plotFigure(demView,'Elevation')
 plt.show()
-## export selected raster
-# grid.to_raster(demView, home + "/Seafile/Ana-Lena_Phillip/PycharmProjects/Ana/clippedElevations.tif")
 
-## Export to shapefile
-# Create a vector representation of the catchment mask
+## Create shapefile and save it
 shapes = grid.polygonize()
 
 schema = {
@@ -88,7 +72,7 @@ schema = {
     'properties': {'LABEL': 'float:16'}
 }
 
-with fiona.open(home + "/Seafile/Masterarbeit/Bash_Kaindy/Delineation/catchment.shp", 'w',
+with fiona.open(output_file, 'w',
                 driver='ESRI Shapefile',
                 crs=grid.crs.srs,
                 schema=schema) as c:
@@ -100,6 +84,8 @@ with fiona.open(home + "/Seafile/Masterarbeit/Bash_Kaindy/Delineation/catchment.
         rec['id'] = str(i)
         c.write(rec)
         i += 1
+c.close()
+
 ## work with shapefile
 shp = gpd.read_file(home + "/Seafile/Masterarbeit/Bash_Kaindy/Delineation/catchment.shp")
 fig, ax = plt.subplots(figsize=(6,6))
