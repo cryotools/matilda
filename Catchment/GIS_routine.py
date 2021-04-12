@@ -1,11 +1,13 @@
 ## Packages
 from pathlib import Path; home = str(Path.home())
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from pysheds.grid import Grid
 import fiona
 import geopandas as gpd
 import gdal
+import subprocess
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -104,6 +106,9 @@ plt.show()
 glaciers_catchment.drop('geometry', axis=1).to_csv('/home/ana/Desktop/csv_test.csv', index=False)
 
 # here code for the shell script
+os.system('./Catchment/ice_thickness.sh')
+
+subprocess.call(['sh', './home/ana/Desktop/ice_thickness.sh'])
 
 ## create shapefile with different elevation bands/lines and cut this to the glacier shapefiles
 
