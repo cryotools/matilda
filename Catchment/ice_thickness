@@ -1,10 +1,12 @@
 #!/bin/bash
 
-for i in $(cat csv_test.csv | cut -d ',' -f1| sed 1d)
+for i in $(cat rgi_csv.csv | cut -d ',' -f1| sed 1d)
 do
   temp="${i%\"}"
   temp="${temp#\"}"
   temp="${temp}_thickness.tif"
 
-  cp /home/ana/Seafile/Tianshan_data/01_original/$temp /home/ana/Desktop/Thickness
+  cp $1$temp $2
 done
+
+rm rgi_csv.csv
