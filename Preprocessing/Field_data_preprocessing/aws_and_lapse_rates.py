@@ -8,7 +8,7 @@ home = str(Path.home())
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/')
 from Preprocessing_functions import *
-working_directory = home + '/Seafile/Tianshan_data/'
+working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
 
 ## General settings
 time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel sensor
@@ -33,7 +33,7 @@ minikin_up = minikin_up.drop(['datetime'], axis=1)
 minikin_up = minikin_up.tz_localize('Asia/Bishkek')
 minikin_up.temp = minikin_up.temp + 273.15
 minikin_up = minikin_up[time_start: time_end]
-minikin_up.to_csv(working_directory+"/Minikin/Cognac_glacier/cognac_glacier_minikin_18_19.csv")
+# minikin_up.to_csv(working_directory+"/Minikin/Cognac_glacier/cognac_glacier_minikin_18_19.csv")
 
 minikin_down = pd.read_csv(working_directory + 'Minikin/Bash_Kaindy/80_2019_09_12_refin.csv', sep=';', decimal=',',
                            usecols=range(0, 4))
@@ -76,7 +76,7 @@ compare_slim = pd.DataFrame({'aws [2250m]': aws.temp, 'hobo1 [3037 m]': hobo1.te
                         'minikin_up [3864m]': minikin_up.temp}, index=minikin_up.index)
 compare_slim = compare_slim.resample('W').mean()
 plt.plot(compare_slim)
-plt.legend(compare_slim.columns.tolist(), loc="upper left")
+plt.legend(compare_slim.columns.tolist(), loc="upper center")
 # plt.title("Monthly Mean Air Temperature in Bash-Kaindy river valley [°C]")
 # plt.savefig('/home/phillip/Seafile/EBA-CA/Workshops/Final_workshop_October2020/Bilder/temp_cognac.png', bbox_inches='tight', dpi=300)
 plt.show()
