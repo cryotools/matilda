@@ -34,16 +34,8 @@ obs["Qobs"] = obs["Qobs"] / 86400 * (46.232 * 1000000) / 1000  # Daten in mm, Um
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
 import mspot_class
 
-class HiddenPrints:
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()
-        sys.stdout = self._original_stdout
-
-def psample(df, obs, rep, dbname='matilda_par_smpl', dbformat=None, obj_func=None, prints=False, set_up_start=None, set_up_end=None,
+def psample(df, obs, rep, dbname='matilda_par_smpl', dbformat=None, obj_func=None, set_up_start=None, set_up_end=None,
             sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None,
             ele_dat=None, ele_glac=None, ele_cat=None, interf=4, freqst=2):  # , algorithm='sceua'
 
@@ -55,11 +47,7 @@ def psample(df, obs, rep, dbname='matilda_par_smpl', dbformat=None, obj_func=Non
     sampler = spotpy.algorithms.sceua(spot_setup, dbname=dbname, dbformat=dbformat)
     # Change dbformat to None for short tests but to 'csv' or 'sql' to avoid data loss after long calculations
 
-    if not prints:
-        with HiddenPrints():
-            sampler.sample(rep)  # ideal number of reps = spot_setup.par_iter
-    else:
-        sampler.sample(rep)
+    sampler.sample(rep)  # ideal number of reps = spot_setup.par_iter
 
     results = sampler.getdata()
     best_param = spotpy.analyser.get_best_parameterset(results)
@@ -70,18 +58,23 @@ def psample(df, obs, rep, dbname='matilda_par_smpl', dbformat=None, obj_func=Non
     best_simulation = pd.Series(list(list(best_model_run[fields])[0]), index=pd.date_range(sim_start, sim_end))
     # Only necessary because spot_setup.evaluation() has a datetime. Thus both need a datetime.
 
-    return [best_param, bestindex, best_model_run, bestobjf, best_simulation]
+    fig1 = plt.figure(1, figsize=(9, 5))
+    plt.plot(results['like1'])
+    plt.ylabel('NS-Eff')
+    plt.xlabel('Iteration')
+
+    return [best_param, bestindex, best_model_run, bestobjf, best_simulation, fig1]
+
 
 best_summary = psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', area_cat=46.232,
                        area_glac=2.566, ele_dat=3864, ele_glac=4042, ele_cat=3360)
 
+best_summary[5].show()
 
 # Weitere Schritte in die Funktion psample
-# Ggf. HiddenPrints in die class verschieben
 # par.iter irgendwie als Option ermöglichen
-#
-
+# Gesamte Vielfalt der Algorithmen einbauen
 
 
 
@@ -94,11 +87,11 @@ best_summary = psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:00:00'
 
 # Plot results of sampling
 
-fig = plt.figure(1, figsize=(9, 5))
-plt.plot(results['like1'])
-plt.ylabel('NS-Eff')
-plt.xlabel('Iteration')
-plt.show()
+# fig = plt.figure(1, figsize=(9, 5))
+# plt.plot(results['like1'])
+# plt.ylabel('NS-Eff')
+# plt.xlabel('Iteration')
+# plt.show()
 
 # Find parameter interaction
 
@@ -108,11 +101,11 @@ plt.show()
 
 # Get best results and plot them
 
-print(spotpy.analyser.get_best_parameterset(results))
-bestindex, bestobjf = spotpy.analyser.get_maxlikeindex(results)  # Run with highest NS
-best_model_run = results[bestindex]
-fields = [word for word in best_model_run.dtype.names if word.startswith('sim')]
-best_simulation = pd.Series(list(list(best_model_run[fields])[0]), index=pd.date_range(sim_start, sim_end))
+# print(spotpy.analyser.get_best_parameterset(results))
+# bestindex, bestobjf = spotpy.analyser.get_maxlikeindex(results)  # Run with highest NS
+# best_model_run = results[bestindex]
+# fields = [word for word in best_model_run.dtype.names if word.startswith('sim')]
+# best_simulation = pd.Series(list(list(best_model_run[fields])[0]), index=pd.date_range(sim_start, sim_end))
 # Only necessary because spot_setup.evaluation() has a datetime. Thus both need a datetime.
 
 # Plot best run against evaluation series
