@@ -1,0 +1,6 @@
+#!/bin/sh
+
+gdalbuildvrt raster.vrt -srcnodata 0 -input_file_list thickness.txt
+gdal_translate --config GDAL_VRT_ENABLE_PYTHON YES raster.vrt $1thickness_raster.tif
+
+rm raster.vrt
