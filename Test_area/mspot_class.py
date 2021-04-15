@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import sys
+import os
 from spotpy.parameter import Uniform
 from spotpy.objectivefunctions import nashsutcliffe
 home = str(Path.home())
@@ -9,6 +10,14 @@ from MATILDA_slim import MATILDA
 
 # Create the MATILDA-SPOTPy-class
 
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
 
 def setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None,
           ele_dat=None, ele_glac=None, ele_cat=None,
@@ -54,15 +63,14 @@ def setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq
 
         par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
 
-        # loading data.
         def __init__(self, df, obs, obj_func=None):
             self.obj_func = obj_func
             self.Input = df
             self.obs = obs
 
-        # starting the simulation. The function hbv_simulation is in the spotpy_hbv script
         def simulation(self, x):
-            sim = MATILDA.MATILDA_simulation(self.Input, obs=self.obs, lr_temp=x.lr_temp, lr_prec=x.lr_prec, BETA=x.BETA,
+            with HiddenPrints():
+                sim = MATILDA.MATILDA_simulation(self.Input, obs=self.obs, lr_temp=x.lr_temp, lr_prec=x.lr_prec, BETA=x.BETA,
                                              CET=x.CET, FC=x.FC, K0=x.K0, K1=x.K1, K2=x.K2, LP=x.LP, MAXBAS=x.MAXBAS,
                                              PERC=x.PERC, UZL=x.UZL, PCORR=x.PCORR, TT_snow=x.TT_snow, TT_rain=x.TT_rain,
                                              CFMAX_snow=x.CFMAX_snow, CFMAX_ice=x.CFMAX_ice, SFCF=x.SFCF,
