@@ -14,28 +14,26 @@ home = str(Path.home())
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
 from MATILDA_slim import MATILDA
 
+
 ## Creating an example file
+
 working_directory = home + "/Seafile/Ana-Lena_Phillip/data/"
 input_path_data = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/"
 input_path_observations = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/"
-
 data_csv = "no182_ERA5_Land_2000_202011_no182_41_75.9_fitted.csv"  # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
 observation_data = "runoff_bashkaindy_04_2019-11_2020_temp_limit.csv"  # Daily Runoff Observations in mm
-
 output_path = working_directory + "input_output/output/" + data_csv[:15]
 
 df = pd.read_csv(input_path_data + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 obs["Qobs"] = obs["Qobs"] / 86400 * (46.232 * 1000000) / 1000  # Daten in mm, Umrechnung in m3/s
 
-# Creating the MATILDA-class
-
 ## Perform parameter sampling (may take a long time depending on # of reps)
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
 import mspot_class
 
 
-def psample(df, obs, rep, dbname='matilda_par_smpl', dbformat=None, obj_func=None, set_up_start=None, set_up_end=None,
+def psample(df, obs, rep=10, dbname='matilda_par_smpl', dbformat=None, obj_func=None, opt_iter=False, set_up_start=None, set_up_end=None,
             sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None,
             ele_dat=None, ele_glac=None, ele_cat=None, interf=4, freqst=2):  # , algorithm='sceua'
 
@@ -45,12 +43,22 @@ def psample(df, obs, rep, dbname='matilda_par_smpl', dbformat=None, obj_func=Non
 
     spot_setup = setup(df, obs, obj_func)  # Define objective function using obj_func=, otherwise NS-eff is used.
     sampler = spotpy.algorithms.sceua(spot_setup, dbname=dbname, dbformat=dbformat)
-    # Change dbformat to None for short tests but to 'csv' or 'sql' to avoid data loss after long calculations
+    # Change dbformat to None for short tests but to 'csv' or 'sql' to avoid data loss in case off long calculations.
 
-    sampler.sample(rep)  # ideal number of reps = spot_setup.par_iter
+    if opt_iter:
+        if yesno("\n******** WARNING! Your optimum # of iterations is {0}. "
+              "This may take a long time. Do you wish to proceed".format(spot_setup.par_iter)):
+            sampler.sample(spot_setup.par_iter)  # ideal number of reps = spot_setup.par_iter
+        else:
+            return
+    else:
+        sampler.sample(rep)
 
     results = sampler.getdata()
     best_param = spotpy.analyser.get_best_parameterset(results)
+    par_names = [sub.replace('par', '') for sub in best_param.dtype.names]
+    param_zip = zip(par_names, best_param[0])
+    best_param = dict(param_zip)
 
     bestindex, bestobjf = spotpy.analyser.get_maxlikeindex(results)  # Run with highest NS
     best_model_run = results[bestindex]
@@ -63,14 +71,17 @@ def psample(df, obs, rep, dbname='matilda_par_smpl', dbformat=None, obj_func=Non
     plt.ylabel('NS-Eff')
     plt.xlabel('Iteration')
 
-    return [best_param, bestindex, best_model_run, bestobjf, best_simulation, fig1]
+    return {'best_param': best_param, 'best_index': bestindex, 'best_model_run': best_model_run, 'best_objf': bestobjf,
+            'best_simulation': best_simulation, 'sampling_plot': fig1, 'param': spot_setup.param,
+            'opt_iter': spot_setup.par_iter}
 
-
+##
 best_summary = psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', area_cat=46.232,
-                       area_glac=2.566, ele_dat=3864, ele_glac=4042, ele_cat=3360)
+                       area_glac=2.566, ele_dat=3864, ele_glac=4042, ele_cat=3360, opt_iter=True)
 
-best_summary[5].show()
+test = best_summary['best_param']
+
 
 # Weitere Schritte in die Funktion psample
 # par.iter irgendwie als Option ermöglichen
