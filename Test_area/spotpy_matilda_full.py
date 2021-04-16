@@ -2,18 +2,11 @@
 import pandas as pd
 from pathlib import Path
 import sys
-import os
-import numpy as np
-import matplotlib.pyplot as plt
 import spotpy  # Load the SPOT package into your working storage
-from spotpy.parameter import Uniform
-from spotpy.objectivefunctions import nashsutcliffe
 from spotpy import analyser  # Load the Plotting extension
-
 home = str(Path.home())
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
-from MATILDA_slim import MATILDA
-
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
+import mspot
 
 ## Creating an example file
 
@@ -29,80 +22,18 @@ obs = pd.read_csv(input_path_observations + observation_data)
 obs["Qobs"] = obs["Qobs"] / 86400 * (46.232 * 1000000) / 1000  # Daten in mm, Umrechnung in m3/s
 
 ## Perform parameter sampling (may take a long time depending on # of reps)
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
-import mspot_class
 
-
-def psample(df, obs, rep=10, dbname='matilda_par_smpl', dbformat=None, obj_func=None, opt_iter=False, set_up_start=None, set_up_end=None,
-            sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None,
-            ele_dat=None, ele_glac=None, ele_cat=None, interf=4, freqst=2):  # , algorithm='sceua'
-
-    setup = mspot_class.setup(set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end,
-                              freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
-                              ele_cat=ele_cat, interf=interf, freqst=freqst)
-
-    spot_setup = setup(df, obs, obj_func)  # Define objective function using obj_func=, otherwise NS-eff is used.
-    sampler = spotpy.algorithms.sceua(spot_setup, dbname=dbname, dbformat=dbformat)
-    # Change dbformat to None for short tests but to 'csv' or 'sql' to avoid data loss in case off long calculations.
-
-    if opt_iter:
-        if yesno("\n******** WARNING! Your optimum # of iterations is {0}. "
-              "This may take a long time. Do you wish to proceed".format(spot_setup.par_iter)):
-            sampler.sample(spot_setup.par_iter)  # ideal number of reps = spot_setup.par_iter
-        else:
-            return
-    else:
-        sampler.sample(rep)
-
-    results = sampler.getdata()
-    best_param = spotpy.analyser.get_best_parameterset(results)
-    par_names = [sub.replace('par', '') for sub in best_param.dtype.names]
-    param_zip = zip(par_names, best_param[0])
-    best_param = dict(param_zip)
-
-    bestindex, bestobjf = spotpy.analyser.get_maxlikeindex(results)  # Run with highest NS
-    best_model_run = results[bestindex]
-    fields = [word for word in best_model_run.dtype.names if word.startswith('sim')]
-    best_simulation = pd.Series(list(list(best_model_run[fields])[0]), index=pd.date_range(sim_start, sim_end))
-    # Only necessary because spot_setup.evaluation() has a datetime. Thus both need a datetime.
-
-    fig1 = plt.figure(1, figsize=(9, 5))
-    plt.plot(results['like1'])
-    plt.ylabel('NS-Eff')
-    plt.xlabel('Iteration')
-
-    return {'best_param': best_param, 'best_index': bestindex, 'best_model_run': best_model_run, 'best_objf': bestobjf,
-            'best_simulation': best_simulation, 'sampling_plot': fig1, 'param': spot_setup.param,
-            'opt_iter': spot_setup.par_iter}
-
-##
-best_summary = psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+best_summary = mspot.psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', area_cat=46.232,
-                       area_glac=2.566, ele_dat=3864, ele_glac=4042, ele_cat=3360, opt_iter=True)
+                       area_glac=2.566, ele_dat=3864, ele_glac=4042, ele_cat=3360)
 
-test = best_summary['best_param']
+best_summary['par_uncertain_plot'].show()
 
 
 # Weitere Schritte in die Funktion psample
-# par.iter irgendwie als Option ermöglichen
 # Gesamte Vielfalt der Algorithmen einbauen
 
 
-
-# setup = mspot_class.setup(set_up_start = '2018-01-01 00:00:00', set_up_end = '2018-12-31 23:00:00',
-#                           sim_start = '2019-01-01 00:00:00', sim_end = '2020-11-01 23:00:00', area_cat = 46.232,
-#                           area_glac = 2.566, ele_dat = 3864, ele_glac = 4042, ele_cat = 3360)#, freq = "D")
-# spot_setup = setup(df, obs)
-# sampler = spotpy.algorithms.sceua(spot_setup, dbname='sceua_matilda', dbformat=None)
-# sampler.sample(5)
-
-# Plot results of sampling
-
-# fig = plt.figure(1, figsize=(9, 5))
-# plt.plot(results['like1'])
-# plt.ylabel('NS-Eff')
-# plt.xlabel('Iteration')
-# plt.show()
 
 # Find parameter interaction
 
@@ -110,44 +41,6 @@ test = best_summary['best_param']
 # posterior = spotpy.analyser.get_posterior(results, percentage=10)
 # spotpy.analyser.plot_parameterInteraction(posterior)
 
-# Get best results and plot them
-
-# print(spotpy.analyser.get_best_parameterset(results))
-# bestindex, bestobjf = spotpy.analyser.get_maxlikeindex(results)  # Run with highest NS
-# best_model_run = results[bestindex]
-# fields = [word for word in best_model_run.dtype.names if word.startswith('sim')]
-# best_simulation = pd.Series(list(list(best_model_run[fields])[0]), index=pd.date_range(sim_start, sim_end))
-# Only necessary because spot_setup.evaluation() has a datetime. Thus both need a datetime.
-
-# Plot best run against evaluation series
-
-fig = plt.figure(figsize=(16, 9))
-ax = plt.subplot(1, 1, 1)
-ax.plot(best_simulation, color='black', linestyle='solid', label='Best objf.=' + str(bestobjf))
-ax.plot(spot_setup.evaluation(), 'r.', markersize=3, label='Observation data')
-plt.xlabel('Date')
-plt.ylabel('Discharge [mm d-1]')
-plt.legend(loc='upper right')
-plt.show()
-
-# Plot parameter uncertainty
-
-fig = plt.figure(figsize=(16, 9))
-ax = plt.subplot(1, 1, 1)
-q5, q25, q75, q95 = [], [], [], []
-for field in fields:
-    q5.append(np.percentile(results[field][-100:-1], 2.5))
-    q95.append(np.percentile(results[field][-100:-1], 97.5))
-ax.plot(q5, color='dimgrey', linestyle='solid')
-ax.plot(q95, color='dimgrey', linestyle='solid')
-ax.fill_between(np.arange(0, len(q5), 1), list(q5), list(q95), facecolor='dimgrey', zorder=0,
-                linewidth=0, label='parameter uncertainty')
-ax.plot(np.array(spot_setup.evaluation()), 'r.',
-        label='data')  # Need to remove Timestamp from Evaluation to make compable
-ax.set_ylim(0, 100)
-ax.set_xlim(0, len(spot_setup.evaluation()))
-ax.legend()
-plt.show()
 
 ## Find best Algorithm
 
