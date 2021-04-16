@@ -6,10 +6,13 @@ This file may use the input files created by the COSIPY-utility "aws2cosipy" as 
 ## import of necessary packages
 import pandas as pd
 from pathlib import Path
-
+import sys
 home = str(Path.home())
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
+import mspot
 from MATILDA_slim import MATILDA
+
 
 ## Setting file paths and parameters
 working_directory = home + "/Seafile/Ana-Lena_Phillip/data/"
@@ -25,12 +28,15 @@ obs = pd.read_csv(input_path + runoff_obs)
 
 ## Parametrization
 
-best_summary['best_param']
+karab_par = mspot.psample(df=df, obs=obs, rep=3, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+              sim_start='2017-01-01 00:00:00', sim_end='2018-11-01 23:00:00', freq="D", area_cat=7.53,
+              area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3830, lr_temp_lo=-0.0065, lr_temp_up=-0.005)
 
+##
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                                       sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
                                       area_cat=7.53, area_glac=2.95,
-                                      ele_dat=2550, ele_glac=3957, ele_cat=3830, ** best_summary['best_param'])
+                                      ele_dat=2550, ele_glac=3957, ele_cat=3830)
 ## Running MATILDA
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                                       sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
@@ -48,9 +54,9 @@ output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 
 ## This function is a standalone function to run the whole MATILDA simulation
 # If output = output_path in function, the output will be saved to a new folder
-output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, set_up_start='2018-01-01 00:00:00',
+output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, set_up_start='2017-01-01 00:00:00',
                                             set_up_end='2018-12-31 23:00:00',
-                                            sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D",
+                                            sim_start='2017-01-01 00:00:00', sim_end='2018-11-01 23:00:00', freq="D",
                                             area_cat=7.53, area_glac=2.95,
                                             ele_dat=2550, ele_glac=3957, ele_cat=3830, TT_snow=0, TT_rain=2)
 output_MATILDA[7].show()
