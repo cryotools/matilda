@@ -19,6 +19,17 @@ class HiddenPrints:
         sys.stdout.close()
         sys.stdout = self._original_stdout
 
+def yesno(question):
+    """Simple Yes/No Function."""
+    prompt = f'{question} ? (y/n): '
+    ans = input(prompt).strip().lower()
+    if ans not in ['y', 'n']:
+        print(f'{ans} is invalid, please try again...')
+        return yesno(question)
+    if ans == 'y':
+        return True
+    return False
+
 def setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None,
           ele_dat=None, ele_glac=None, ele_cat=None,
           lr_temp_lo=-0.008, lr_prec_lo=-0.0005, BETA_lo=1, CET_lo=0, FC_lo=50, K0_lo=0.01, K1_lo=0.01, K2_lo=0.001,
