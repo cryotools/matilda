@@ -17,7 +17,7 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
                       area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, \
                       CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
-                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1):
+                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, **kwargs):
 
     print("Reading parameters for MATILDA simulation")
     # Checking the parameters to set the catchment properties and simulation

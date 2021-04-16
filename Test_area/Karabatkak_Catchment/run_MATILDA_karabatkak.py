@@ -25,7 +25,12 @@ obs = pd.read_csv(input_path + runoff_obs)
 
 ## Parametrization
 
+best_summary['best_param']
 
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+                                      sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
+                                      area_cat=7.53, area_glac=2.95,
+                                      ele_dat=2550, ele_glac=3957, ele_cat=3830, ** best_summary['best_param'])
 ## Running MATILDA
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                                       sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
