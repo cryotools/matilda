@@ -149,7 +149,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         # Changing the input unit from m/3 to mm.
         obs_preproc["Qobs"] = obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
         obs_preproc = obs_preproc.resample("D").sum()
-        # expanding the observation period to the whole one year, filling the NAs with 0
+        # expanding the observation period a whole one year, filling the NAs with 0
         idx_first = obs_preproc.index.year[1]
         idx_last = obs_preproc.index.year[-1]
         idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
@@ -162,8 +162,8 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         return df_preproc
 
 
-"""The main MATILDA simulation. It consists of a linear downscaling of the data if elevations for data, catchment and glacier
-are given. Then the DDM and HBV model are run."""
+"""The main MATILDA simulation. It consists of linear downscaling of the data (if elevations for data, catchment and glacier
+are given) and runs the DDM and HBV models subsequently."""
 
 def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print('---')
