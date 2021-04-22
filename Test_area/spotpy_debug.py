@@ -122,11 +122,20 @@ class spot_setup:
         return like
 
 ##
-rep = 10
+rep = 500
 spot_setup = spot_setup(df)
-sampler = spotpy.algorithms.mc(spot_setup, dbname='mc_hbv',
-                               dbformat='csv')  # links the setup to the Monte Carlo algorithm
+sampler = spotpy.algorithms.mc(spot_setup, dbname='20210421_mpi_mc_hbv',
+                               dbformat='csv', parallel='mpi')  # links the setup to the Monte Carlo algorithm
 sampler.sample(rep)  # runs the algorithm.
+
+##
+# rep = 500
+# spot_setup = spot_setup(df)
+# sampler = spotpy.algorithms.mc(spot_setup, dbname=None,
+#                                dbformat='csv')  # links the setup to the Monte Carlo algorithm
+# sampler.sample(rep)  # runs the algorithm.
+
+
 #
 # results = sampler.getdata()  # Get the results of the sampler
 # # spotpy.analyser.plot_parameterInteraction(results)
@@ -135,84 +144,84 @@ sampler.sample(rep)  # runs the algorithm.
 # print(spotpy.analyser.get_best_parameterset(results))
 
 ## Find best Algorithm
-
-results = []
-spot_setup = spot_setup(df)         # Kann man aus irgendeinem Grund nur einmal ausführen.
-rep = 10        # ideal number of iterations: spot_setup.par_iter
-timeout = 10  # Given in Seconds
-
-parallel = "seq"
-dbformat = None
-
-sampler = spotpy.algorithms.mc(spot_setup, parallel=parallel, dbname='HBV_MC', dbformat=dbformat, sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.lhs(spot_setup, parallel=parallel, dbname='HBV_LHS', dbformat=dbformat,
-                                sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.mle(spot_setup, parallel=parallel, dbname='HBV_MLE', dbformat=dbformat,
-                                sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.mcmc(spot_setup, parallel=parallel, dbname='HBV_MCMC', dbformat=dbformat,
-                                 sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.sceua(spot_setup, parallel=parallel, dbname='HBV_SCEUA', dbformat=dbformat,
-                                  sim_timeout=timeout)
-sampler.sample(rep, ngs=4)
-results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.sa(spot_setup, parallel=parallel, dbname='HBV_SA', dbformat=dbformat, sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-# sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='HBV_DEMCz', dbformat=dbformat,
-#                                   sim_timeout=timeout)
-# sampler.sample(rep, nChains=4)
+#
+# results = []
+# spot_setup = spot_setup(df)         # Kann man aus irgendeinem Grund nur einmal ausführen.
+# rep = 10        # ideal number of iterations: spot_setup.par_iter
+# timeout = 10  # Given in Seconds
+#
+# parallel = "seq"
+# dbformat = None
+#
+# sampler = spotpy.algorithms.mc(spot_setup, parallel=parallel, dbname='HBV_MC', dbformat=dbformat, sim_timeout=timeout)
+# sampler.sample(rep)
 # results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.rope(spot_setup, parallel=parallel, dbname='HBV_ROPE', dbformat=dbformat,
-                                 sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.abc(spot_setup, parallel=parallel, dbname='HBV_ABC', dbformat=dbformat,
-                                sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.fscabc(spot_setup, parallel=parallel, dbname='HBV_FSABC', dbformat=dbformat,
-                                   sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-# sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='HBV_DEMCZ', dbformat=dbformat,
+#
+# sampler = spotpy.algorithms.lhs(spot_setup, parallel=parallel, dbname='HBV_LHS', dbformat=dbformat,
+#                                 sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.mle(spot_setup, parallel=parallel, dbname='HBV_MLE', dbformat=dbformat,
+#                                 sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.mcmc(spot_setup, parallel=parallel, dbname='HBV_MCMC', dbformat=dbformat,
+#                                  sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.sceua(spot_setup, parallel=parallel, dbname='HBV_SCEUA', dbformat=dbformat,
+#                                   sim_timeout=timeout)
+# sampler.sample(rep, ngs=4)
+# results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.sa(spot_setup, parallel=parallel, dbname='HBV_SA', dbformat=dbformat, sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+#
+# # sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='HBV_DEMCz', dbformat=dbformat,
+# #                                   sim_timeout=timeout)
+# # sampler.sample(rep, nChains=4)
+# # results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.rope(spot_setup, parallel=parallel, dbname='HBV_ROPE', dbformat=dbformat,
+#                                  sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.abc(spot_setup, parallel=parallel, dbname='HBV_ABC', dbformat=dbformat,
+#                                 sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.fscabc(spot_setup, parallel=parallel, dbname='HBV_FSABC', dbformat=dbformat,
+#                                    sim_timeout=timeout)
+# sampler.sample(rep)
+# results.append(sampler.getdata())
+#
+# # sampler = spotpy.algorithms.demcz(spot_setup, parallel=parallel, dbname='HBV_DEMCZ', dbformat=dbformat,
+# #                                   sim_timeout=timeout)
+# # sampler.sample(rep)
+# # results.append(sampler.getdata())
+#
+# sampler = spotpy.algorithms.dream(spot_setup, parallel=parallel, dbname='HBV_DREAM', dbformat=dbformat,
 #                                   sim_timeout=timeout)
 # sampler.sample(rep)
 # results.append(sampler.getdata())
-
-sampler = spotpy.algorithms.dream(spot_setup, parallel=parallel, dbname='HBV_DREAM', dbformat=dbformat,
-                                  sim_timeout=timeout)
-sampler.sample(rep)
-results.append(sampler.getdata())
-
-algorithms = ['mc', 'lhs', 'mle', 'mcmc', 'sceua', 'sa', 'rope', 'abc', 'fscabc', 'dream']  # 'demcz', , 'demcz'
-spotpy.analyser.plot_parametertrace_algorithms(results, algorithms, spot_setup)
-
-## Sensitivity Analysis
-spot_setup = spot_setup(df)     # only once
-
-sampler = spotpy.algorithms.fast(spot_setup,  dbname='HBV_FAST',  dbformat='csv')
-sampler.sample(spot_setup.par_iter)          # minimum 60 to run through,
-                            # ideal number of iterations: spot_setup.par_iter, immer wieder einzelne Zeilen "out of bounds"
-results = sampler.getdata()
-analyser.plot_fast_sensitivity(results, number_of_sensitiv_pars=2, fig_name="FAST_sensitivity_HBV.png")
-
-SI = spotpy.analyser.get_sensitivity_of_fast(results)  # Sensitivity indexes as dict
-
+#
+# algorithms = ['mc', 'lhs', 'mle', 'mcmc', 'sceua', 'sa', 'rope', 'abc', 'fscabc', 'dream']  # 'demcz', , 'demcz'
+# spotpy.analyser.plot_parametertrace_algorithms(results, algorithms, spot_setup)
+#
+# ## Sensitivity Analysis
+# spot_setup = spot_setup(df)     # only once
+#
+# sampler = spotpy.algorithms.fast(spot_setup,  dbname='HBV_FAST',  dbformat='csv')
+# sampler.sample(spot_setup.par_iter)          # minimum 60 to run through,
+#                             # ideal number of iterations: spot_setup.par_iter, immer wieder einzelne Zeilen "out of bounds"
+# results = sampler.getdata()
+# analyser.plot_fast_sensitivity(results, number_of_sensitiv_pars=2, fig_name="FAST_sensitivity_HBV.png")
+#
+# SI = spotpy.analyser.get_sensitivity_of_fast(results)  # Sensitivity indexes as dict
+#

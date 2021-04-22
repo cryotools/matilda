@@ -21,6 +21,8 @@ df = pd.read_csv(input_path_data + data_csv)
 obs = pd.read_csv(input_path_observations + observation_data)
 obs["Qobs"] = obs["Qobs"] / 86400 * (46.232 * 1000000) / 1000  # Daten in mm, Umrechnung in m3/s
 
+
+
 ## Perform parameter sampling (may take a long time depending on # of reps)
 
 best_summary = mspot.psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
@@ -29,9 +31,15 @@ best_summary = mspot.psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:
 
 best_summary['par_uncertain_plot'].show()
 
+best_summary['best_param']
+
 
 # Weitere Schritte in die Funktion psample
 # Gesamte Vielfalt der Algorithmen einbauen
+# CSVs müssen abgespeichert werden (option)
+# Analyse und plotting in Funktion packen, um es auch einfach aus csv reproduzieren zu können
+# Routine auf mehreren Kernen laufbar machen.
+# Routine auf Cirrus ermöglichen.
 
 
 
@@ -40,6 +48,10 @@ best_summary['par_uncertain_plot'].show()
 # spotpy.analyser.plot_parameterInteraction(results)
 # posterior = spotpy.analyser.get_posterior(results, percentage=10)
 # spotpy.analyser.plot_parameterInteraction(posterior)
+
+
+
+
 
 
 ## Find best Algorithm
