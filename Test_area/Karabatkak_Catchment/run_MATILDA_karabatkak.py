@@ -5,11 +5,8 @@ This file may use the input files created by the COSIPY-utility "aws2cosipy" as 
 """
 ## import of necessary packages
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import sys
-import spotpy
-import matplotlib.pyplot as plt
 import socket
 host = socket.gethostname()
 if 'cirrus' in host:
@@ -18,8 +15,7 @@ else:
     home = str(Path.home()) + '/Seafile'
 sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
 sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
-import mspot
-from MATILDA_slim import MATILDA
+import mspot_cirrus
 
 
 ## Setting file paths and parameters
@@ -34,6 +30,7 @@ df = pd.read_csv(input_path + data_csv)
 obs = pd.read_csv(input_path + runoff_obs)
 # obs["Qobs"] = obs["Qobs"] / 86400*(46.232*1000000)/1000
 
+
 # set_up_start='2017-01-01 00:00:00'
 # set_up_end='2018-12-31 23:00:00'
 # sim_start='2017-01-01 00:00:00'
@@ -47,10 +44,10 @@ obs = pd.read_csv(input_path + runoff_obs)
 
 ## Parametrization
 
-karab_par = mspot.psample(df=df, obs=obs, rep=3, dbformat='csv', dbname='karabatkak_upper_para_sampling', set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+karab_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat='csv', dbname='karabatkak_upper_para_sampling', set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
               sim_start='2017-01-01 00:00:00', sim_end='2018-11-01 23:00:00', freq="D", area_cat=7.53,
               area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3830, lr_temp_lo=-0.0065, lr_temp_up=-0.005,
-                opt_iter=False, savefig=True)
+                opt_iter=True, savefig=True)
 
 # karab_par['sampling_plot'].show()
 # karab_par['best_run_plot'].show()
