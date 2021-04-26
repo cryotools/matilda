@@ -134,22 +134,28 @@ def setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq
 def psample(df, obs, rep=10, dbname='matilda_par_smpl', dbformat=None, obj_func=None, opt_iter=False, savefig=False,
             set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", area_cat=None,
             area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, interf=4, freqst=2, parallel=False, ngs=2,
-            **kwargs):
-    # , algorithm='sceua'
+            algorithm='sceua', **kwargs):
 
     setup = mspot.setup(set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end,
                               freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
                               ele_cat=ele_cat, interf=interf, freqst=freqst, **kwargs)
 
+    alg_selector = {'mc': spotpy.algorithms.mc, 'sceua': spotpy.algorithms.sceua, 'mcmc': spotpy.algorithms.mcmc,
+                    'mle': spotpy.algorithms.mle, 'abc': spotpy.algorithms.abc, 'sa': spotpy.algorithms.sa,
+                    'dds': spotpy.algorithms.dds, 'demcz': spotpy.algorithms.demcz,
+                    'dream': spotpy.algorithms.dream, 'fscabc': spotpy.algorithms.fscabc,
+                    'lhs': spotpy.algorithms.lhs, 'padds': spotpy.algorithms.padds,
+                    'rope': spotpy.algorithms.rope}
+
     spot_setup = setup(df, obs, obj_func)  # Define objective function using obj_func=, otherwise NS-eff is used.
     if parallel:
-        sampler = spotpy.algorithms.sceua(spot_setup, dbname=dbname, dbformat=dbformat, parallel='mpi')
+        sampler = alg_selector[algorithm](spot_setup, dbname=dbname, dbformat=dbformat, parallel='mpi')
         if opt_iter:
             sampler.sample(spot_setup.par_iter, ngs=ngs)  # ideal number of reps = spot_setup.par_iter
         else:
             sampler.sample(rep)
     else:
-        sampler = spotpy.algorithms.sceua(spot_setup, dbname=dbname, dbformat=dbformat)
+        sampler = alg_selector[algorithm](spot_setup, dbname=dbname, dbformat=dbformat)
         if opt_iter:
             sampler.sample(spot_setup.par_iter)  # ideal number of reps = spot_setup.par_iter
         else:
