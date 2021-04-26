@@ -7,16 +7,21 @@ This file may use the input files created by the COSIPY-utility "aws2cosipy" as 
 import pandas as pd
 from pathlib import Path
 import sys
+import spotpy
+import numpy as np
 import socket
+
 host = socket.gethostname()
-if 'cirrus' in host:
+if 'node' in host:
+    home = '/data/projects/ebaca'
+elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
 sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
 sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
 import mspot_cirrus
-
+import mspot
 
 ## Setting file paths and parameters
 working_directory = home + "/Ana-Lena_Phillip/data/"
@@ -44,10 +49,24 @@ obs = pd.read_csv(input_path + runoff_obs)
 
 ## Parametrization
 
-karab_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat='csv', dbname='karabatkak_upper_para_sampling', set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
-              sim_start='2017-01-01 00:00:00', sim_end='2018-11-01 23:00:00', freq="D", area_cat=7.53,
-              area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3830, lr_temp_lo=-0.0065, lr_temp_up=-0.005,
-                opt_iter=True, savefig=True)
+if 'node' in host:
+    karab_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat='csv', dbname='karabatkak_upper_para_sampling',
+                                     set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+                                     sim_start='2017-01-01 00:00:00', sim_end='2018-11-01 23:00:00', freq="D",
+                                     area_cat=7.53, area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3830,
+                                     lr_temp_lo=-0.0065, lr_temp_up=-0.005,
+                                     opt_iter=True, savefig=True, algorithm='mcmc')
+else:
+    karab_par = mspot.psample(df=df, obs=obs, rep=3, dbformat=None, dbname='karabatkak_upper_para_sampling',
+                                 set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
+                                 sim_start='2017-01-01 00:00:00', sim_end='2018-11-01 23:00:00', freq="D",
+                                 area_cat=7.53, area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3830,
+                                 lr_temp_lo=-0.0065, lr_temp_up=-0.005,
+                                 opt_iter=False, savefig=False, algorithm='mcmc')
+
+
+
+
 
 # karab_par['sampling_plot'].show()
 # karab_par['best_run_plot'].show()
@@ -61,22 +80,21 @@ karab_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat='csv', dbname='
 # best_par_karab.to_csv('best_param_karab.csv')
 
 ##
-
-# results = spotpy.analyser.load_csv_results('karabatkak_upper_para_samplig')
-# best10 = spotpy.analyser.get_posterior(results, percentage=1, maximize=True)       # get best xx%
-#
+result_path = '/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/karabatkak_upper_para_sampling_first_cirrus_try'
+results = spotpy.analyser.load_csv_results(result_path)
+best10 = spotpy.analyser.get_posterior(results, percentage=1, maximize=True)  # get best xx%
 # trues = np.where((results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow']))
-# trues = results[(results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow'])]
-#
-# likes = trues['like1']
-# maximum = np.nanmax(likes)
-# index = np.where(likes == maximum)
-#
-# best_param = trues[index]
-# best_param_values = spotpy.analyser.get_parameters(trues[index])[0]
-# par_names = spotpy.analyser.get_parameternames(trues)
-# param_zip = zip(par_names, best_param_values)
-# best_param = dict(param_zip)
+trues = results[(results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow'])]
+
+likes = trues['like1']
+maximum = np.nanmax(likes)
+index = np.where(likes == maximum)
+
+best_param = trues[index]
+best_param_values = spotpy.analyser.get_parameters(trues[index])[0]
+par_names = spotpy.analyser.get_parameternames(trues)
+param_zip = zip(par_names, best_param_values)
+best_param = dict(param_zip)
 #
 #
 #
