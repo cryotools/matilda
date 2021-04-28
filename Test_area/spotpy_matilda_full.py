@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import sys
 import spotpy  # Load the SPOT package into your working storage
+import numpy as np
 from spotpy import analyser  # Load the Plotting extension
 home = str(Path.home())
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
@@ -140,6 +141,30 @@ results = sampler.getdata()
 analyser.plot_fast_sensitivity(results, number_of_sensitiv_pars=2, fig_name="FAST_sensitivity_MATILDA.png")
 
 SI = spotpy.analyser.get_sensitivity_of_fast(results)  # Sensitivity indexes as dict
+
+
+## Analyse MSpot-results from csv
+wd = '/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/'
+result_path = wd + 'kysylsuurope'
+results = spotpy.analyser.load_csv_results(result_path)
+# best10 = spotpy.analyser.get_posterior(results, percentage=1, maximize=True)      # get best xx%
+# trues = np.where((results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow']))
+trues = results[(results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow'])]
+
+likes = trues['like1']
+maximum = np.nanmax(likes)
+index = np.where(likes == maximum)
+
+best_param = trues[index]
+best_param_values = spotpy.analyser.get_parameters(trues[index])[0]
+par_names = spotpy.analyser.get_parameternames(trues)
+param_zip = zip(par_names, best_param_values)
+best_param = dict(param_zip)
+
+best_param_df = pd.DataFrame(best_param, index=[0])
+best_param_df.to_csv(wd + 'best_param_rope_0,7676.csv')
+
+
 
 ## Baustellen:
 
