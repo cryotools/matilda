@@ -7,11 +7,14 @@ library(tidyr)
 
 home <- ("/home/ana/")
 
-data_CMIP<- read.csv(paste0(home, "Seafile/Tianshan_data/CMIP/CMIP5/EC-EARTH_r6i1p1_r7i1p1_r8i1p1/temp_prec_rcp26_rcp45_rcp85_2006-2100.csv"))
-data_CMIP$time <- as.Date(data_CMIP$time)
+#data_CMIP<- read.csv(paste0(home, "Seafile/Tianshan_data/CMIP/CMIP5/EC-EARTH_r6i1p1_r7i1p1_r8i1p1/temp_prec_rcp26_rcp45_rcp85_2006-2100.csv"))
+data_CMIP <- read.csv("/home/ana/Desktop/in_cm4_8/CMIP6_INM-CM4-19810917-21001230_42.75-78.0.csv")
+data_CMIP$time <- as.Date(data_CMIP$X)
+data_CMIP <- subset(data_CMIP, data_CMIP$time >= "2001-01-01" & data_CMIP$time <= "2100-12-31")
 
 data_CMIP$month <- month(data_CMIP$time)
 data_CMIP$year <- year(data_CMIP$time)
+
 
 #data_CMIP <- data_CMIP[!(data_CMIP$year=="2100"),]
 
@@ -20,7 +23,7 @@ data_CMIP_monthly <- data_CMIP %>%
   summarise(temp_26=mean(temp_26), temp_45=mean(temp_45), temp_85=mean(temp_85), prec_26=sum(prec_26), prec_45=sum(prec_45), prec_85=sum(prec_85))
 
 
-data_CMIP_monthly$period[data_CMIP_monthly$year >= 2006 & data_CMIP_monthly$year <= 2020] <- "2006_2020" 
+data_CMIP_monthly$period[data_CMIP_monthly$year >= 2001 & data_CMIP_monthly$year <= 2014] <- "2006_2020" 
 data_CMIP_monthly$period[data_CMIP_monthly$year >= 2021 & data_CMIP_monthly$year <= 2040] <- "2021_2040" 
 data_CMIP_monthly$period[data_CMIP_monthly$year >= 2041 & data_CMIP_monthly$year <= 2060] <- "2041_2060" 
 data_CMIP_monthly$period[data_CMIP_monthly$year >= 2061 & data_CMIP_monthly$year <= 2080] <- "2061_2080" 
@@ -45,4 +48,5 @@ monthly_trend_cmip$prec_fact_2100 <- monthly_trend_cmip$`2081_2100` / monthly_tr
 cmip_26 <- monthly_trend_cmip[monthly_trend_cmip$scenario == "temp_26" | monthly_trend_cmip$scenario == "prec_26", ]
 
 
-#write.csv(monthly_trend_cmip, "/home/ana/Seafile/Tianshan_data/CMIP/CMIP5/EC-EARTH_r6i1p1_r7i1p1_r8i1p1/CMIP5_monthly_trend2.csv")
+#write.csv(monthly_trend_cmip, "/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/EC-EARTH_r6i1p1_r7i1p1_r8i1p1/CMIP5_monthly_trend2.csv")
+write.csv(monthly_trend_cmip, "/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/in_cm4_8/CMIP6_INM-CM4-8_monthly_trend.csv")

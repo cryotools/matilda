@@ -107,75 +107,53 @@ for i in range(1, 13):
 
 ## MATILDA run with CMIP data
 cmip_output = pd.DataFrame(index=df_preproc.index)
+cmip_output = cmip_output[parameter.sim_start:parameter.sim_end]
 
 list_cmip = [df_hist, df_26_2040, df_26_2060, df_26_2080, df_26_2100, df_45_2040, df_45_2060, df_45_2080, df_45_2100, df_85_2040, df_85_2060, df_85_2080, df_85_2100]
 
 
 for i in list_cmip:
-# Downscaling the dataframe to the glacier height
     output_MATILDA = MATILDA.MATILDA_submodules(i, parameter) # MATILDA model run + downscaling
     output = output_MATILDA[0]["Q_Total"]
     cmip_output[i.name] = output
 
-#cmip_output.to_csv("/home/ana/Desktop/cmip_output.csv")
+#cmip_output.to_csv("/home/ana/Desktop/cmip_output_newroutine.csv")
 
 ## Glacier runs
 
 list_cmip_60 = [df_26_2060, df_45_2060, df_85_2060]
-cmip_output_glacier = pd.DataFrame(index=df.index)
+cmip_output_glacier = pd.DataFrame(index=df_preproc.index)
+cmip_output_glacier = cmip_output_glacier[parameter.sim_start:parameter.sim_end]
+
 
 for i in list_cmip_60:
-# Downscaling the dataframe to the glacier height
-    df_DDM = dataformatting.glacier_downscaling(i, height_diff=236, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
-    df = dataformatting.glacier_downscaling(i, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature, lapse_rate_precipitation=lapse_rate_precipitation)
-
-    degreedays_ds = DDM.calculate_PDD(df_DDM)
-    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5) # output in mm, parameter adjustment possible
-    output_DDM["Q_DDM"] = output_DDM["Q_DDM"]*((glacier_area*0.5)/catchment_area) # scaling glacier melt to glacier area
-    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2) # output in mm, individual parameters can be set here
-
-    output = pd.concat([output_hbv, output_DDM], axis=1)
-    output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-    cmip_output_glacier[i.name]= output["Q_Total"]
-
+    parameter_glac = parameter.copy()
+    parameter_glac.area_glac = parameter_glac.area_glac *0.5
+    output_MATILDA = MATILDA.MATILDA_submodules(i, parameter_glac)  # MATILDA model run + downscaling
+    output = output_MATILDA[0]["Q_Total"]
+    cmip_output_glacier[i.name] = output
 
 # 2060-2080
 list_cmip_80 = [df_26_2080, df_45_2080, df_85_2080]
 
 for i in list_cmip_80:
-    df_DDM = dataformatting.glacier_downscaling(i, height_diff=286, lapse_rate_temperature=lapse_rate_temperature,
-                                            lapse_rate_precipitation=lapse_rate_precipitation)
-    df = dataformatting.glacier_downscaling(i, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature,
-                                        lapse_rate_precipitation=lapse_rate_precipitation)
-
-    degreedays_ds = DDM.calculate_PDD(df_DDM)
-    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
-    output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.4) / catchment_area)  # scaling glacier melt to glacier area
-    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2)  # output in mm, individual parameters can be set here
-
-    output = pd.concat([output_hbv, output_DDM], axis=1)
-    output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-    cmip_output_glacier[i.name] = output["Q_Total"]
+    parameter_glac = parameter.copy()
+    parameter_glac.area_glac = parameter_glac.area_glac *0.4
+    output_MATILDA = MATILDA.MATILDA_submodules(i, parameter_glac)  # MATILDA model run + downscaling
+    output = output_MATILDA[0]["Q_Total"]
+    cmip_output_glacier[i.name] = output
 
 # 2080-2100
 list_cmip_2100 = [df_26_2100, df_45_2100, df_85_2100]
 
 for i in list_cmip_2100:
-    df_DDM = dataformatting.glacier_downscaling(i, height_diff=336, lapse_rate_temperature=lapse_rate_temperature,
-                                            lapse_rate_precipitation=lapse_rate_precipitation)
-    df = dataformatting.glacier_downscaling(i, height_diff=height_diff_catchment, lapse_rate_temperature=lapse_rate_temperature,
-                                        lapse_rate_precipitation=lapse_rate_precipitation)
+    parameter_glac = parameter.copy()
+    parameter_glac.area_glac = parameter_glac.area_glac * 0.3
+    output_MATILDA = MATILDA.MATILDA_submodules(i, parameter_glac)  # MATILDA model run + downscaling
+    output = output_MATILDA[0]["Q_Total"]
+    cmip_output_glacier[i.name] = output
 
-    degreedays_ds = DDM.calculate_PDD(df_DDM)
-    output_DDM, parameter_DDM = DDM.calculate_glaciermelt(degreedays_ds, pdd_factor_snow=2.5, pdd_factor_ice=5, temp_snow=-0.5)  # output in mm, parameter adjustment possible
-    output_DDM["Q_DDM"] = output_DDM["Q_DDM"] * ((glacier_area * 0.3) / catchment_area)  # scaling glacier melt to glacier area
-    output_hbv, parameter_HBV = HBV.hbv_simulation(df, cal_period_start, cal_period_end, parTT=-0.5, parCFMAX=2.5, parPERC=2.5, parFC=200, parUZL=60, parMAXBAS=2)  # output in mm, individual parameters can be set here
-
-    output = pd.concat([output_hbv, output_DDM], axis=1)
-    output["Q_Total"] = output["Q_HBV"] + output["Q_DDM"]
-    cmip_output_glacier[i.name] = output["Q_Total"]
-
-cmip_output_glacier.to_csv("/home/ana/Desktop/cmip_output_glacier.csv")
+cmip_output_glacier.to_csv("/home/ana/Desktop/cmip_output_glacier_newroutine.csv")
 
 ## Plot preprocessing
 cmip_output_monthly = cmip_output.resample("M").agg("sum")
