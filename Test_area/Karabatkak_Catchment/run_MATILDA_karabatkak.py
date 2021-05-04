@@ -10,6 +10,8 @@ import sys
 import spotpy
 import numpy as np
 import socket
+import matplotlib as mpl
+mpl.use('Agg')
 
 host = socket.gethostname()
 if 'node' in host:
