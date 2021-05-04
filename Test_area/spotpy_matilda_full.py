@@ -145,7 +145,7 @@ SI = spotpy.analyser.get_sensitivity_of_fast(results)  # Sensitivity indexes as 
 
 ## Analyse MSpot-results from csv
 wd = '/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/'
-result_path = wd + 'kysylsuurope'
+result_path = wd + 'kysylsuusa'
 results = spotpy.analyser.load_csv_results(result_path)
 # best10 = spotpy.analyser.get_posterior(results, percentage=1, maximize=True)      # get best xx%
 # trues = np.where((results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow']))
@@ -162,9 +162,53 @@ param_zip = zip(par_names, best_param_values)
 best_param = dict(param_zip)
 
 best_param_df = pd.DataFrame(best_param, index=[0])
-best_param_df.to_csv(wd + 'best_param_rope_0,7676.csv')
+best_param_df.to_csv(wd + 'best_param_sa_0,7607.csv')
+
+def load_psample(path, max=True, cond1={'par1': 'parTT_rain', 'operator': 'lessthan', 'par2': 'parTT_snow'}):
+    results = spotpy.analyser.load_csv_results(path)
+    trues = results[(results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow'])]
+
+    trues = results[(results[cond1.get()])]
 
 
+    likes = trues['like1']
+    if max:
+        obj_val = np.nanmax(likes)
+    else:
+        obj_val = np.nanmin(likes)
+
+    index = np.where(likes == obj_val)
+    best_param = trues[index]
+    best_param_values = spotpy.analyser.get_parameters(trues[index])[0]
+    par_names = spotpy.analyser.get_parameternames(trues)
+    param_zip = zip(par_names, best_param_values)
+    best_param = dict(param_zip)
+
+    return [best_param, obj_val]
+
+def filt(left, operator, right):
+    return operator(left, right)
+
+def lessthan(left, right):
+    return filt(left, (lambda a, b: a < b), right)
+
+def greaterthan(left, right):
+    return filt(left, (lambda a, b: a > b), right)
+
+cond1={'par1': 'parTT_rain', 'operator': '<', 'par2': 'parTT_snow'}
+cond1.get('par1')
+
+if cond1.get('operator') == '<':
+    zero = results[lessthan(results[cond1.get('par1')], results[cond1.get('par2')])]
+elif cond1.get('operator') == '>':
+    zero = results[greaterthan(results[cond1.get('par1')], results[cond1.get('par2')])]
+
+
+one = results[lessthan(results['parTT_snow'], results['parTT_rain'])]
+
+two = results[filt(results['parTT_snow'],(lambda a, b: a<b), results['parTT_rain'])]
+
+three = results[results['parTT_snow'] < results['parTT_rain']]
 
 ## Baustellen:
 
@@ -172,3 +216,38 @@ best_param_df.to_csv(wd + 'best_param_rope_0,7676.csv')
 # Die CFMAX-Werte stehen in einem fixen Verhältnis.
 # Die Correction-Factors überblenden immer die gesamte Sensitivitäts-Analyse
 # Sollte die deltaH-Routine in der class mit eingebaut werden?
+
+##
+# karab:
+wd = '/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/'
+result_path = wd + 'karabatkak_upper_para_sampling'
+results = spotpy.analyser.load_csv_results(result_path)
+trues = results[(results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow'])]
+
+likes = trues['like1']
+maximum = np.nanmax(likes)
+index = np.where(likes == maximum)
+
+best_param = trues[index]
+best_param_values = spotpy.analyser.get_parameters(trues[index])[0]
+par_names = spotpy.analyser.get_parameternames(trues)
+param_zip = zip(par_names, best_param_values)
+best_param = dict(param_zip)
+
+best_param_df = pd.DataFrame(best_param, index=[0])
+best_param_df.to_csv(wd + 'best_param_karab_sceua_0,843.csv')
+
+# compare:
+kysyl1 = pd.read_csv(wd + 'best_param_rope_0,7676.csv').transpose()
+kysyl2 = pd.read_csv(wd + 'best_param_sa_0,7607.csv').transpose()
+karab = pd.read_csv(wd + 'best_param_karab_sceua_0,843.csv').transpose()
+
+kysyl1.reset_index(level=0, inplace=True)
+kysyl2.reset_index(level=0, inplace=True)
+karab.reset_index(level=0, inplace=True)
+
+
+
+merge = pd.merge(kysyl1,kysyl2, on='index')
+comp = pd.merge(merge, karab, on='index')
+pd.DataFrame(kysyl1,kysyl2)
