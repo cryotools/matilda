@@ -1,19 +1,34 @@
 ## import of necessary packages
 from pathlib import Path
 import sys
-home = str(Path.home())
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
 #from matilda_sample import df, obs, set_up_start, set_up_end, sim_start, sim_end, freq, area_cat, area_glac, ele_dat, ele_glac,ele_cat
-from MATILDA_slim import MATILDA
 import spotpy
 from spotpy.parameter import Uniform
 from spotpy.objectivefunctions import nashsutcliffe
 import pandas as pd
+## import of necessary packages
+import pandas as pd
+from pathlib import Path
+import sys
+import spotpy
+import numpy as np
+import socket
+
+host = socket.gethostname()
+if 'node' in host:
+    home = '/data/projects/ebaca'
+elif 'cirrus' in host:
+    home = '/data/projects/ebaca'
+else:
+    home = str(Path.home()) + '/Seafile'
+sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
+sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
+import mspot_cirrus
+from MATILDA_slim import MATILDA
 
 ##
-working_directory = home + "/Seafile/Ana-Lena_Phillip/data/"
-input_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/"
+working_directory = home + "/Ana-Lena_Phillip/data/"
+input_path = home + "/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/"
 
 data_csv = "obs_20210313_kyzylsuu_awsq_1982_2019.csv"  # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
 runoff_obs = "obs_kashkator_runoff_2017_2018.csv"  # Daily Runoff Observations in m³/s
@@ -154,10 +169,10 @@ class spot_setup:
         return like
 
 ##
-rep = 10
+rep = 100
 spot_setup = spot_setup(df, obs)
-sampler = spotpy.algorithms.sceua(spot_setup, dbname='20210421_mpi_mc_hbv', dbformat=None, parallel='mpi')
-sampler.sample(rep, ngs=2)
+sampler = spotpy.algorithms.mc(spot_setup, dbname='20210421_mpi_mc_hbv', dbformat=None, parallel='mpi')
+sampler.sample(rep)
 
 # Mit dieser Variante funktioniert MPI. Welche Funktion verhindert es bei psample?
 # Hiddenprints? Yesno? psample Funktion? par_iter?
