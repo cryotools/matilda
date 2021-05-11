@@ -3,15 +3,17 @@ import pandas as pd
 from pathlib import Path
 import glob
 import subprocess
+import matplotlib.pyplot as plt
 import os
 home = str(Path.home())
 wd = home + "/Seafile/Tianshan_data/CMIP/CMIP6/dir_test"
-
+wd = "/home/ana/Desktop/in_cm4_8/"
+#wd = "/data/projects/ensembles/cmip6"
 ## output information
 var = ['near_surface_air_temperature', 'precipitation']
 variable = ["tas", "pr"]
-scen = ['ssp1_2_6', 'ssp2_4_5']
-start_date = '2020-01-01'; end_date = '2029-12-31'
+scen = ['historical', 'ssp1_2_6', 'ssp2_4_5']
+start_date = '2010-01-01'; end_date = '2039-12-31'
 lat = 42.25; lon = 78.25
 
 ## find models: python version
@@ -92,6 +94,19 @@ else:
 # subprocess.call(['./cmip_test3', working_directory, str(lon), str(lat)])
 
 ##
+# ds = xr.open_dataset("/home/ana/Desktop/in_cm4_8/near_surface_air_temperature/ssp2_4_5/tas_day_INM-CM4-8_ssp245_r1i1p1f1_gr1_20150101-20460916.nc")
+# resampled = ds.resample(time="MS").mean()
+#
+# time = ds.indexes['time']
+# time = pd.to_datetime(time.astype('str'))
+
+##
+# path = wd
+# scenarios = scen.copy()
+# var_id = variable.copy()
+# var_name = var.copy()
+# method = "nearest"
+# model_list = ["in_cm4_8"]
 def cmip_csv(path, scenarios, model_list, var_id, var_name, lat, lon, start_date, end_date, method='nearest'):
     rcp_dfs = {}
 
@@ -100,19 +115,46 @@ def cmip_csv(path, scenarios, model_list, var_id, var_name, lat, lon, start_date
         pick = ds.sel(lat=lat, lon=lon, method=method)
         dat = pick[[var_id]].to_dataframe()
         if not isinstance(dat.index, pd.DatetimeIndex):
-            time = ds.indexes['time'].to_datetimeindex()
+            #time = ds.indexes['time'].to_datetimeindex()
+            time = ds.indexes['time']
+            time = pd.to_datetime(time.astype('str'), errors='coerce')
             dat = dat.set_index(time)
         dat = dat[var_id]
         return dat
 
+    scen = scenarios.copy()
+    if "historical" in scenarios:
+        rcp_dfs_historical = {}
+        scen.remove("historical")
+        for models in model_list:
+            data_all = []
+            columns = []
+            data_conc = []
+            for v, v_id in zip(var_name, var_id):
+                data_list = []
+                for file in sorted(glob.glob(path + '/' + v + '/' + 'historical' + '/' + models + '/' + '*.nc')):
+                #for file in sorted(glob.glob(path + '/' + v + '/' + 'historical' + '/' + '*.nc')): # testing
+                    data_list.append(cmip_open(file, lat=lat, lon=lon, var_id=v_id, method=method))
+                data_conc.append(pd.concat(data_list))
+                data_name = [str(v_id) + '_' + 'historical']
+                columns = columns + data_name
+            data_all.append(pd.concat(data_conc, axis=1))
+            rcp_data = pd.concat(data_all, axis=1)
+            rcp_data.columns = columns
+            rcp_data = rcp_data.dropna()
+            rcp_data = rcp_data.sort_index().loc[start_date:end_date]
+            rcp_data["pr_historical"] = rcp_data["pr_historical"]*86400
+            rcp_dfs_historical[models] = rcp_data
+
     for models in model_list:
         data_all = []
         columns = []
-        for s in scenarios:
+        for s in scen:
             data_conc = []
             for v, v_id in zip(var_name, var_id):
                 data_list = []
                 for file in sorted(glob.glob(path + '/' + v + '/' + s + '/' + models + '/' + '*.nc')):
+                #for file in sorted(glob.glob(path + '/' + v + '/' + s + '/' + '*.nc')): #testing
                     data_list.append(cmip_open(file, lat=lat, lon=lon, var_id=v_id, method=method))
                 data_conc.append(pd.concat(data_list))
                 data_name = [str(v_id) + '_' + str(s)]
@@ -120,7 +162,19 @@ def cmip_csv(path, scenarios, model_list, var_id, var_name, lat, lon, start_date
             data_all.append(pd.concat(data_conc, axis=1))
             rcp_data = pd.concat(data_all, axis=1)
             rcp_data.columns = columns
-            rcp_data = rcp_data[start_date:end_date]
+            rcp_data = rcp_data.dropna()
+            rcp_data = rcp_data.sort_index().loc[start_date:end_date]
+            for y in rcp_data.loc[:, rcp_data.columns.str.startswith('pr')].columns:
+                rcp_data[y] = rcp_data[y] * 86400 # prec in kg m-2 s-2
+        if "historical" in scenarios:
+            historical_df = rcp_dfs_historical[models].copy()
+            for l in range(len(scen)-1):
+                historical_df["tas_"+str(l)] = historical_df["tas_historical"]
+                historical_df["pr_" + str(l)] = historical_df["pr_historical"]
+            columns = rcp_data.columns
+            historical_df.columns = columns
+            rcp_data = historical_df.append(rcp_data)
+
         rcp_dfs[models] = rcp_data
     return rcp_dfs
 
@@ -130,48 +184,82 @@ rcp_dfs = cmip_csv(wd, scen, model_list, variable, var, lat, lon, start_date, en
 # for i in rcp_dfs.keys():
 #     rcp_dfs[i].to_csv(wd + "/CMIP6_" + i + "_" + str(lat) + "-" + str(lon) + "_" + str(start_date[:4]) + "-" + str(end_date[:4]) + ".csv")
 
-## multiple plots
-import matplotlib.pyplot as plt
+## calculate mean
+if "historical" in scen:
+    scen.remove("historical")
+
 mean_dict = {}
 for i in scen:
     mean_dict[i] = pd.DataFrame()
-    for k in rcp_dfs.keys():
-        mean_dict[i]["tas_" + str(k)] = rcp_dfs[k]["tas_" + str(i)]
-    mean_dict[i]["mean"] = mean_dict[i].mean(axis=1)
-    mean_dict[i] = mean_dict[i].resample("Y").agg("mean")
-    for key in rcp_dfs.keys():
-        yearly_df = rcp_dfs[key].resample("Y").agg("mean")
-        plt.plot(yearly_df.index.to_pydatetime(), yearly_df["tas_"+str(i)], label=key)
-        plt.title("CMIP6 yearly mean temperature for the " + str(i) + " scenario", size=10)
-        plt.xlabel("Date")
-        plt.ylabel("Temperature [K]")
-    plt.plot(yearly_df.index.to_pydatetime(), mean_dict[i]["mean"], label="mean", color="k")
-    plt.legend()
+    for v in variable:
+        for k in rcp_dfs.keys():
+            mean_dict[i][str(v) + "_" + str(k)] = rcp_dfs[k][str(v) + "_" + str(i)]
+            mean_dict[i][str(v) + "_" + str(k)] = rcp_dfs[k][str(v) + "_" + str(i)]
+        mean_dict[i][str(v) + "_" + "mean"] = mean_dict[i].filter(regex=str(v)).mean(axis=1)
 
-    plt.show()
+
+# for i in mean_dict.keys():
+#     mean_dict[i].to_csv("/data/scratch/tappeana/CMIP6_" + str(i) + "_" + str(lat) + "-" + str(lon) + "_" + start_date + "-" + end_date + ".csv")
+## multiple plots
+
+for i in scen:
+    mean_dict[i] = mean_dict[i].resample("Y").agg({"tas_mean": "mean", "pr_mean": "sum"})
+    for v in variable:
+        for key in rcp_dfs.keys():
+            if v == "tas":
+                yearly_df = rcp_dfs[key].resample("Y").agg("mean")
+            if v == "pr":
+                yearly_df = rcp_dfs[key].resample("Y").agg("sum")
+            plt.plot(yearly_df.index.to_pydatetime(), yearly_df[str(v) + "_" +str(i)], label=key, alpha=0.8)
+            if v == "tas":
+                plt.title("CMIP6 yearly mean temperature for the " + str(i) + " scenario", size=10)
+            if v == "pr":
+                plt.title("CMIP6 yearly precipitation sum for the " + str(i) + " scenario", size=10)
+            plt.xlabel("Date")
+            if v == "tas":
+                plt.ylabel("Temperature [K]")
+            if v == "pr":
+                plt.ylabel("Precipitation [mm]")
+        plt.plot(yearly_df.index.to_pydatetime(), mean_dict[i][str(v) + "_" + "mean"], label="mean", color="k")
+        plt.legend()
+
+        plt.show()
 
 ## all in one plot
-mean_dict = {}
+if "historical" in scen:
+    scen.remove("historical")
 
-fig, axs = plt.subplots(len(scen), sharex=True, sharey=True)
-fig.suptitle("CMIP6 yearly mean temperature")
-for s, i in zip(scen, range(len(scen))):
-    mean_dict[s] = pd.DataFrame()
-    for k in rcp_dfs.keys():
-        mean_dict[s]["tas_" + str(k)] = rcp_dfs[k]["tas_" + str(s)]
-    mean_dict[s]["mean"] = mean_dict[s].mean(axis=1)
-    mean_dict[s] = mean_dict[s].resample("Y").agg("mean")
+for v in variable:
+    fig, axs = plt.subplots(len(scen), sharex=True, sharey=True)
+    if v == "tas":
+        fig.suptitle("CMIP6 yearly mean temperature")
+    if v == "pr":
+        fig.suptitle("CMIP6 yearly precipitation sum")
+    for s, i in zip(scen, range(len(scen))):
+        mean_dict[s] = mean_dict[s].resample("Y").agg({"tas_mean": "mean", "pr_mean": "sum"})
+        for key in rcp_dfs.keys():
+            if v == "tas":
+                yearly_df = rcp_dfs[key].resample("Y").agg("mean")
+            if v == "pr":
+                yearly_df = rcp_dfs[key].resample("Y").agg("sum")
+            axs[i].plot(yearly_df.index.to_pydatetime(), yearly_df[v + "_" + str(s)], label=key, alpha=0.8)
+            axs[i].set_title(s + " scenario", fontsize=9)
+            if v == "tas":
+                axs[i].set_ylabel("Temperature [K]")
+            if v == "pr":
+                axs[i].set_ylabel("Precipitation [mm]")
+        axs[i].plot(yearly_df.index.to_pydatetime(), mean_dict[s][v + "_" + "mean"], label="mean", color="k")
 
-    for key in rcp_dfs.keys():
-        yearly_df = rcp_dfs[key].resample("Y").agg("mean")
-        axs[i].plot(yearly_df.index.to_pydatetime(), yearly_df["tas_"+str(s)], label=key)
-        axs[i].set_title(s + " scenario", fontsize=9)
-        axs[i].set_ylabel("Temperature [K]")
-    axs[i].plot(yearly_df.index.to_pydatetime(), mean_dict[s]["mean"], label="mean", color="k")
-
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12),
-                  fancybox=True, shadow=True, ncol=10)
-plt.show()
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12),
+                      fancybox=True, shadow=True, ncol=7)
+    plt.show()
 
 ##
-
+# df_2_6 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_ssp1_2_6_42.25-78.25_2000-01-01-2099-12-31.csv")
+# df_4_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_ssp2_4_5_42.25-78.25_2000-01-01-2099-12-31.csv")
+# df_8_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_ssp5_8_5_42.25-78.25_2000-01-01-2099-12-31.csv")
+#
+# df_all = pd.DataFrame(data=None, index=df_2_6["time"])
+# df_all["prec_85"] = df_8_5["pr_mean"].values
+#
+# df_all.to_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv")
