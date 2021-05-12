@@ -177,6 +177,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
                                               input_df_glacier["T2"])
             input_df_glacier["T2"] = input_df_glacier["T2"] + height_diff_glacier * float(parameter.lr_temp)
             input_df_glacier["RRR"] = input_df_glacier["RRR"] + (height_diff_glacier * float(parameter.lr_prec) * input_df_glacier["RRR"])
+            input_df_glacier["RRR"] = np.where(input_df_glacier["RRR"] < 0, 0, input_df_glacier["RRR"])
         else:
             input_df_glacier = df_preproc.copy()
         if parameter.ele_cat is not None:
@@ -186,6 +187,8 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
                                                 input_df_catchment["T2"])
             input_df_catchment["T2"] = input_df_catchment["T2"] + height_diff_catchment * float(parameter.lr_temp)
             input_df_catchment["RRR"] = input_df_catchment["RRR"] + height_diff_catchment * float(parameter.lr_prec)
+            input_df_catchment["RRR"] = np.where(input_df_catchment["RRR"] < 0, 0, input_df_catchment["RRR"])
+
         else:
             input_df_catchment = df_preproc.copy()
         return input_df_glacier, input_df_catchment
@@ -479,6 +482,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         Evap_cal = Evap[parameter.set_up_start:parameter.set_up_end]
         # overall correction factor
         Prec_cal = parameter.PCORR * Prec_cal
+        Prec_cal = np.where(Prec_cal < 0, 0, Prec_cal)
         # precipitation separation
         # if T < parTT: SNOW, else RAIN
         RAIN_cal = np.where(Temp_cal > parameter.TT_rain, Prec_cal, 0)
@@ -579,6 +583,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         # 3. meteorological forcing preprocessing for simulation
         # overall correction factor
         Prec = parameter.PCORR * Prec
+        Prec = np.where(Prec < 0, 0, Prec)
         # precipitation separation
         # if T < parTT: SNOW, else RAIN
         RAIN = np.where(Temp > parameter.TT_snow, Prec, 0)

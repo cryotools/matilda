@@ -11,6 +11,8 @@ import spotpy
 import numpy as np
 import socket
 import matplotlib as mpl
+from MATILDA_slim import MATILDA
+
 mpl.use('Agg')
 
 host = socket.gethostname()
@@ -32,6 +34,8 @@ input_path = home + "/Ana-Lena_Phillip/data/input_output/input/observations/kara
 data_csv = "obs_20210313_kyzylsuu_awsq_1982_2019.csv"  # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
 runoff_obs = "obs_kashkator_runoff_2017_2018.csv"  # Daily Runoff Observations in m³/s
 output_path = working_directory + "input_output/output/" + data_csv[4:21]
+output_path = "/home/ana/Desktop/Meeting/kashkator_"
+
 
 df = pd.read_csv(input_path + data_csv)
 obs = pd.read_csv(input_path + runoff_obs)
@@ -147,19 +151,22 @@ best_par_karab.to_csv(working_directory + 'scripts/Test_area/Karabatkak_Catchmen
 #                                       area_cat=7.53, area_glac=2.95,
 #                                       ele_dat=2550, ele_glac=3957, ele_cat=3830, **best_summary['best_param'])
 # ## Running MATILDA
-# parameter = MATILDA.MATILDA_parameter(df, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
-#                                       sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
-#                                       area_cat=7.53, area_glac=2.95,
-#                                       ele_dat=2550, ele_glac=3957, ele_cat=3830)
-# df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs)  # Data preprocessing
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2016-01-01 00:00:00', set_up_end='2016-12-31 23:00:00',
+                                      sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
+                                      area_cat=7.53, area_glac=2.95,
+                                      ele_dat=2550, ele_glac=3957, lr_temp=-0.005936, lr_prec=-0.0002503,
+                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
+                                      CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
+                                      LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
+df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs)  # Data preprocessing
 #
-# output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc)  # MATILDA model run + downscaling
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc)  # MATILDA model run + downscaling
 #
-# output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
+output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 # # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
 # # adding them to the output
 #
-# # MATILDA_save_output(output_MATILDA, parameter, output_path)
+MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
 #
 # ## This function is a standalone function to run the whole MATILDA simulation
 # # If output = output_path in function, the output will be saved to a new folder
