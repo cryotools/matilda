@@ -9,8 +9,10 @@ from MATILDA_slim import MATILDA
 
 ## Data
 cmip_data = "/data/scratch/tappeana/Work/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv"
+cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv"
 
-input_csv = "/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"
+input_csv = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"
+#input_csv = "/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"
 #parameter = pd.read_csv(home +"/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/best_param_sa_0,7607.csv")
 
 output_path = "/data/scratch/tappeana/Work/"
