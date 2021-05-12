@@ -250,4 +250,4 @@ karab.reset_index(level=0, inplace=True)
 
 merge = pd.merge(kysyl1,kysyl2, on='index')
 comp = pd.merge(merge, karab, on='index')
-pd.DataFrame(kysyl1,kysyl2)
+pd.DataFrame(kysyl1, kysyl2)
