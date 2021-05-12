@@ -82,9 +82,9 @@ else:
 # best_par_karab.to_csv('best_param_karab.csv')
 
 ##
-result_path = '/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/karabatkak_upper_para_sampling_first_cirrus_try'
+result_path = '/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/kysylsuurope2000'
 results = spotpy.analyser.load_csv_results(result_path)
-best10 = spotpy.analyser.get_posterior(results, percentage=1, maximize=True)  # get best xx%
+# best10 = spotpy.analyser.get_posterior(results, percentage=1, maximize=True)  # get best xx%
 # trues = np.where((results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow']))
 trues = results[(results['parTT_snow'] < results['parTT_rain']) & (results['parCFMAX_ice'] > results['parCFMAX_snow'])]
 
@@ -97,9 +97,11 @@ best_param_values = spotpy.analyser.get_parameters(trues[index])[0]
 par_names = spotpy.analyser.get_parameternames(trues)
 param_zip = zip(par_names, best_param_values)
 best_param = dict(param_zip)
-#
-#
-#
+
+best_par_karab = pd.DataFrame.from_dict(best_param, orient='index')
+best_par_karab.to_csv(working_directory + 'scripts/Test_area/Karabatkak_Catchment/' + 'best_param_kysyl_20210511.csv')
+
+
 # bestindex, bestobjf = index, trues[index]['like1']  # Run with highest NS
 # best_model_run = trues[bestindex]
 # fields = [word for word in best_model_run.dtype.names if word.startswith('sim')]
