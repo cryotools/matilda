@@ -59,8 +59,8 @@ monthly_trend_cmip["prec_fact_2100"] = monthly_trend_cmip["period_2081_2100"] / 
 df = pd.read_csv(input_csv)
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
-                                      sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=7.53,
-                                      area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3830, lr_temp=-0.005936, lr_prec=-0.0002503,
+                                      sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=315.69,
+                                      area_glac=32.54, ele_dat=2550, ele_glac=4000, ele_cat=3221, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
                                       LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
@@ -170,9 +170,9 @@ for i in list_cmip:
     output = output_MATILDA[0]
     output_dict[i.name] = output
 
-for i in output_dict.keys:
-    output_dict[i].to_csv("/data/scratch/tappeana/Work/MATILDA_CMIP_kashkator_" + str(i) + ".csv")
-cmip_output.to_csv("/data/scratch/tappeana/Work/MATILDA_CMIP_kashkator.csv")
+# for i in output_dict.keys():
+#     output_dict[i].to_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/CMIP_runs/MATILDA_CMIP_kashkator_" + str(i) + ".csv")
+cmip_output.to_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_kyzylsuu.csv")
 
 ## Glacier runs
 
@@ -208,11 +208,11 @@ for i in list_cmip_2100:
     output = output_MATILDA[0]["Q_Total"]
     cmip_output_glacier[i.name] = output
 
-cmip_output_glacier.to_csv("/data/scratch/tappeana/Work/MATILDA_CMIP_glacier-melt_kashkator.csv")
+cmip_output_glacier.to_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_glacier-melt_kyzylsuu.csv")
 
 ## Plot preprocessing
-cmip_output = pd.read_csv("/home/ana/Desktop/Meeting/MATILDA_CMIP_kashkator.csv.csv")
-cmip_output_glacier = pd.read_csv("/home/ana/Desktop/Meeting/MATILDA_CMIP_glacier-melt_kashkator.csv")
+cmip_output = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_kyzylsuu.csv")
+cmip_output_glacier = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_glacier-melt_kyzylsuu.csv")
 
 cmip_output = cmip_output.set_index("TIMESTAMP")
 cmip_output.index = pd.to_datetime(cmip_output.index)
@@ -231,38 +231,38 @@ cmip_output_glacier_monthly_mean = cmip_output_glacier_monthly.groupby(["month"]
 cmip_output_glacier_monthly_mean["month"] = cmip_output_glacier_monthly_mean.index
 
 ## Plots
-fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharey=True, figsize=(10, 6))
-gs = gridspec.GridSpec(2, 2)
-ax1 = plt.subplot(gs[0, 0])
-ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
-ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_26_2040"], c="#D55E00", linewidth=1.2, label="RCP 2.6")
-ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_45_2040"], c="#009E73", linewidth=1.2, label="RCP 4.5")
-ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_85_2040"], c="#CC79A7", linewidth=1.2, label="RCP 8.5")
-ax2 = plt.subplot(gs[0,1], sharey=ax1)
-ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
-ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_26_2060"], c="#D55E00", linewidth=1.2, label="RCP 2.6")
-ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_45_2060"], c="#009E73", linewidth=1.2, label="RCP 4.5")
-ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_85_2060"], c="#CC79A7", linewidth=1.2, label="RCP 8.5")
-ax3 = plt.subplot(gs[1,0], sharey=ax1)
-ax3.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
-ax3.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#D55E00", linewidth=1.2, label="RCP 2.6")
-ax3.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_45_2080"], c="#009E73", linewidth=1.2, label="RCP 4.5")
-ax3.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_85_2080"], c="#CC79A7", linewidth=1.2, label="RCP 8.5")
-ax4 = plt.subplot(gs[1,1], sharey=ax1)
-ax4.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
-ax4.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#D55E00", linewidth=1.2, label="RCP 2.6")
-ax4.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#009E73", linewidth=1.2, label="RCP 4.5")
-ax4.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#CC79A7", linewidth=1.2, label="RCP 8.5")
-#ax1.legend(), ax2.legend(), ax3.legend(), ax4.legend()
-ax1.xaxis.set_ticks(np.arange(2, 12, 2)), ax2.xaxis.set_ticks(np.arange(2, 12, 2)), ax3.xaxis.set_ticks(np.arange(2, 12, 2)); ax4.xaxis.set_ticks(np.arange(2, 12, 2))
-fig.subplots_adjust(top=0.9, left=0.1, right=0.9, bottom=0.12)
-ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=4)
-ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9), ax4.set_ylabel("[mm]", fontsize=9)
-ax1.set_title("Period of 2021 - 2040", fontsize=9)
-ax2.set_title("Period of 2041 - 2060", fontsize=9)
-ax3.set_title("Period of 2061 - 2080", fontsize=9)
-ax4.set_title("Period of 2081 - 2100", fontsize=9)
-plt.show()
+# fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharey=True, figsize=(10, 6))
+# gs = gridspec.GridSpec(2, 2)
+# ax1 = plt.subplot(gs[0, 0])
+# ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
+# ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_26_2040"], c="#D55E00", linewidth=1.2, label="RCP 2.6")
+# ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_45_2040"], c="#009E73", linewidth=1.2, label="RCP 4.5")
+# ax1.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_85_2040"], c="#CC79A7", linewidth=1.2, label="RCP 8.5")
+# ax2 = plt.subplot(gs[0,1], sharey=ax1)
+# ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
+# ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_26_2060"], c="#D55E00", linewidth=1.2, label="RCP 2.6")
+# ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_45_2060"], c="#009E73", linewidth=1.2, label="RCP 4.5")
+# ax2.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_85_2060"], c="#CC79A7", linewidth=1.2, label="RCP 8.5")
+# ax3 = plt.subplot(gs[1,0], sharey=ax1)
+# ax3.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
+# ax3.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#D55E00", linewidth=1.2, label="RCP 2.6")
+# ax3.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_45_2080"], c="#009E73", linewidth=1.2, label="RCP 4.5")
+# ax3.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean["df_85_2080"], c="#CC79A7", linewidth=1.2, label="RCP 8.5")
+# ax4 = plt.subplot(gs[1,1], sharey=ax1)
+# ax4.plot(cmip_output_monthly_mean["month"], cmip_output_monthly_mean['df_hist'], c="#0072B2", linewidth=1.2, label="Historical")
+# ax4.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#D55E00", linewidth=1.2, label="RCP 2.6")
+# ax4.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#009E73", linewidth=1.2, label="RCP 4.5")
+# ax4.plot(cmip_output_monthly_mean["month"], annual.index.to_pydatetime(), c="#CC79A7", linewidth=1.2, label="RCP 8.5")
+# #ax1.legend(), ax2.legend(), ax3.legend(), ax4.legend()
+# ax1.xaxis.set_ticks(np.arange(2, 12, 2)), ax2.xaxis.set_ticks(np.arange(2, 12, 2)), ax3.xaxis.set_ticks(np.arange(2, 12, 2)); ax4.xaxis.set_ticks(np.arange(2, 12, 2))
+# fig.subplots_adjust(top=0.9, left=0.1, right=0.9, bottom=0.12)
+# ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=4)
+# ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel("[mm]", fontsize=9), ax3.set_ylabel("[mm]", fontsize=9), ax4.set_ylabel("[mm]", fontsize=9)
+# ax1.set_title("Period of 2021 - 2040", fontsize=9)
+# ax2.set_title("Period of 2041 - 2060", fontsize=9)
+# ax3.set_title("Period of 2061 - 2080", fontsize=9)
+# ax4.set_title("Period of 2081 - 2100", fontsize=9)
+# plt.show()
 ##
 barWidth = 0.2
 fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, figsize=(10, 6))
@@ -336,9 +336,9 @@ ax6.text(0.02, 0.95, 'RCP 8.5', transform=ax6.transAxes, fontsize=8, verticalali
 plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))], ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
 #ax3.legend(loc='upper center', bbox_to_anchor=(1.5, -0.5),fancybox=False, shadow=False, ncol=2)
 plt.tight_layout()
-plt.suptitle("MATILDA simulation for the Kyzyluu catchment with CMIP6 forcing data")
+plt.suptitle("MATILDA simulation for Kyzylsuu with CMIP6 forcing data")
 #plt.show()
-plt.savefig("/home/ana/Desktop/Meeting/output_barplot2.png", dpi=700)
+plt.savefig("/home/ana/Desktop/Meeting/CMIP6_Kyzylsuu_barplot.png", dpi=700)
 ##
 annual = cmip_output.copy()
 annual["month"] = annual.index.month
@@ -417,8 +417,10 @@ ax6.set_xticklabels(labels,  size = 8)
 ax6.text(0.02, 0.95, 'RCP 8.5', transform=ax6.transAxes, fontsize=8, verticalalignment='top')
 #ax3.legend(loc='upper center', bbox_to_anchor=(1.5, -0.5),fancybox=False, shadow=False, ncol=2)
 plt.tight_layout()
-plt.suptitle("Mean annual cicle for the x catchment with CMIP6 forcing data")
-plt.show()
+plt.suptitle("Mean annual cycle for Kyzylsuu with CMIP6 forcing data")
+#plt.show()
+plt.savefig("/home/ana/Desktop/Meeting/CMIP6_Kyzylsuu_mean_annual.png", dpi=700)
+
 ## test output
 path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/CMIP_runs/"
 CMIP_output = {}
