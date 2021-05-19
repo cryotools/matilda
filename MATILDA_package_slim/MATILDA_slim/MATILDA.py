@@ -416,6 +416,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"]
         for i in range(len(glacier_change)):
             year = glacier_change["water_year"][i]
+            smb_sum = glacier_change["smb_sum"][i]
             smb = int(-glacier_change["smb_percentage"][i])
             if smb <=99:
                 # getting the right row from the lookup table depending on the smb
@@ -425,7 +426,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             else:
                 new_area = 0
             # multiplying the output with the fraction of the new area
-            glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area}, ignore_index=True)
+            glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_sum":smb_sum}, ignore_index=True)
             output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])
 
         return output_DDM, glacier_change_area
@@ -462,18 +463,46 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         if Temp[1] >= 100:  # making sure the temperature is in Celsius
             Temp = Temp - 273.15
         Prec = input_df_hbv['RRR']
-
+        parameter.lat = 43
         # Calculation of PE with Oudin et al. 2005
-        solar_constant = (1376 * 1000000) / 86400  # from 1376 J/m2s to MJm2d
-        extra_rad = 27.086217947590317
+        #solar_constant = (1376 * 1000000) / 86400  # from 1376 J/m2s to MJm2d
         latent_heat_flux = 2.45
         water_density = 1000
         if "PE" in input_df_catchment.columns:
             Evap = input_df_hbv["PE"]
         else:
-            input_df_hbv["PE"] = np.where((Temp) + 5 > 0, ((extra_rad / (water_density * latent_heat_flux)) * \
-                                                           ((Temp) + 5) / 100) * 1000, 0)
-            Evap = input_df_hbv["PE"]
+            doy = np.array(input_df_hbv.index.strftime('%j')).astype(int)
+            lat = np.deg2rad(parameter.lat)
+            # Part 2. Extraterrrestrial radiation calculation
+            # set solar constant (in W m-2)
+            Rsc = 1367 # solar constant (in W m-2)
+            # calculate solar declination dt (in radians)
+            dt = 0.409 * np.sin(2 * np.pi / 365 * doy - 1.39)
+            # calculate sunset hour angle (in radians)
+            ws = np.arccos(-np.tan(lat) * np.tan(dt))
+            # Calculate sunshine duration N (in hours)
+            N = 24 / np.pi * ws
+            # Calculate day angle j (in radians)
+            j = 2 * np.pi / 365.25 * doy
+            # Calculate relative distance to sun
+            dr = 1.0 + 0.03344 * np.cos(j - 0.048869)
+            # Calculate extraterrestrial radiation (J m-2 day-1)
+            Re = Rsc * 86400 / np.pi * dr * (ws * np.sin(lat) * np.sin(dt) \
+                                             + np.sin(ws) * np.cos(lat) * np.cos(dt))
+            # convert from J m-2 day-1 to MJ m-2 day-1
+            Re = Re / 10 ** 6
+
+            Evap = np.where(Temp + 5 > 0, (Re / (water_density * latent_heat_flux)) * ((Temp + 5) / 100) * 1000, 0)
+
+            Evap = pd.Series(Evap, index = input_df_hbv.index)
+            input_df_hbv["PE"] = Evap
+
+            extra_rad = 27.086217947590317
+            latent_heat_flux = 2.45
+            water_density = 1000
+
+            input_df_hbv["PE2"] = np.where((Temp) + 5 > 0, ((extra_rad / (water_density * latent_heat_flux)) * \
+                                                               ((Temp) + 5) / 100) * 1000, 0)
 
         # 2. Calibration period:
         # 2.1 meteorological forcing preprocessing

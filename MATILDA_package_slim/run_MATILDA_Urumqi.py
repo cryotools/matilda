@@ -43,6 +43,7 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, glacier_profile=glacier
 #MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
 output_MATILDA[6].show()
 
+output_MATILDA[4].to_csv("/home/ana/Desktop/2011_2018_2021-05-13_11:34:23/glacier_melt.csv")
 
 ## Preparing data to HBV Light
 data = output_MATILDA[0][["T2", "RRR", "PE", "Qobs"]]

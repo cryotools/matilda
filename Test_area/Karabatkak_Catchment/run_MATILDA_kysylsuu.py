@@ -10,10 +10,10 @@ import sys
 import spotpy
 import numpy as np
 import socket
-import matplotlib as mpl
+import matplotlib.pyplot as plt
 from MATILDA_slim import MATILDA
 
-mpl.use('Agg')
+#mpl.use('Agg')
 
 host = socket.gethostname()
 if 'node' in host:
