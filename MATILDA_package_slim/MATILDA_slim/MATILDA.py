@@ -14,13 +14,16 @@ import matplotlib.pyplot as plt
 
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
-                      area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, lr_temp=-0.006, lr_prec=0, \
+                      lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, \
                       CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, **kwargs):
 
     print("Reading parameters for MATILDA simulation")
     # Checking the parameters to set the catchment properties and simulation
+    if lat is None:
+        print("WARNING: No latitude specified. Please provide to calculate PE")
+        return
     if area_cat is None:
         print("WARNING: No catchment area specified. Please provide catchment area in km2")
         return
@@ -114,7 +117,7 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
 
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end, \
-         "freq": freq, "freq_long": freq_long, "area_cat": area_cat, "area_glac": area_glac, "ele_dat": ele_dat, \
+         "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac, "ele_dat": ele_dat, \
          "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "lr_temp": lr_temp, \
          "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "CFMAX_snow": CFMAX_snow, \
          "CFMAX_ice": CFMAX_ice, "CFR_snow": CFR_snow, "CFR_ice": CFR_ice, "BETA": BETA, "CET": CET, \
@@ -463,7 +466,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         if Temp[1] >= 100:  # making sure the temperature is in Celsius
             Temp = Temp - 273.15
         Prec = input_df_hbv['RRR']
-        parameter.lat = 43
+
         # Calculation of PE with Oudin et al. 2005
         #solar_constant = (1376 * 1000000) / 86400  # from 1376 J/m2s to MJm2d
         latent_heat_flux = 2.45
@@ -497,12 +500,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             Evap = pd.Series(Evap, index = input_df_hbv.index)
             input_df_hbv["PE"] = Evap
 
-            extra_rad = 27.086217947590317
-            latent_heat_flux = 2.45
-            water_density = 1000
-
-            input_df_hbv["PE2"] = np.where((Temp) + 5 > 0, ((extra_rad / (water_density * latent_heat_flux)) * \
-                                                               ((Temp) + 5) / 100) * 1000, 0)
 
         # 2. Calibration period:
         # 2.1 meteorological forcing preprocessing
@@ -989,16 +986,15 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
 
 
 def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, set_up_start=None, set_up_end=None, \
-                       sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, \
-                       ele_cat=None, plots=True, hydro_year=10, lr_temp=-0.006, lr_prec=0, TT_snow=0, TT_rain=2, \
-                       CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, \
-                       K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
+                       sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None, area_glac=None, ele_dat=None,
+                       ele_glac=None, ele_cat=None, plots=True, hydro_year=10, lr_temp=-0.006, lr_prec=0, TT_snow=0,
+                       TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15,
+                       FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
                        CWH=0.1):
     print('---')
     print('MATILDA framework')
     parameter = MATILDA_parameter(input_df, set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start,
-                                  sim_end=sim_end, \
-                                  freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
+                                  sim_end=sim_end, freq=freq, lat=lat, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
                                   ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, lr_temp=lr_temp,
                                   lr_prec=lr_prec, TT_snow=TT_snow, \
                                   TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, CFR_snow=CFR_snow, \
