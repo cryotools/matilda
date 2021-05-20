@@ -27,7 +27,8 @@ sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
 import mspot_cirrus
 
 
-algorithm = 'sa'
+algorithm = 'rope'
+rep = 1000
 
 ## Setting file paths and parameters
 working_directory = home + "/Ana-Lena_Phillip/data/"
@@ -47,19 +48,19 @@ obs = obs[['Date', 'Qobs']]
 
 
 if 'node' in host:
-    kysyl_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat='csv', dbname='kysylsuu' + algorithm,
+    kysyl_par = mspot_cirrus.psample(df=df, obs=obs, rep=rep, dbformat='csv', dbname='kysylsuu' + algorithm + str(rep),
                                      set_up_start='1994-01-01 00:00:00', set_up_end='1995-12-31 23:00:00',
                                      sim_start='1994-01-01 00:00:00', sim_end='1997-12-31 23:00:00', freq="D",
                                      area_cat=315.69,
-                                     area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3221, lr_temp_lo=-0.0065,
+                                     area_glac=32.54, ele_dat=2550, ele_glac=3957, ele_cat=3221, lr_temp_lo=-0.0065,
                                      lr_temp_up=-0.005,
-                                     opt_iter=True, savefig=True, algorithm=algorithm)
+                                     opt_iter=False, savefig=True, algorithm=algorithm)
 else:
-    kysyl_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat=None, dbname='kysylsuu' + algorithm,
+    kysyl_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat=None, dbname='kysylsuu' + algorithm + str(rep),
                                      set_up_start='1994-01-01 00:00:00', set_up_end='1995-12-31 23:00:00',
                                      sim_start='1994-01-01 00:00:00', sim_end='1997-12-31 23:00:00', freq="D",
                                      area_cat=315.69,
-                                     area_glac=2.95, ele_dat=2550, ele_glac=3957, ele_cat=3221, lr_temp_lo=-0.0065,
+                                     area_glac=32.54, ele_dat=2550, ele_glac=3957, ele_cat=3221, lr_temp_lo=-0.0065,
                                      lr_temp_up=-0.005,
                                      opt_iter=False, savefig=False, algorithm=algorithm)
 
@@ -79,8 +80,8 @@ else:
 # par_names = spotpy.analyser.get_parameternames(trues)
 # param_zip = zip(par_names, best_param_values)
 # best_param = dict(param_zip)
-#
-#
+
+
 
 
 # ##
