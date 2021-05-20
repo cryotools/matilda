@@ -59,7 +59,8 @@ monthly_trend_cmip["prec_fact_2100"] = monthly_trend_cmip["period_2081_2100"] / 
 df = pd.read_csv(input_csv)
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
-                                      sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=315.69,
+                                      sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D",
+                                      lat=42.25, area_cat=315.69,
                                       area_glac=32.54, ele_dat=2550, ele_glac=4000, ele_cat=3221, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
@@ -69,8 +70,6 @@ df_preproc = df_preproc.resample("D").agg({"T2":"mean", "RRR":"sum"}) # to prepa
 
 output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter)  # MATILDA model run + downscaling
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-
-test = output_MATILDA[0]
 
 #MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
 

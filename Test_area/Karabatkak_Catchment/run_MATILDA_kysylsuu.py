@@ -31,7 +31,7 @@ algorithm = 'sa'
 
 ## Setting file paths and parameters
 working_directory = home + "/Ana-Lena_Phillip/data/"
-input_path = home + "/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/"
+input_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/"
 
 data_csv = "ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"  # dataframe with columns T2 (Temp in Celsius), RRR (Prec in mm) and if possible PE (in mm)
 runoff_obs = "obs_kyzylsuu_runoff_1994_1997_zero.csv"  # Daily Runoff Observations in m³/s
