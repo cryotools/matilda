@@ -23,15 +23,27 @@ from utils import prob_plots
 plt.ion()
 
 ## load my data
-dat = pd.read_csv(home + "/input_output/input/ERA5/Tien-Shan/At-Bashy/Bash-Kaindy_preprocessed_forcing_data.csv",
-                  parse_dates=['TIMESTAMP'], index_col='TIMESTAMP')
-dat = dat.resample('D').mean()
+
+dat = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv',
+                  parse_dates=['datetime'], index_col='datetime')
+# dat = dat.resample('D').mean()
 
 training = dat.drop(columns=['temp_era_fitted', 'temp_minikin'])
-targets = dat.drop(columns=['temp_era_fitted', 'temp_era'])
+targets = dat.drop(columns=['rh', 'ws', 'wd'])          # HIER MIT ERA5L-DATEN FORTFAHREN!!
 
 train_slice = slice('2018-09-07', '2019-03-13')
 predict_slice = slice('2019-03-14', '2019-09-13')
+
+## example
+# dat = pd.read_csv(home + "/input_output/input/ERA5/Tien-Shan/At-Bashy/Bash-Kaindy_preprocessed_forcing_data.csv",
+#                   parse_dates=['TIMESTAMP'], index_col='TIMESTAMP')
+# # dat = dat.resample('D').mean()
+#
+# training = dat.drop(columns=['temp_era_fitted', 'temp_minikin'])
+# targets = dat.drop(columns=['temp_era_fitted', 'temp_era'])
+#
+# train_slice = slice('2018-09-07', '2019-09-13')
+# predict_slice = slice('2018-09-07', '2019-09-13')
 
 # print a table of the training/targets data
 # display(pd.concat({'training': training, 'targets': targets}, axis=1))
@@ -45,8 +57,6 @@ axes.plot(targets[plot_slice], label='targets')
 axes.legend()
 axes.set_ylabel('Temperature [C]')
 
-# plt.ioff()
-
 ##
 models = {
     'GARD: PureAnalog-best-1': PureAnalog(kind='best_analog', n_analogs=1),
@@ -56,7 +66,7 @@ models = {
     'GARD: PureAnalog-mean-10': PureAnalog(kind='mean_analogs', n_analogs=10),
     'GARD: AnalogRegression-100': AnalogRegression(n_analogs=100),
     'GARD: LinearRegression': LinearRegression(),
-    # 'BCSD: BcsdTemperature': BcsdTemperature(return_anoms=False),             # Only works with decent training period.
+    'BCSD: BcsdTemperature': BcsdTemperature(return_anoms=False),             # Only works with decent training period.
     'Sklearn: RandomForestRegressor': RandomForestRegressor(random_state=0)
 }
 
@@ -65,8 +75,6 @@ X_train = training[train_slice]
 y_train = targets[train_slice]
 X_predict = training[predict_slice]
 
-test = BcsdTemperature(return_anoms=False).fit(X_train, y_train)
-test.predict(X_predict)
 ##
 # Fit all models
 for key, model in models.items():
