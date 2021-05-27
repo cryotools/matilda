@@ -30,7 +30,7 @@ obs["Qobs"] = obs["Qobs"] / 86400*(3.367*1000000)/1000 # in der Datei sind die m
 
 ## Running MATILDA
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2010-01-01 00:00:00', set_up_end='2010-12-31 23:00:00',
-                       sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="W", area_cat=3.367, area_glac=1.581,
+                       sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', lat=43, freq="W", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs) # Data preprocessing
 
@@ -38,9 +38,9 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, glacier_profile=glacier
                        sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="W", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 
-#output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
-#output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-#MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
+output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
+MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
 output_MATILDA[6].show()
 
 output_MATILDA[4].to_csv("/home/ana/Desktop/2011_2018_2021-05-13_11:34:23/glacier_melt.csv")

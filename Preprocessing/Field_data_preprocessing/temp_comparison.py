@@ -81,7 +81,8 @@ plt.legend(compare_slim.columns.tolist(), loc="upper left")
 plt.show()
 
 ## Comparing the ERA5 data
-era5_down = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2018_2019.csv")
+#era5_down = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182ERA5_Land_2018_2019.csv")
+era5_down= pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/no182_ERA5_Land_2000_202011_no182_41_75.9.csv")
 era5_down.set_index('TIMESTAMP', inplace=True)
 era5_down.index = pd.to_datetime(era5_down.index)
 era5_down = era5_down["2018-09-07":"2019-09-13"]
@@ -94,6 +95,8 @@ era5_down = era5_down.resample('W').mean()
 compare_slim["temp_2250"] = era5_down["temp_2250"]
 compare_slim["temp_3037"] = era5_down["temp_3037"]
 compare_slim["temp_3864"] = era5_down["temp_3864"]
+
+compare_slim = pd.concat([compare_slim, era5_down], axis=1)
 
 plt.plot(compare_slim)
 plt.legend(compare_slim.columns.tolist(), loc="upper left")
@@ -109,8 +112,8 @@ ax3.plot(compare_slim.index.to_pydatetime(), (compare_slim["temp_3864"]), c="#2c
 ax1.legend(), ax2.legend(), ax3.legend()
 ax1.set_ylabel("[K]", fontsize=9), ax2.set_ylabel("[K]", fontsize=9), ax3.set_ylabel("[K]", fontsize=9)
 ax1.set_title("Comparison of downscaled ERA5 data with a lapse rate of -0.006K/m and sensors", fontsize=14)
-#plt.show()
-plt.savefig("/home/ana/Desktop/Downscaled_temp.png")
+plt.show()
+#plt.savefig("/home/ana/Desktop/Downscaled_temp.png")
 
 
 ## ERA5 + lapse rates

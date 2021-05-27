@@ -45,15 +45,15 @@ monthly_trend_cmip.rename(columns={'variable':'scenario'}, inplace=True)
 
 
 for i in range((period_start+period_length), period_end, period_length):
-    monthly_trend_cmip["temp_diff_hist_"+str(i+(period_length-1))] = monthly_trend_cmip["period_" + str(i) + "_" + str(i + (period_length - 1))] - monthly_trend_cmip["period_" + str(i-period_length)+ "_" + str(i-1)]
-    monthly_trend_cmip["prec_fact_"+str(i+(period_length-1))] = monthly_trend_cmip["period_" + str(i) + "_" + str(i + (period_length - 1))] / monthly_trend_cmip["period_" + str(i-period_length)+ "_" + str(i-1)]
+    monthly_trend_cmip["temp_diff_hist_"+str(i+(period_length-1))] = monthly_trend_cmip["period_" + str(i) + "_" + str(i + (period_length - 1))] - monthly_trend_cmip["period_" + str(period_start)+ "_" + str(period_start+period_length-1)]
+    monthly_trend_cmip["prec_fact_"+str(i+(period_length-1))] = monthly_trend_cmip["period_" + str(i) + "_" + str(i + (period_length - 1))] / monthly_trend_cmip["period_" + str(period_start)+ "_" + str(period_start+period_length-1)]
 
 scenario = np.unique(monthly_trend_cmip["scenario"])
 
 factors = {}
 for i in variables:
     all_factors = monthly_trend_cmip.loc[monthly_trend_cmip["scenario"].str.startswith(i)].copy()
-    factors[i] = all_factors.loc[:, (all_factors.columns.str.startswith(i))]
+    factors[i] = all_factors.loc[:, (all_factors.columns.stestr.startswith(("month", "scenario", i)))]
 
 
 

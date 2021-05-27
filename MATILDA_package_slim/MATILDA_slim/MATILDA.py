@@ -11,6 +11,8 @@ import scipy.signal as ss
 from datetime import date, datetime
 import os
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.offsetbox import AnchoredText
 
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
@@ -840,7 +842,17 @@ def MATILDA_plots(output_MATILDA, parameter):
                  "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
         if "Qobs" in output_MATILDA[0].columns:
             plot_data["Qobs"] = obs
-        return plot_data
+
+        plot_annual_data = output_MATILDA[0].copy()
+        plot_annual_data["month"] = plot_annual_data.index.month
+        plot_annual_data["day"] = plot_annual_data.index.day
+        plot_annual_data = plot_annual_data.groupby(["month", "day"]).mean()
+        plot_annual_data["date"] = pd.date_range(parameter.sim_start, freq='D', periods=len(plot_annual_data)).strftime('%Y-%m-%d')
+        plot_annual_data = plot_annual_data.set_index(plot_annual_data["date"])
+        plot_annual_data.index = pd.to_datetime(plot_annual_data.index)
+        plot_annual_data["plot"] = 0
+
+        return plot_data, plot_annual_data
 
     # Plotting the meteorological parameters
     def plot_meteo(plot_data, parameter):
@@ -870,37 +882,48 @@ def MATILDA_plots(output_MATILDA, parameter):
         fig.set_size_inches(10, 6)
         return fig
 
-    def plot_runoff(plot_data, parameter):
+    def plot_runoff(plot_data, plot_annual_data, parameter):
         plot_data["plot"] = 0
-        fig = plt.figure(figsize=(10, 6))
+        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(14, 4.5), gridspec_kw={'width_ratios': [2.75, 1]})
         if 'Qobs' in plot_data.columns:
-            plt.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00",
-                     label="Observations", linewidth=1.2)
-        plt.fill_between(plot_data.index.to_pydatetime(), plot_data["plot"], plot_data["Q_HBV"], color='#56B4E9',
-                         alpha=.75, label="MATILDA catchment runoff")
+            ax1.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00", label="", linewidth=1.2)
+        ax1.fill_between(plot_data.index.to_pydatetime(), plot_data["plot"], plot_data["Q_HBV"], color='#56B4E9',
+                         alpha=.75, label="")
         if "Q_DDM" in plot_data.columns:
-            plt.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], c="k", label="MATILDA total runoff",
+            ax1.plot(plot_data.index.to_pydatetime(), plot_data["Q_Total"], c="k", label="", linewidth=0.75, alpha=0.75)
+            ax1.fill_between(plot_data.index.to_pydatetime(), plot_data["Q_HBV"], plot_data["Q_Total"], color='#CC79A7',
+                             alpha=.75, label="")
+        ax1.set_ylabel("Runoff [mm]", fontsize=9)
+        if output_MATILDA[1] == "error":
+            anchored_text = AnchoredText('NS coeff exceeds boundaries', loc=2, frameon=False)
+        elif isinstance(output_MATILDA[1], float):
+            anchored_text = AnchoredText('NS coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
+        ax1.add_artist(anchored_text)
+        if 'Qobs' in plot_annual_data.columns:
+            ax2.plot(plot_annual_data.index.to_pydatetime(), plot_annual_data["Qobs"], c="#E69F00",
+                     label="Observations", linewidth=1.2)
+        ax2.fill_between(plot_annual_data.index.to_pydatetime(), plot_annual_data["plot"], plot_annual_data["Q_HBV"], color='#56B4E9',
+                         alpha=.75, label="MATILDA catchment runoff")
+        if "Q_DDM" in plot_annual_data.columns:
+            ax2.plot(plot_annual_data.index.to_pydatetime(), plot_annual_data["Q_Total"], c="k", label="MATILDA total runoff",
                      linewidth=0.75, alpha=0.75)
-            plt.fill_between(plot_data.index.to_pydatetime(), plot_data["Q_HBV"], plot_data["Q_Total"],
-                            color='#CC79A7', alpha=.75, label="MATILDA glacial runoff")
-        plt.legend()
-        plt.ylabel("Runoff [mm]", fontsize=9)
+            ax2.fill_between(plot_annual_data.index.to_pydatetime(), plot_annual_data["Q_HBV"], plot_annual_data["Q_Total"], color='#CC79A7',
+                             alpha=.75, label="MATILDA glacial runoff")
+        ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+        ax2.set_ylabel("Runoff [mm]", fontsize=9)
         if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
-            plt.title(
-                parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[-1])[
-                                                                              :4],
+            plt.suptitle(
+                parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[-1])[:4],
                 size=14)
         else:
-            plt.title(
-                parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[1])[
-                                                                              :4] + "-" + str(
-                    plot_data.index.values[-1])[:4], size=14)
-        if output_MATILDA[1] == "error":
-            plt.text(0.77, 0.9, 'NS coeff exceeds boundaries', fontsize=8, transform=fig.transFigure)
-        elif isinstance(output_MATILDA[1], float):
-            plt.text(0.85, 0.9, 'NS coeff ' + str(round(output_MATILDA[1], 2)), fontsize=8, transform=fig.transFigure)
+            plt.suptitle(parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[1])[
+                                                                                       :4] + "-" + str(
+                plot_data.index.values[-1])[:4], size=14)
+        handles, labels = ax2.get_legend_handles_labels()
+        fig.legend(handles, labels, loc='lower center', ncol=4, bbox_to_anchor=(0.5, -0.02),
+                   bbox_transform=plt.gcf().transFigure)
         plt.tight_layout()
-        fig.set_size_inches(10, 6)
         return fig
 
     # Plotting the HBV output parameters
@@ -932,9 +955,9 @@ def MATILDA_plots(output_MATILDA, parameter):
         fig.set_size_inches(10, 6)
         return fig
 
-    plot_data = plot_data(output_MATILDA, parameter)
+    plot_data, plot_data_annual = plot_data(output_MATILDA, parameter)
     fig1 = plot_meteo(plot_data, parameter)
-    fig2 = plot_runoff(plot_data, parameter)
+    fig2 = plot_runoff(plot_data, plot_data_annual, parameter)
     fig3 = plot_hbv(plot_data, parameter)
     output_MATILDA.extend([fig1, fig2, fig3])
     return output_MATILDA
@@ -955,12 +978,12 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
 
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
         output_MATILDA[5].savefig(
-            output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
+            output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png", bbox_inches='tight',
             dpi=output_MATILDA[5].dpi)
     else:
         output_MATILDA[5].savefig(
             output_path + "meteorological_data_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
-                output_MATILDA[0].index.values[-1])[:4] + ".png", dpi=output_MATILDA[5].dpi)
+                output_MATILDA[0].index.values[-1])[:4] + ".png", bbox_inches='tight', dpi=output_MATILDA[5].dpi)
 
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
         output_MATILDA[6].savefig(output_path + "model_runoff_" + str(output_MATILDA[0].index.values[-1])[:4] + ".png",
