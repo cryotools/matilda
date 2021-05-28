@@ -17,7 +17,7 @@ wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing/Downscaling'
 import os
 os.chdir(wd)
 sys.path.append(wd)
-import scikit_downscale_matilda as sdsm
+import scikit_downscale_matilda as sds
 
 
 # interactive plotting?
@@ -25,15 +25,15 @@ plt.ion()
 
 ## load my data
 
-dat = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv',
-                  parse_dates=['datetime'], index_col='datetime')
-# dat = dat.resample('D').mean()
-
-training = dat.drop(columns=['temp_era_fitted', 'temp_minikin'])
-targets = dat.drop(columns=['rh', 'ws', 'wd'])          # HIER MIT ERA5L-DATEN FORTFAHREN!!
-
-train_slice = slice('2018-09-07', '2019-03-13')
-predict_slice = slice('2019-03-14', '2019-09-13')
+# dat = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv',
+#                   parse_dates=['datetime'], index_col='datetime')
+# # dat = dat.resample('D').mean()
+#
+# training = dat.drop(columns=['temp_era_fitted', 'temp_minikin'])
+# targets = dat.drop(columns=['rh', 'ws', 'wd'])          # HIER MIT ERA5L-DATEN FORTFAHREN!!
+#
+# train_slice = slice('2018-09-07', '2019-03-13')
+# predict_slice = slice('2019-03-14', '2019-09-13')
 
 ## example
 dat = pd.read_csv(home + "/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/Bash-Kaindy_preprocessed_forcing_data.csv",
@@ -54,7 +54,13 @@ x_predict = training[predict_slice]
 y_predict = targets[predict_slice]      # Only for finding the best model.
 
 ##
-sdsm.overview_plot(training[plot_slice], targets[plot_slice], label='Temperature [°C]')
-predict_df = sdsm.fit_dmodels(x_train, y_train, x_predict)
-sdsm.modcomp_plot(targets[plot_slice], x_predict[plot_slice], predict_df[plot_slice])
-sdsm.dmod_score(predict_df, targets['temp_minikin'], y_predict['temp_minikin'], x_predict)
+sds.overview_plot(training[plot_slice], targets[plot_slice], label='Temperature [°C]')
+prediction = sds.fit_dmodels(x_train, y_train, x_predict)
+sds.modcomp_plot(targets[plot_slice], x_predict[plot_slice], prediction['predictions'][plot_slice])
+sds.dmod_score(prediction['predictions'], targets['temp_minikin'], y_predict['temp_minikin'], x_predict)
+
+## Pick best model
+
+best_mod = prediction['models']['GARD: PureAnalog-weight-100']
+best_mod.fit(x_train, y_train)
+result = best_mod.predict()         # insert scenario data here
