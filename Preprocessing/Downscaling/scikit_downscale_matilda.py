@@ -39,7 +39,7 @@ def fit_dmodels(x_train, y_train, x_predict):
     for key, model in models.items():
         predict_df[key] = model.predict(x_predict)
 
-    return predict_df
+    return {'predictions': predict_df, 'models': models}
 
 
 def modcomp_plot(targets, x_predict,  predict_df, figsize=(10, 5), xlabel='Date', ylabel=None,
