@@ -11,28 +11,55 @@ from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
 from utils import prob_plots
 
 
-def overview_plot(training, targets, no_var=1, figsize=(8, 6), sharex=True, label=None, label_train="training", label_target="target", **kwargs):
-    fig, axes = plt.subplots()
-    axes.plot(training, label=label_train)
-    axes.plot(targets, label=label_target)
-    axes.legend()
-    axes.set_ylabel(label)
+def overview_plot(training, targets, training_var2=None, targets_var2=None, no_var=1, figsize=(8, 6), sharex=True,
+                  labelvar1=None, labelvar2=None, label_train="training", label_target="target", **kwargs):
+    if no_var == 1:
+        fig, axes = plt.subplots()
+        axes.plot(training, label=label_train)
+        axes.plot(targets, label=label_target)
+        axes.legend()
+        axes.set_ylabel(labelvar1)
+    elif no_var == 2:
+        fig, axes = plt.subplots(ncols=1, nrows=2, figsize=figsize, sharex=sharex)
+        axes[0].plot(training, label=label_train)
+        axes[0].plot(targets, label=label_target)
+        axes[0].legend()
+        axes[0].set_ylabel(labelvar1)
+
+        axes[1].plot(training_var2)
+        axes[1].plot(targets_var2)
+        _ = axes[1].set_ylabel(labelvar2)
+    else:
+        print('Too many variables for this function. Please customize the plots yourself.')
 
 
-def fit_dmodels(x_train, y_train, x_predict):
+def fit_dmodels(x_train, y_train, x_predict, precip=False):
 
     # Define which models to apply
-    models = {
-        'GARD: PureAnalog-best-1': PureAnalog(kind='best_analog', n_analogs=1),
-        'GARD: PureAnalog-sample-10': PureAnalog(kind='sample_analogs', n_analogs=10),
-        'GARD: PureAnalog-weight-10': PureAnalog(kind='weight_analogs', n_analogs=10),
-        'GARD: PureAnalog-weight-100': PureAnalog(kind='weight_analogs', n_analogs=100),
-        'GARD: PureAnalog-mean-10': PureAnalog(kind='mean_analogs', n_analogs=10),
-        'GARD: AnalogRegression-100': AnalogRegression(n_analogs=100),
-        'GARD: LinearRegression': LinearRegression(),
-        'BCSD: BcsdTemperature': BcsdTemperature(return_anoms=False),  # Only works with decent training period.
-        'Sklearn: RandomForestRegressor': RandomForestRegressor(random_state=0)
-    }
+    if precip:
+        models = {
+            'GARD: PureAnalog-best-1': PureAnalog(kind='best_analog', n_analogs=1),
+            'GARD: PureAnalog-sample-10': PureAnalog(kind='sample_analogs', n_analogs=10),
+            'GARD: PureAnalog-weight-10': PureAnalog(kind='weight_analogs', n_analogs=10),
+            'GARD: PureAnalog-weight-100': PureAnalog(kind='weight_analogs', n_analogs=100),
+            'GARD: PureAnalog-mean-10': PureAnalog(kind='mean_analogs', n_analogs=10),
+            'GARD: AnalogRegression-100': AnalogRegression(n_analogs=100),
+            'GARD: LinearRegression': LinearRegression(),
+            'BCSD: BcsdPrecipitation': BcsdPrecipitation(return_anoms=False),  # Only works with decent training period.
+            'Sklearn: RandomForestRegressor': RandomForestRegressor(random_state=0)
+        }
+    else:
+        models = {
+            'GARD: PureAnalog-best-1': PureAnalog(kind='best_analog', n_analogs=1),
+            'GARD: PureAnalog-sample-10': PureAnalog(kind='sample_analogs', n_analogs=10),
+            'GARD: PureAnalog-weight-10': PureAnalog(kind='weight_analogs', n_analogs=10),
+            'GARD: PureAnalog-weight-100': PureAnalog(kind='weight_analogs', n_analogs=100),
+            'GARD: PureAnalog-mean-10': PureAnalog(kind='mean_analogs', n_analogs=10),
+            'GARD: AnalogRegression-100': AnalogRegression(n_analogs=100),
+            'GARD: LinearRegression': LinearRegression(),
+            'BCSD: BcsdTemperature': BcsdTemperature(return_anoms=False),  # Only works with decent training period.
+            'Sklearn: RandomForestRegressor': RandomForestRegressor(random_state=0)
+        }
     for key, model in models.items():                   # Fit all models
         model.fit(x_train, y_train)
     predict_df = pd.DataFrame(index=x_predict.index)    # store predicted results in this dataframe
@@ -65,3 +92,4 @@ def dmod_score(predict_df, targets, y_predict, x_predict, figsize=(12, 12)):
     return {'R2-scores': score, 'QQ-Matrix': fig}
 
 
+prob_plots
