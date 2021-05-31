@@ -1,15 +1,15 @@
-from datetime import datetime
 from pathlib import Path; home = str(Path.home())
 import pandas as pd
 import numpy as np
-import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from MATILDA_slim import MATILDA
+from MATILDA_slim import MATILDA_functions
 
 ## Data
 cmip_data = "/data/scratch/tappeana/Work/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv"
-cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv"
+cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Kysylsuu/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv"
+parameter_df = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/best_param_kysyl_20210511.csv")
 
 input_csv = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"
 #input_csv = "/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"
@@ -18,6 +18,10 @@ input_csv = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observatio
 output_path = "/data/scratch/tappeana/Work/"
 
 ## Trend
+hist_period_start=2001; hist_period_end = 2020; period_start = 2021; period_end = 2100; period_length = 20
+variables = ["temp", "prec"]
+scenarios = ["26", "45", "85"]
+
 cmip_df = pd.read_csv(cmip_data)
 
 cmip_df = cmip_df.set_index("time")
@@ -25,46 +29,16 @@ cmip_df.index = pd.to_datetime(cmip_df.index)
 cmip_df["year"] = cmip_df.index.year
 cmip_df["month"] = cmip_df.index.month
 
-cmip_monthly = cmip_df.groupby(["month", "year"], as_index=False).agg(temp_26=('temp_26','mean'), temp_45=('temp_45','mean'),
-                                                                      temp_85=('temp_85','mean'), prec_26= ('prec_26','sum'),
-                                                                      prec_45= ('prec_45','sum'), prec_85= ('prec_85','sum'))
+factors_cmip = MATILDA_functions.cmip_factors(cmip_df, variables, hist_period_start, hist_period_end, period_start, period_end, period_length)
 
-cmip_monthly["period"] = 0
-cmip_monthly["period"] = np.where(((cmip_monthly["year"] >= 2001) & (cmip_monthly["year"] <= 2020)), "period_2001_2020", cmip_monthly["period"])
-cmip_monthly["period"] = np.where(((cmip_monthly["year"] >= 2021) & (cmip_monthly["year"] <= 2040)), "period_2021_2040", cmip_monthly["period"])
-cmip_monthly["period"] = np.where(((cmip_monthly["year"] >= 2041) & (cmip_monthly["year"] <= 2060)), "period_2041_2060", cmip_monthly["period"])
-cmip_monthly["period"] = np.where(((cmip_monthly["year"] >= 2061) & (cmip_monthly["year"] <= 2080)), "period_2061_2080", cmip_monthly["period"])
-cmip_monthly["period"] = np.where(((cmip_monthly["year"] >= 2081) & (cmip_monthly["year"] <= 2100)), "period_2081_2100", cmip_monthly["period"])
-
-cmip_monthly_period = cmip_monthly.groupby(["month", "period"], as_index=False).agg(temp_26=('temp_26','mean'), temp_45=('temp_45','mean'),
-                                                                      temp_85=('temp_85','mean'), prec_26= ('prec_26','mean'),
-                                                                      prec_45= ('prec_45','mean'), prec_85= ('prec_85','mean'))
-
-monthly_trend_cmip = cmip_monthly_period.melt(id_vars=['month', 'period'])
-monthly_trend_cmip = monthly_trend_cmip.pivot_table(index=['month','variable'], columns='period',values='value')
-monthly_trend_cmip = monthly_trend_cmip.reset_index()
-monthly_trend_cmip.rename(columns={'variable':'scenario'}, inplace=True)
-
-
-monthly_trend_cmip["diff_hist_2040"] = monthly_trend_cmip["period_2021_2040"] - monthly_trend_cmip["period_2001_2020"]
-monthly_trend_cmip["diff_hist_2060"] = monthly_trend_cmip["period_2041_2060"] - monthly_trend_cmip["period_2001_2020"]
-monthly_trend_cmip["diff_hist_2080"] = monthly_trend_cmip["period_2061_2080"] - monthly_trend_cmip["period_2001_2020"]
-monthly_trend_cmip["diff_hist_2100"] = monthly_trend_cmip["period_2081_2100"] - monthly_trend_cmip["period_2001_2020"]
-monthly_trend_cmip["prec_fact_2040"] = monthly_trend_cmip["period_2021_2040"] / monthly_trend_cmip["period_2001_2020"]
-monthly_trend_cmip["prec_fact_2060"] = monthly_trend_cmip["period_2041_2060"] / monthly_trend_cmip["period_2001_2020"]
-monthly_trend_cmip["prec_fact_2080"] = monthly_trend_cmip["period_2061_2080"] / monthly_trend_cmip["period_2001_2020"]
-monthly_trend_cmip["prec_fact_2100"] = monthly_trend_cmip["period_2081_2100"] / monthly_trend_cmip["period_2001_2020"]
-
-## MATILDA preparation
+parameter_df = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/best_param_kysyl_20210511.csv")
+## MATILDA preparation -  Initial run
 df = pd.read_csv(input_csv)
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
                                       sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D",
                                       lat=42.25, area_cat=315.69,
-                                      area_glac=32.54, ele_dat=2550, ele_glac=4000, ele_cat=3221, lr_temp=-0.005936, lr_prec=-0.0002503,
-                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
-                                      CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
-                                      LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
+                                      area_glac=32.54, ele_dat=2550, ele_glac=4000, ele_cat=3221, parameter_df=parameter_df)
 df_preproc = MATILDA.MATILDA_preproc(df, parameter)
 df_preproc = df_preproc.resample("D").agg({"T2":"mean", "RRR":"sum"}) # to prepare future dataframes
 
@@ -73,145 +47,70 @@ output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 
 #MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
 
-## Preparing CMIP trend and dataframes for each period
-cmip_trend_26_temp = monthly_trend_cmip[monthly_trend_cmip["scenario"] == "temp_26"]
-cmip_trend_26_prec = monthly_trend_cmip[monthly_trend_cmip["scenario"] == "prec_26"]
-cmip_trend_45_temp = monthly_trend_cmip[monthly_trend_cmip["scenario"] == "temp_45"]
-cmip_trend_45_prec = monthly_trend_cmip[monthly_trend_cmip["scenario"] == "prec_45"]
-cmip_trend_85_temp = monthly_trend_cmip[monthly_trend_cmip["scenario"] == "temp_85"]
-cmip_trend_85_prec = monthly_trend_cmip[monthly_trend_cmip["scenario"] == "prec_85"]
-
-cmip_trend_26_temp = cmip_trend_26_temp.reset_index()
-cmip_trend_26_prec = cmip_trend_26_prec.reset_index()
-cmip_trend_45_temp = cmip_trend_45_temp.reset_index()
-cmip_trend_45_prec = cmip_trend_45_prec.reset_index()
-cmip_trend_85_temp = cmip_trend_85_temp.reset_index()
-cmip_trend_85_prec = cmip_trend_85_prec.reset_index()
-
-df_hist = df_preproc.copy()
-df_hist.name = "df_hist"
-
+##
 df_preproc["month"] = df_preproc.index.month
 
-df_26_2040 = df_preproc.copy()
-df_26_2040.name = "df_26_2040"
-df_26_2060 = df_preproc.copy()
-df_26_2060.name = "df_26_2060"
-df_26_2080 = df_preproc.copy()
-df_26_2080.name = "df_26_2080"
-df_26_2100 = df_preproc.copy()
-df_26_2100.name = "df_26_2100"
-df_45_2040 = df_preproc.copy()
-df_45_2040.name = "df_45_2040"
-df_45_2060 = df_preproc.copy()
-df_45_2060.name = "df_45_2060"
-df_45_2080 = df_preproc.copy()
-df_45_2080.name = "df_45_2080"
-df_45_2100 = df_preproc.copy()
-df_45_2100.name = "df_45_2100"
-df_85_2040 = df_preproc.copy()
-df_85_2040.name = "df_85_2040"
-df_85_2060 = df_preproc.copy()
-df_85_2060.name = "df_85_2060"
-df_85_2080 = df_preproc.copy()
-df_85_2080.name = "df_85_2080"
-df_85_2100 = df_preproc.copy()
-df_85_2100.name = "df_85_2100"
+cmip_dfs = {}
+cmip_dfs["df_hist"] = df_preproc.copy()
+cmip_dfs["df_hist"].name = "df_hist"
 
-for i in range(1, 13):
-    df_26_2040["T2"] = np.where(df_26_2040["month"] == i, df_26_2040["T2"] + cmip_trend_26_temp.loc[i-1, "diff_hist_2040"], df_26_2040["T2"])
-    df_26_2040["RRR"] = np.where(df_26_2040["month"] == i, df_26_2040["RRR"] * cmip_trend_26_prec.loc[i - 1, "prec_fact_2040"], df_26_2040["RRR"])
-for i in range(1, 13):
-    df_26_2060["T2"] = np.where(df_26_2060["month"] == i, df_26_2060["T2"] + cmip_trend_26_temp.loc[i-1, "diff_hist_2060"], df_26_2060["T2"])
-    df_26_2060["RRR"] = np.where(df_26_2060["month"] == i, df_26_2060["RRR"] * cmip_trend_26_prec.loc[i - 1, "prec_fact_2060"], df_26_2060["RRR"])
-for i in range(1, 13):
-    df_26_2080["T2"] = np.where(df_26_2080["month"] == i, df_26_2080["T2"] + cmip_trend_26_temp.loc[i-1, "diff_hist_2080"], df_26_2080["T2"])
-    df_26_2080["RRR"] = np.where(df_26_2080["month"] == i, df_26_2080["RRR"] * cmip_trend_26_prec.loc[i - 1, "prec_fact_2080"], df_26_2080["RRR"])
-for i in range(1, 13):
-    df_26_2100["T2"] = np.where(df_26_2100["month"] == i, df_26_2100["T2"] + cmip_trend_26_temp.loc[i-1, "diff_hist_2100"], df_26_2100["T2"])
-    df_26_2100["RRR"] = np.where(df_26_2100["month"] == i, df_26_2100["RRR"] * cmip_trend_26_prec.loc[i - 1, "prec_fact_2100"], df_26_2100["RRR"])
-for i in range(1, 13):
-    df_45_2040["T2"] = np.where(df_45_2040["month"] == i, df_45_2040["T2"] + cmip_trend_45_temp.loc[i-1, "diff_hist_2040"], df_45_2040["T2"])
-    df_45_2040["RRR"] = np.where(df_45_2040["month"] == i, df_45_2040["RRR"] * cmip_trend_45_prec.loc[i - 1, "prec_fact_2040"], df_45_2040["RRR"])
-for i in range(1, 13):
-    df_45_2060["T2"] = np.where(df_45_2060["month"] == i, df_45_2060["T2"] + cmip_trend_45_temp.loc[i-1, "diff_hist_2060"], df_45_2060["T2"])
-    df_45_2060["RRR"] = np.where(df_45_2060["month"] == i, df_45_2060["RRR"] * cmip_trend_45_prec.loc[i - 1, "prec_fact_2060"], df_45_2060["RRR"])
-for i in range(1, 13):
-    df_45_2080["T2"] = np.where(df_45_2080["month"] == i, df_45_2080["T2"] + cmip_trend_45_temp.loc[i-1, "diff_hist_2080"], df_45_2080["T2"])
-    df_45_2080["RRR"] = np.where(df_45_2080["month"] == i, df_45_2080["RRR"] * cmip_trend_45_prec.loc[i - 1, "prec_fact_2080"], df_45_2080["RRR"])
-for i in range(1, 13):
-    df_45_2100["T2"] = np.where(df_45_2100["month"] == i, df_45_2100["T2"] + cmip_trend_45_temp.loc[i-1, "diff_hist_2100"], df_45_2100["T2"])
-    df_45_2100["RRR"] = np.where(df_45_2100["month"] == i, df_45_2100["RRR"] * cmip_trend_45_prec.loc[i - 1, "prec_fact_2100"], df_45_2100["RRR"])
-for i in range(1, 13):
-    df_85_2040["T2"] = np.where(df_85_2040["month"] == i, df_85_2040["T2"] + cmip_trend_85_temp.loc[i-1, "diff_hist_2040"], df_85_2040["T2"])
-    df_85_2040["RRR"] = np.where(df_85_2040["month"] == i, df_85_2040["RRR"] * cmip_trend_85_prec.loc[i - 1, "prec_fact_2040"], df_85_2040["RRR"])
-for i in range(1, 13):
-    df_85_2060["T2"] = np.where(df_85_2060["month"] == i, df_85_2060["T2"] + cmip_trend_85_temp.loc[i-1, "diff_hist_2060"], df_85_2060["T2"])
-    df_85_2060["RRR"] = np.where(df_85_2060["month"] == i, df_85_2060["RRR"] * cmip_trend_85_prec.loc[i - 1, "prec_fact_2060"], df_85_2060["RRR"])
-for i in range(1, 13):
-    df_85_2080["T2"] = np.where(df_85_2080["month"] == i, df_85_2080["T2"] + cmip_trend_85_temp.loc[i-1, "diff_hist_2080"], df_85_2080["T2"])
-    df_85_2080["RRR"] = np.where(df_85_2080["month"] == i, df_85_2080["RRR"] * cmip_trend_85_prec.loc[i - 1, "prec_fact_2080"], df_85_2080["RRR"])
-for i in range(1, 13):
-    df_85_2100["T2"] = np.where(df_85_2100["month"] == i, df_85_2100["T2"] + cmip_trend_85_temp.loc[i-1, "diff_hist_2100"], df_85_2100["T2"])
-    df_85_2100["RRR"] = np.where(df_85_2100["month"] == i, df_85_2100["RRR"] * cmip_trend_85_prec.loc[i - 1, "prec_fact_2100"], df_85_2100["RRR"])
+cmip_dfs = MATILDA_functions.MATILDA_cmip_dfs(cmip_dfs, df_preproc, factors_cmip, hist_period_end, period_end, period_length, scenarios, variables)
+
 
 ## MATILDA run with CMIP data
 cmip_output = pd.DataFrame(index=df_preproc.index)
 cmip_output = cmip_output[parameter.sim_start:parameter.sim_end]
 
-list_cmip = [df_hist, df_26_2040, df_26_2060, df_26_2080, df_26_2100, df_45_2040, df_45_2060, df_45_2080, df_45_2100, df_85_2040, df_85_2060, df_85_2080, df_85_2100]
 output_dict ={}
 
-for i in list_cmip:
-    output_MATILDA = MATILDA.MATILDA_submodules(i, parameter) # MATILDA model run + downscaling
+for i in cmip_dfs.keys():
+    output_MATILDA = MATILDA.MATILDA_submodules(cmip_dfs[i], parameter) # MATILDA model run + downscaling
     output = output_MATILDA[0]["Q_Total"]
-    cmip_output[i.name] = output
+    cmip_output[i] = output
     output = output_MATILDA[0]
-    output_dict[i.name] = output
+    output_dict[i] = output
 
 # for i in output_dict.keys():
 #     output_dict[i].to_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/CMIP_runs/MATILDA_CMIP_kashkator_" + str(i) + ".csv")
 cmip_output.to_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_kyzylsuu.csv")
 
 ## Glacier runs
-
-list_cmip_60 = [df_26_2060, df_45_2060, df_85_2060]
 cmip_output_glacier = pd.DataFrame(index=df_preproc.index)
 cmip_output_glacier = cmip_output_glacier[parameter.sim_start:parameter.sim_end]
 
-
-for i in list_cmip_60:
+list_cmip_60 = {k: v for k, v in cmip_dfs.items() if k.endswith('2060')}
+for i in list_cmip_60.keys():
     parameter_glac = parameter.copy()
     parameter_glac.area_glac = parameter_glac.area_glac *0.5
-    output_MATILDA = MATILDA.MATILDA_submodules(i, parameter_glac)  # MATILDA model run + downscaling
+    output_MATILDA = MATILDA.MATILDA_submodules(list_cmip_60[i], parameter_glac)  # MATILDA model run + downscaling
     output = output_MATILDA[0]["Q_Total"]
-    cmip_output_glacier[i.name] = output
+    cmip_output_glacier[i] = output
 
 # 2060-2080
-list_cmip_80 = [df_26_2080, df_45_2080, df_85_2080]
+list_cmip_80 = {k: v for k, v in cmip_dfs.items() if k.endswith('2080')}
 
 for i in list_cmip_80:
     parameter_glac = parameter.copy()
     parameter_glac.area_glac = parameter_glac.area_glac * 0.4
-    output_MATILDA = MATILDA.MATILDA_submodules(i, parameter_glac)  # MATILDA model run + downscaling
+    output_MATILDA = MATILDA.MATILDA_submodules(list_cmip_80[i], parameter_glac)  # MATILDA model run + downscaling
     output = output_MATILDA[0]["Q_Total"]
-    cmip_output_glacier[i.name] = output
+    cmip_output_glacier[i] = output
 
 # 2080-2100
-list_cmip_2100 = [df_26_2100, df_45_2100, df_85_2100]
+list_cmip_2100 = {k: v for k, v in cmip_dfs.items() if k.endswith('2100')}
 
 for i in list_cmip_2100:
     parameter_glac = parameter.copy()
     parameter_glac.area_glac = parameter_glac.area_glac * 0.3
-    output_MATILDA = MATILDA.MATILDA_submodules(i, parameter_glac)  # MATILDA model run + downscaling
+    output_MATILDA = MATILDA.MATILDA_submodules(list_cmip_2100[i], parameter_glac)  # MATILDA model run + downscaling
     output = output_MATILDA[0]["Q_Total"]
-    cmip_output_glacier[i.name] = output
+    cmip_output_glacier[i] = output
 
 cmip_output_glacier.to_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_glacier-melt_kyzylsuu.csv")
 
 ## Plot preprocessing
-cmip_output = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_kyzylsuu.csv")
-cmip_output_glacier = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/MATILDA_CMIP_glacier-melt_kyzylsuu.csv")
+cmip_output = pd.read_csv("/home/ana/Desktop/Meeting/MATILDA_CMIP_kyzylsuu.csv")
+cmip_output_glacier = pd.read_csv("/home/ana/Desktop/Meeting/MATILDA_CMIP_kyzylsuu_glacier.csv")
 
 cmip_output = cmip_output.set_index("TIMESTAMP")
 cmip_output.index = pd.to_datetime(cmip_output.index)
@@ -336,8 +235,8 @@ plt.xticks([r + barWidth for r in range(len(cmip_output_monthly_mean["month"]))]
 #ax3.legend(loc='upper center', bbox_to_anchor=(1.5, -0.5),fancybox=False, shadow=False, ncol=2)
 plt.tight_layout()
 plt.suptitle("MATILDA simulation for Kyzylsuu with CMIP6 forcing data")
-#plt.show()
-plt.savefig("/home/ana/Desktop/Meeting/CMIP6_Kyzylsuu_barplot.png", dpi=700)
+plt.show()
+#plt.savefig("/home/ana/Desktop/Meeting/CMIP6_Kyzylsuu_barplot.png", dpi=700)
 ##
 annual = cmip_output.copy()
 annual["month"] = annual.index.month
@@ -417,8 +316,8 @@ ax6.text(0.02, 0.95, 'RCP 8.5', transform=ax6.transAxes, fontsize=8, verticalali
 #ax3.legend(loc='upper center', bbox_to_anchor=(1.5, -0.5),fancybox=False, shadow=False, ncol=2)
 plt.tight_layout()
 plt.suptitle("Mean annual cycle for Kyzylsuu with CMIP6 forcing data")
-#plt.show()
-plt.savefig("/home/ana/Desktop/Meeting/CMIP6_Kyzylsuu_mean_annual.png", dpi=700)
+plt.show()
+#plt.savefig("/home/ana/Desktop/Meeting/CMIP6_Kyzylsuu_mean_annual.png", dpi=700)
 
 ## test output
 path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/CMIP6/CMIP_runs/"
