@@ -59,12 +59,12 @@ def get_sample_data(kind):
     return df
 
 
-def prob_plots(x, y, y_hat, shape=(2, 2), figsize=(8, 8)):
+def prob_plots(x, y, y_hat, shape=(2, 2), figsize=(8, 8), **kwargs):
 
     fig, axes = plt.subplots(*shape, sharex=True, sharey=True, figsize=figsize)
 
     scatter_kws = dict(label="", marker=None, linestyle="-")
-    common_opts = dict(plottype="qq", problabel="", datalabel="")
+    common_opts = dict(plottype="qq", problabel="", datalabel="", **kwargs)
 
     for ax, (label, series) in zip(axes.flat, y_hat.items()):
 
