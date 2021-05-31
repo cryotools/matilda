@@ -1,30 +1,9 @@
-from datetime import datetime
-from pathlib import Path; home = str(Path.home())
 import pandas as pd
 import numpy as np
-import xarray as xr
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-from MATILDA_slim import MATILDA
 
-## Data
-cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv"
-
-input_csv = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"
-
-hist_period_start=2001; hist_period_end = 2020; period_start = 2021; period_end = 2099; period_length = 20
-variables = ["temp", "prec"]
-
-##
-cmip_df = pd.read_csv(cmip_data)
-
-cmip_df = cmip_df.set_index("time")
-cmip_df.index = pd.to_datetime(cmip_df.index)
-cmip_df["year"] = cmip_df.index.year
-cmip_df["month"] = cmip_df.index.month
-cmip_df["period"] = 0
-
-
+## Factors for CMIP runs: Difference between historical run and specified time periods
+# needs a dataframe with a timestamp as index and columns of temperature and precipitation data from different cmip scenarios
+# these columns should start with "temp" and "prec"
 def cmip_factors(cmip_df, variables, hist_period_start, hist_period_end, period_start, period_end, period_length):
     cmip_df["year"] = cmip_df.index.year
     cmip_df["month"] = cmip_df.index.month
@@ -69,6 +48,30 @@ def cmip_factors(cmip_df, variables, hist_period_start, hist_period_end, period_
 
     return factors
 
-factors_cmip = cmip_factors(cmip_df, variables, hist_period_start, hist_period_end, period_start, period_end, period_length)
+# produces a dictionary with dataframes for each time period and scenario
+# Uses the output from the cmip_factors function and the preprocessed dataframe
 
+def MATILDA_cmip_dfs(cmip_dfs, df_preproc, factors_cmip, hist_period_end, period_end, period_length, scenarios, variables):
+    for period in range(hist_period_end, period_end, period_length):
+        for scen in scenarios:
+            cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)] = df_preproc.copy()
+            cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)].name = "df_" + str(scen) + "_" + str(period + period_length)
+            for v in variables:
+                factor = factors_cmip[v][factors_cmip[v]["scenario"].str.contains(scen)].copy()
+                factor = factor.reset_index()
+                if v == "temp":
+                    for i in range(1, 13):
+                        cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["T2"] = \
+                            np.where(cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["month"] == i,
+                                     cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["T2"] +
+                                     factor.loc[i - 1, "temp_diff_hist_" + str(period + period_length)],
+                                     cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["T2"])
+                if v == "prec":
+                    for i in range(1, 13):
+                        cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["RRR"] = \
+                            np.where(cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["month"] == i,
+                                     cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["RRR"] *
+                                     factor.loc[i - 1, "prec_fact_" + str(period + period_length)],
+                                     cmip_dfs["df_" + str(scen) + "_" + str(period + period_length)]["RRR"])
+    return cmip_dfs
 
