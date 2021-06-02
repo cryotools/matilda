@@ -1,12 +1,8 @@
 ##
 import warnings
-
-import pylab as pl
-
 warnings.filterwarnings("ignore")  # sklearn
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy.stats as stats
 from pathlib import Path
 import sys
 import socket
@@ -21,8 +17,6 @@ wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing/Downscaling'
 import os
 os.chdir(wd)
 sys.path.append(wd)
-from sklearn.linear_model import LinearRegression
-from skdownscale.pointwise_models import BcsdTemperature
 import scikit_downscale_matilda as sds
 
 
