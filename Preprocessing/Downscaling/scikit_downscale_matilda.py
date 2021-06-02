@@ -14,7 +14,7 @@ from utils import prob_plots
 def overview_plot(training, targets, training_var2=None, targets_var2=None, no_var=1, figsize=(8, 6), sharex=True,
                   labelvar1=None, labelvar2=None, label_train="training", label_target="target", **kwargs):
     if no_var == 1:
-        fig, axes = plt.subplots()
+        fig, axes = plt.subplots(figsize=figsize)
         axes.plot(training, label=label_train)
         axes.plot(targets, label=label_target)
         axes.legend()
