@@ -1,15 +1,16 @@
 #!/bin/bash
-longitude_range=75.85,76.06
-latitude_range=40.94,41.17
+longitude_range=78.00,78.30
+latitude_range=42.00,42.40
 
-ncdf_folder=/data/projects/ensembles/era5_land/ERA5Land_HighMountainAsia/nc/
-destination_folder=/data/projects/ebaca/data/input_output/input/ERA5/no182
-destination_name=no182
-dataset_name=ERA5_Land_1981_2019.nc
+ncdf_folder=/data/projects/ensembles/era5_land/ERA5-Land_HMA/nc/
+destination_folder=/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu
+destination_name=kysylsuu
+dataset_name=ERA5L_1982_2019.nc
 underscore=_
+# "d2m" "sf" "sp" "ssrd" "strd" "t2m" "tp" "u10" "v10"
 
 mkdir $destination_folder/variables
-for field in "d2m" "sf" "sp" "ssrd" "strd" "t2m" "tp" "u10" "v10" ; do
+for field in "t2m" "tp" ; do
     echo $field
     output_folder=$destination_folder/variables/$field
     mkdir $output_folder
@@ -26,7 +27,7 @@ for field in "d2m" "sf" "sp" "ssrd" "strd" "t2m" "tp" "u10" "v10" ; do
     done
 done
 
-for field in "d2m" "sf" "sp" "ssrd" "strd" "t2m" "tp" "u10" "v10" ; do
+for field in "t2m" "tp" ; do
     input_folder=$destination_folder/variables/$field
     cd $input_folder
     output_timemerge=$destination_folder/variables/$field$underscore$dataset_name
@@ -45,3 +46,4 @@ module load cdo
 pwd
 ls -l
 cdo merge *.nc $output_file
+
