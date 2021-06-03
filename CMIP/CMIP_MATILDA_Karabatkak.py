@@ -32,7 +32,7 @@ cmip_df["month"] = cmip_df.index.month
 factors_cmip = MATILDA_functions.cmip_factors(cmip_df, variables, hist_period_start, hist_period_end, period_start, period_end, period_length)
 
 parameter_df = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/Karabatkak_Catchment/best_param_kysyl_20210511.csv")
-## MATILDA preparation -  Initial run
+## MATILDA preparation -  Initial run: Kysylsuu
 df = pd.read_csv(input_csv)
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
