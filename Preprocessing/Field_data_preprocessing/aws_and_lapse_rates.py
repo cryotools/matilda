@@ -9,6 +9,8 @@ sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/')
 from Preprocessing_functions import *
 working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
+working_directory = home + '/Seafile/Tianshan_data/'
+
 
 ## General settings
 time_start = '2018-09-07 18:00:00'  # longest timeseries of waterlevel sensor
@@ -51,9 +53,9 @@ data_list = []
 for file in sorted(glob.glob(path + 'atbs*.csv')):
     data_list.append(sdss_open(file, time_slice=True, time_start='2017-06-02T15:00:00'))
 aws = round(pd.concat(data_list, axis=1), 2)
-aws.columns = ['temp', 'rh', 'prec', 'ws', 'wd']
+aws.columns = ['temp1', 'temp', 'rh', 'prec', 'ws', 'wd']
 aws.temp = aws.temp + 273.15
-aws.to_csv(working_directory + 'AWS_atbs/atbs_met-data_2017-2020.csv')
+#aws.to_csv(working_directory + 'AWS_atbs/atbs_met-data_2017-2020.csv')
 
 ## Apply preprocessing on HOBO-temphum timeseries
 path1 = working_directory + 'HOBO_temphum/HOBO1.csv'
@@ -81,6 +83,7 @@ plt.legend(compare_slim.columns.tolist(), loc="upper center")
 # plt.savefig('/home/phillip/Seafile/EBA-CA/Workshops/Final_workshop_October2020/Bilder/temp_cognac.png', bbox_inches='tight', dpi=300)
 plt.show()
 
+compare_slim.to_csv("/home/ana/Desktop/compare_slim.csv")
 ## Calculate lapse rates
 lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down)
 lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down)

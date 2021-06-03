@@ -230,3 +230,4 @@ era_subset = era_subset.sort_index()
 
 plt.plot(era_subset["t2m"])
 plt.show()
+

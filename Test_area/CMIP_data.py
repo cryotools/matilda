@@ -255,11 +255,11 @@ for v in variable:
     plt.show()
 
 ##
-# df_2_6 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_ssp1_2_6_42.25-78.25_2000-01-01-2099-12-31.csv")
-# df_4_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_ssp2_4_5_42.25-78.25_2000-01-01-2099-12-31.csv")
-# df_8_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_ssp5_8_5_42.25-78.25_2000-01-01-2099-12-31.csv")
-#
-# df_all = pd.DataFrame(data=None, index=df_2_6["time"])
-# df_all["prec_85"] = df_8_5["pr_mean"].values
-#
-# df_all.to_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv")
+df_2_6 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/ssp1_2_6_41-75.9_2000-01-01-2100-12-31.csv")
+df_4_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/ssp2_4_5_41-75.9_2000-01-01-2100-12-31.csv")
+df_8_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/ssp5_8_5_41-75.9_2000-01-01-2100-12-31.csv")
+
+df_all = pd.DataFrame(data=None, index=df_2_6["time"])
+df_all["prec_85"] = df_8_5["pr_mean"].values
+
+df_all.to_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/CMIP6_mean_41-75.9_2000-01-01-2100-12-31.csv")

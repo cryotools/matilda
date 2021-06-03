@@ -199,13 +199,13 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         obs_preproc = obs_preproc[parameter.sim_start: parameter.sim_end]
         # Changing the input unit from m/3 to mm.
         obs_preproc["Qobs"] = obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
-        obs_preproc = obs_preproc.resample("D").sum()
+        obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
         # expanding the observation period a whole one year, filling the NAs with 0
-        idx_first = obs_preproc.index.year[1]
-        idx_last = obs_preproc.index.year[-1]
-        idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
-        obs_preproc = obs_preproc.reindex(idx)
-        obs_preproc = obs_preproc.fillna(0)
+        #idx_first = obs_preproc.index.year[1]
+        #idx_last = obs_preproc.index.year[-1]
+        #idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
+        #obs_preproc = obs_preproc.reindex(idx)
+        #obs_preproc = obs_preproc.fillna(0)
 
     if obs is not None:
         return df_preproc, obs_preproc
@@ -819,7 +819,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         output_MATILDA = output_HBV.copy()
 
     if obs is not None:
-        output_MATILDA = pd.concat([output_MATILDA, obs], axis=1)
+        output_MATILDA = pd.concat([output_MATILDA, obs_preproc], axis=1)
 
     if parameter.area_glac > 0:
         if glacier_profile is not None:
@@ -831,16 +831,19 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
 
+    if obs is not None:
+        output_MATILDA.loc[output_MATILDA.isnull().any(axis=1), :] = np.nan
+
     # Nash–Sutcliffe model efficiency coefficient
-    def NS(output_MATILDA, obs):
-        nash_sut = 1 - np.sum((obs["Qobs"] - output_MATILDA["Q_Total"]) ** 2) / (
-            np.sum((obs["Qobs"] - obs["Qobs"].mean()) ** 2))
+    def NS(output_MATILDA):
+        nash_sut = 1 - np.sum((output_MATILDA["Qobs"] - output_MATILDA["Q_Total"]) ** 2) / (
+            np.sum((output_MATILDA["Qobs"] - output_MATILDA["Qobs"].mean()) ** 2))
         if nash_sut > 1 or nash_sut < -1:
             nash_sut = "error"
         return nash_sut
 
     if obs is not None:
-        nash_sut = NS(output_MATILDA, obs)
+        nash_sut = NS(output_MATILDA)
 
         if nash_sut == "error":
             print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
@@ -880,14 +883,16 @@ def MATILDA_plots(output_MATILDA, parameter):
             plot_data = output_MATILDA[0].resample(parameter.freq).agg(
                 {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
                 "Q_DDM": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-                 "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+                 "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
         else:
             plot_data = output_MATILDA[0].resample(parameter.freq).agg(
                 {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
                   "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
-                 "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"})
+                 "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
         if "Qobs" in output_MATILDA[0].columns:
             plot_data["Qobs"] = obs
+        plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
+
 
         plot_annual_data = output_MATILDA[0].copy()
         plot_annual_data["month"] = plot_annual_data.index.month
@@ -930,6 +935,7 @@ def MATILDA_plots(output_MATILDA, parameter):
 
     def plot_runoff(plot_data, plot_annual_data, parameter):
         plot_data["plot"] = 0
+        plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(14, 4.5), gridspec_kw={'width_ratios': [2.75, 1]})
         if 'Qobs' in plot_data.columns:
             ax1.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00", label="", linewidth=1.2)
