@@ -14,7 +14,7 @@ from utils import prob_plots
 def overview_plot(training, targets, training_var2=None, targets_var2=None, no_var=1, figsize=(8, 6), sharex=True,
                   labelvar1=None, labelvar2=None, label_train="training", label_target="target", **kwargs):
     if no_var == 1:
-        fig, axes = plt.subplots()
+        fig, axes = plt.subplots(figsize=figsize)
         axes.plot(training, label=label_train)
         axes.plot(targets, label=label_target)
         axes.legend()
@@ -33,7 +33,7 @@ def overview_plot(training, targets, training_var2=None, targets_var2=None, no_v
         print('Too many variables for this function. Please customize the plots yourself.')
 
 
-def fit_dmodels(x_train, y_train, x_predict, precip=False):
+def fit_dmodels(x_train, y_train, x_predict, precip=False, **qm_kwargs):
 
     # Define which models to apply
     if precip:
@@ -45,7 +45,7 @@ def fit_dmodels(x_train, y_train, x_predict, precip=False):
             'GARD: PureAnalog-mean-10': PureAnalog(kind='mean_analogs', n_analogs=10),
             'GARD: AnalogRegression-100': AnalogRegression(n_analogs=100),
             'GARD: LinearRegression': LinearRegression(),
-            'BCSD: BcsdPrecipitation': BcsdPrecipitation(return_anoms=False),  # Only works with decent training period.
+            'BCSD: BcsdPrecipitation': BcsdPrecipitation(return_anoms=False, **qm_kwargs),  # Only works with decent training period.
             'Sklearn: RandomForestRegressor': RandomForestRegressor(random_state=0)
         }
     else:
@@ -90,6 +90,3 @@ def dmod_score(predict_df, targets, y_predict, x_predict, figsize=(12, 12)):
     score = (predict_df.corrwith(y_predict) ** 2).sort_values().to_frame('r2_score')        # calculate r2
     fig = prob_plots(x_predict, targets, predict_df[score.index.values], shape=(3, 3), figsize=figsize)     # QQ-Plots
     return {'R2-scores': score, 'QQ-Matrix': fig}
-
-
-prob_plots
