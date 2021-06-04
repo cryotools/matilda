@@ -6,6 +6,9 @@ import plotly.io
 warnings.filterwarnings("ignore")  # sklearn
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+import xarray as xr
+import salem
 from pathlib import Path
 import sys
 import socket
@@ -16,11 +19,13 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing/Downscaling'
+wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
 import os
-os.chdir(wd)
+os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
-import scikit_downscale_matilda as sds
+import Downscaling.scikit_downscale_matilda as sds
+from Preprocessing_functions import pce_correct
+
 
 
 # interactive plotting?
@@ -30,53 +35,59 @@ import scikit_downscale_matilda as sds
 #   Data preparation:    #
 ##########################
 
-# ERA5 closest gridpoint:
-era = pd.read_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy'
-                           '/no182ERA5_Land_lat41.0_lon75.9_alt3839.6_1981-2019.csv', index_col='time')
-era.index = pd.to_datetime(era.index, format='%d.%m.%Y %H:%M')
+## ERA5 closest gridpoint:
+
+# Apply '/Ana-Lena_Phillip/data/scripts/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
+
+in_file = home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/new_grib_conversion' +\
+          '/no182_ERA5L_1982_2019.nc'
+ds = xr.open_dataset(in_file)
+pick = ds.sel(latitude=41.134066, longitude=75.942381, method='nearest')           # closest to AWS location
+era = pick.to_dataframe().filter(['t2m', 'tp'])
 era = era.tz_localize('UTC')
-era = era.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
+era['tp'] = era['tp']*1000                      # Unit to mm
+era['tp'][era['tp'] < 0.001] = 0               # Negative values in the data
+# era.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/t2m_tp_ERA5L_no182_41.1_75.9_1982_2019.csv')
+
+era_D = era.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
 
 
-# AWS Bash Kaingdy:
+## AWS Bash Kaingdy:
 aws = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv',
                   parse_dates=['datetime'], index_col='datetime')
+
+    ## TO BE REPLACED WHEN FULL SDSS DATA IS AVAILABLE AGAIN:
 aws = aws.shift(periods=6, freq="H")                                     # Data is still not aligned with UTC
+                                    # HAT WOHL MIT DEM PREPROCESSESING ZU TUN! TRITT BEIM ORIGINALFILE NICHT AUF.
 aws = aws.tz_convert('UTC')
-aws = aws.drop(columns=['rh', 'ws', 'wd'])                    # Need to be dataframes not series!
-aws.columns = era.columns
-    # Downscaling cannot cope with data gaps:                   APPEARS TO A PROBLEM OF LINEAR REGRESSION ONLY!!!!!!
-aws = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
-aws = aws.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
+aws_temp = aws.drop(columns=['rh', 'prec', 'ws', 'wd'])                    # Need to be dataframes not series!
 
-
-
-
-
-
-# BEIM AUFARBEITEN DER ORIGINALDATEN HAST DU DEN MEAN DER NS-DATEN GENOMMEN. BESSER EINZELDATEN NEHMEN!
-
-prec = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_Rain_mm_Tot_2017-20.csv',
+##
+aws_prec = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_Rain_mm_Tot_2017-20.csv',
                    index_col='date/time', parse_dates=['date/time'])
-prec = prec.tz_localize('UTC')
-prec = prec.resample('H').sum()
-test_slice = slice('2017-07-14', '2017-07-30')
-check = pd.merge(aws['tp'][test_slice], prec[test_slice], how='outer', left_index=True, right_index=True)
-check.plot()
-plt.show()
+aws_prec = aws_prec.tz_localize('UTC')
+aws_prec = aws_prec.resample('H').sum()
+
+aws_wind = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_WS_ms_S_WVT_2017-20.csv',
+                   index_col='date/time', parse_dates=['date/time'])
+aws_wind = aws_wind.tz_localize('UTC')
+aws_wind = aws_wind.resample('H').mean()
+
+aws = pd.merge(aws_temp, aws_prec, how='inner', left_index=True, right_index=True)
+aws = pd.merge(aws, aws_wind, how='inner', left_index=True, right_index=True)
+aws.columns = ['t2m', 'tp', 'ws']
 
 
+    # Application of transfer function to account for solid precipitation undercatch (Kochendorfer et.al. 2020)
+aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
+
+    # Downscaling cannot cope with data gaps:                   But BCSD CAN!!!!!!
+aws_D = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean'})
+aws_D_int = aws.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
 
 
-
-
-
-
-
-
-
-# Minikin-data:
-minikin = pd.read_csv(home + "/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy" +
+## Minikin-data:
+minikin = pd.read_csv(home + "/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/Old" +
                              "/Bash-Kaindy_preprocessed_forcing_data.csv",
                       parse_dates=['TIMESTAMP'], index_col='TIMESTAMP')
 minikin = minikin.filter(like='_minikin')
@@ -84,19 +95,19 @@ minikin.columns = ['t2m']
 minikin = minikin.resample('D').mean()
 
 
-# CMIP6 data Bash Kaingdy:
+## CMIP6 data Bash Kaingdy:
 cmip = pd.read_csv(home + '/EBA-CA/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/' +
-                       'ssp2_4_5_41-75.9_2000-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
-cmip = cmip.filter(like='_mean')            # To get mean values for the selected scenario
+                       'CMIP6_mean_41-75.9_2000-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
+cmip = cmip.filter(like='_45')            # To select scenario e.g. RCP4.5 from the model means
 cmip = cmip.tz_localize('UTC')
 cmip.columns = era.columns
-cmip['tp'] = cmip['tp']/1000            # Unit to m
-cmip = cmip.resample('D').mean()        # Already daily but wrong daytime (12:00:00 --> lesser days overall).
+cmip = cmip.resample('D').mean()                   # Already daily but wrong daytime (12:00:00 --> lesser days overall).
 cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 years, only 3 in fitting period.
 
 
 ## Overview
 
+# AWS location: 41.134066, 75.942381
 # aws:      2017-07-14 to 2020-09-30    --> Available from 2017-06-02 but biggest datagap: 2017-07-04 to 2017-07-14
 # era:      1981-01-01 to 2019-12-31
 # minikin:  2018-09-07 to 2019-09-13
@@ -107,17 +118,31 @@ cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 ye
 # data = pd.DataFrame(d)
 # data.plot(figsize=(12, 6))
 #
-t = slice('2018-09-07', '2019-09-13')
-d = {'AWS': aws[t]['tp'], 'ERA5': era[t]['tp'], 'CMIP6': cmip[t]['tp']}
-data = pd.DataFrame(d)
-data.plot(figsize=(12, 6))
-# data.describe()
-plt.show()
+# t = slice('2018-09-07', '2019-09-13')
+# d = {'AWS': aws_D[t]['tp'], 'ERA5': era_D[t]['tp'], 'CMIP6': cmip[t]['tp']}
+# data = pd.DataFrame(d)
+# data.plot(figsize=(12, 6))
+# # data.describe()
+# plt.show()
+#
+# t = slice('2018-09-07', '2019-09-13')
+# d = {'ERA5': era[t]['tp'], 'AWS': aws[t]['tp']}
+# data = pd.DataFrame(d)
+# data.plot(figsize=(12, 6))
+# # data.describe()
+# plt.show()
+
 
 
 #################################
 #    Downscaling temperature    #
 #################################
+
+
+
+#               HOURLY TEMPERATURE DATA IS FULL OF NAs. DOWNSCALING WITH DAILY BUT HOURLY FOR PRECIPITATION?
+
+
 
 ## Step 1 - Downscale ERA5 using AWS
 
@@ -231,17 +256,17 @@ final_predict_slice = slice('2000-01-01', '2019-12-31')
 plot_slice = slice('2018-09-30', '2019-12-31')
 
 sds.overview_plot(era[plot_slice]['tp'], aws[plot_slice]['tp'],
-                  labelvar1='Daily Precipitation [m]', figsize=(15,6))
+                  labelvar1='Daily Precipitation [mm]', figsize=(15,6))
 
 x_train = era[train_slice].drop(columns=['t2m'])
-y_train = aws[train_slice].drop(columns=['t2m'])
+y_train = aws[train_slice].drop(columns=['t2m','ws'])
 x_predict = era[predict_slice].drop(columns=['t2m'])
-y_predict = aws[predict_slice].drop(columns=['t2m'])
+y_predict = aws[predict_slice].drop(columns=['t2m', 'ws'])
 
 prediction = sds.fit_dmodels(x_train, y_train, x_predict, precip=True,
                              **{'detrend': False})                          # Detrending results in negative values.
 sds.modcomp_plot(aws[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice],
-                 ylabel='Daily Precipitation [m]')
+                 ylabel='Daily Precipitation [mm]')
 sds.dmod_score(prediction['predictions'], aws['tp'], y_predict['tp'], x_predict['tp'])
 
 
@@ -254,12 +279,12 @@ sds.dmod_score(prediction['predictions'], aws['tp'], y_predict['tp'], x_predict[
 # Apply best model on full training and prediction periods
 
 x_train = era[final_train_slice].drop(columns=['t2m'])
-y_train = aws[final_train_slice].drop(columns=['t2m'])
+y_train = aws[final_train_slice].drop(columns=['t2m', 'ws'])
 x_predict = era[final_predict_slice].drop(columns=['t2m'])
-y_predict = aws[final_predict_slice].drop(columns=['t2m'])
+y_predict = aws[final_predict_slice].drop(columns=['t2m', 'ws'])
 
 sds.overview_plot(era[final_train_slice]['tp'], aws[final_train_slice]['tp'],
-                  labelvar1='Daily Precipitation [m]')
+                  labelvar1='Daily Precipitation [mm]')
 
 best_mod = prediction['models']['BCSD: BcsdPrecipitation']          # Pick the best model by name.
 best_mod.fit(x_train, y_train)
@@ -267,11 +292,11 @@ p_corr = pd.DataFrame(index=x_predict.index)
 p_corr['tp'] = best_mod.predict(x_predict)         # insert scenario data here
 
 # Compare results with training and target data:
-
+freq='M'
 fig, ax = plt.subplots(figsize=(12,8))
-p_corr['tp'][final_train_slice].plot(ax=ax, label='fitted', legend=True)
-x_predict['tp'][final_train_slice].plot(label='era5', ax=ax, legend=True)
-y_predict['tp'].plot(label='aws', ax=ax, legend=True)
+x_predict['tp'][final_train_slice].resample(freq).sum().plot(label='era5', ax=ax, legend=True)
+y_predict['tp'].resample(freq).sum().plot(label='aws', ax=ax, legend=True)
+p_corr['tp'][final_train_slice].resample(freq).sum().plot(ax=ax, label='fitted', legend=True)
 
 # compare = pd.concat({'fitted':p_corr['tp'][final_train_slice], 'era5': x_predict['tp'][final_train_slice],
 #                      'aws':y_predict['tp'][final_train_slice]}, axis=1)
@@ -293,7 +318,7 @@ final_predict_slice = slice('2000-01-01', '2100-12-30')
 plot_slice = slice('2010-01-01', '2019-12-31')
 
 sds.overview_plot(cmip[plot_slice]['tp'], p_corr[plot_slice]['tp'],
-                  labelvar1='Daily Precipitation [m]')
+                  labelvar1='Daily Precipitation [mm]')
 
 x_train = cmip[train_slice].drop(columns=['t2m'])
 y_train = p_corr[train_slice]
@@ -301,7 +326,7 @@ x_predict = cmip[predict_slice].drop(columns=['t2m'])
 y_predict = p_corr[predict_slice]
 
 prediction = sds.fit_dmodels(x_train, y_train, x_predict, precip=True)
-sds.modcomp_plot(p_corr[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice], ylabel='Daily Precipitation [m]')
+sds.modcomp_plot(p_corr[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice], ylabel='Daily Precipitation [mm]')
 sds.dmod_score(prediction['predictions'], p_corr['tp'], y_predict['tp'], x_predict['tp'])
 
 # # Compare results with training and target data:
@@ -364,7 +389,7 @@ era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan
 # ## Plot both datasets
 # sds.overview_plot(training[plot_slice]['t2m'], targets[plot_slice]['t2m'],
 #                   training[plot_slice]['tp'], targets[plot_slice]['tp'], no_var=2,
-#                   labelvar1='Temperature [K]', labelvar2='Precipitation [m]')
+#                   labelvar1='Temperature [K]', labelvar2='Precipitation [mm]')
 #
 # ## extract training / prediction data
 # x_train = training[train_slice]
@@ -405,7 +430,7 @@ era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan
 # y_predict_p = y_predict.drop(columns=['t2m'])
 #
 # prediction = sds.fit_dmodels(x_train_p, y_train_p, x_predict_p, precip=True)
-# sds.modcomp_plot(targets[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice], ylabel='Daily Precipitation [m]')
+# sds.modcomp_plot(targets[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice], ylabel='Daily Precipitation [mm]')
 # sds.dmod_score(prediction['predictions'], targets['tp'], targets['tp'], x_predict['tp'])
 # comp = prediction['predictions'].agg(sum)
 # comp['obs'] = y_train_p
@@ -423,7 +448,7 @@ era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan
 # p_corr['p_corr'] = best_mod.predict(y_predict_p)         # insert scenario data here
 #
 # sds.overview_plot(y_train_p, p_corr['p_corr'],
-#                   labelvar1='Daily Precipitation [m]', label_train='obs', label_target='corrected')
+#                   labelvar1='Daily Precipitation [mm]', label_train='obs', label_target='corrected')
 
 
 ## example

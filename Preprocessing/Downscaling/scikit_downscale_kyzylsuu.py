@@ -43,7 +43,7 @@ ds = xr.open_dataset(in_file)
 pick = ds.sel(latitude=42.191433, longitude=78.200253, method='nearest')           # closest to AWS location
 # pick = pick.sel(time=slice('1989-01-01', '2019-12-31'))                      # start of gauging till end of file
 era = pick.to_dataframe().filter(['t2m', 'tp'])
-era['tp'][era['tp'] < 0.0001] = 0                                                # Negative values in the data
+era['tp'][era['tp'] < 0.000001] = 0                           # Negative values in the data. WHICH THRESHOLD?
 # era.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu/t2m_tp_ERA5L_kyzylsuu_42.2_78.2_1982_2019.csv')
 
 era_D = era.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
