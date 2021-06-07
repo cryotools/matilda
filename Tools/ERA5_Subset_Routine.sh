@@ -1,12 +1,19 @@
 #!/bin/bash
 longitude_range=75.80,76.40
 latitude_range=41.00,41.40
+# longitude_range=78.00,78.30
+# latitude_range=42.00,42.40
 
 ncdf_folder=/data/projects/ensembles/era5_land/ERA5-Land_HMA/nc/
+dataset_name=ERA5L_1982_2020.nc
+underscore=_
+
 destination_folder=/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/new_grib_conversion
 destination_name=no182
-dataset_name=ERA5L_1982_2019.nc
-underscore=_
+# destination_folder=/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu
+# destination_name=kysylsuu
+
+
 # "d2m" "sf" "sp" "ssrd" "strd" "t2m" "tp" "u10" "v10"
 
 mkdir $destination_folder/variables
