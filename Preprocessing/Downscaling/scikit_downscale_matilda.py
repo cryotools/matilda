@@ -43,7 +43,7 @@ def fit_dmodels(x_train, y_train, x_predict, precip=False, **qm_kwargs):
             'GARD: PureAnalog-weight-10': PureAnalog(kind='weight_analogs', n_analogs=10),
             'GARD: PureAnalog-weight-100': PureAnalog(kind='weight_analogs', n_analogs=100),
             'GARD: PureAnalog-mean-10': PureAnalog(kind='mean_analogs', n_analogs=10),
-            'GARD: AnalogRegression-100': AnalogRegression(n_analogs=100),
+            # 'GARD: AnalogRegression-100': AnalogRegression(n_analogs=100),
             'GARD: LinearRegression': LinearRegression(),
             'BCSD: BcsdPrecipitation': BcsdPrecipitation(return_anoms=False, **qm_kwargs),  # Only works with decent training period.
             'Sklearn: RandomForestRegressor': RandomForestRegressor(random_state=0)
