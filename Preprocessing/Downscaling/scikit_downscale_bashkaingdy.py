@@ -1,8 +1,5 @@
 ##
 import warnings
-
-import plotly.io
-
 warnings.filterwarnings("ignore")  # sklearn
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -44,7 +41,7 @@ in_file = home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Ba
 ds = xr.open_dataset(in_file)
 pick = ds.sel(latitude=41.134066, longitude=75.942381, method='nearest')           # closest to AWS location
 era = pick.to_dataframe().filter(['t2m', 'tp'])
-era = era.tz_localize('UTC')
+# era = era.tz_localize('UTC')
 
 total_precipitation = np.append(0, (era.drop(columns='t2m').diff(axis=0).values.flatten()[1:]))   # transform from cumulative values
 total_precipitation[total_precipitation < 0] = era.tp.values[total_precipitation < 0]
@@ -59,30 +56,12 @@ era_D = era.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
 
 
 ## AWS Bash Kaingdy:
-aws = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv',
-                  parse_dates=['datetime'], index_col='datetime')
+aws_full = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/download/New/atbs_2017-2021.csv',
+                 parse_dates=['time'], index_col='time')
+aws_full.t2m = aws_full.t2m + 273.15
+aws_full = aws_full.resample('H').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean', 'wd': 'mean', 'rh': 'mean'})
 
-    ## TO BE REPLACED WHEN FULL SDSS DATA IS AVAILABLE AGAIN:
-aws = aws.shift(periods=6, freq="H")                                     # Data is still not aligned with UTC
-                                    # HAT WOHL MIT DEM PREPROCESSESING ZU TUN! TRITT BEIM ORIGINALFILE NICHT AUF.
-aws = aws.tz_convert('UTC')
-aws_temp = aws.drop(columns=['rh', 'prec', 'ws', 'wd'])                    # Need to be dataframes not series!
-
-##
-aws_prec = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_Rain_mm_Tot_2017-20.csv',
-                   index_col='date/time', parse_dates=['date/time'])
-aws_prec = aws_prec.tz_localize('UTC')
-aws_prec = aws_prec.resample('H').sum()
-
-aws_wind = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_WS_ms_S_WVT_2017-20.csv',
-                   index_col='date/time', parse_dates=['date/time'])
-aws_wind = aws_wind.tz_localize('UTC')
-aws_wind = aws_wind.resample('H').mean()
-
-aws = pd.merge(aws_temp, aws_prec, how='inner', left_index=True, right_index=True)
-aws = pd.merge(aws, aws_wind, how='inner', left_index=True, right_index=True)
-aws.columns = ['t2m', 'tp', 'ws']
-
+aws = aws_full.drop(columns=['wd', 'rh'])
 
     # Application of transfer function to account for solid precipitation undercatch (Kochendorfer et.al. 2020)
 aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
@@ -90,6 +69,40 @@ aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
     # Downscaling cannot cope with data gaps:                   But BCSD CAN!!!!!!
 aws_D = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean'})
 aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
+
+
+#
+# aws = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv',
+#                   parse_dates=['datetime'], index_col='datetime')
+#
+#     ## TO BE REPLACED WHEN FULL SDSS DATA IS AVAILABLE AGAIN:
+# aws = aws.shift(periods=6, freq="H")                                     # Data is still not aligned with UTC
+#                                     # HAT WOHL MIT DEM PREPROCESSESING ZU TUN! TRITT BEIM ORIGINALFILE NICHT AUF.
+# aws = aws.tz_convert('UTC')
+# aws_temp = aws.drop(columns=['rh', 'prec', 'ws', 'wd'])                    # Need to be dataframes not series!
+#
+# ##
+# aws_prec = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_Rain_mm_Tot_2017-20.csv',
+#                    index_col='date/time', parse_dates=['date/time'])
+# aws_prec = aws_prec.tz_localize('UTC')
+# aws_prec = aws_prec.resample('H').sum()
+#
+# aws_wind = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_WS_ms_S_WVT_2017-20.csv',
+#                    index_col='date/time', parse_dates=['date/time'])
+# aws_wind = aws_wind.tz_localize('UTC')
+# aws_wind = aws_wind.resample('H').mean()
+#
+# aws = pd.merge(aws_temp, aws_prec, how='inner', left_index=True, right_index=True)
+# aws = pd.merge(aws, aws_wind, how='inner', left_index=True, right_index=True)
+# aws.columns = ['t2m', 'tp', 'ws']
+#
+#
+#     # Application of transfer function to account for solid precipitation undercatch (Kochendorfer et.al. 2020)
+# aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
+#
+#     # Downscaling cannot cope with data gaps:                   But BCSD CAN!!!!!!
+# aws_D = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean'})
+# aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
 
 
 ## Minikin-data:
@@ -105,7 +118,7 @@ aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger da
 cmip = pd.read_csv(home + '/EBA-CA/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/' +
                        'CMIP6_mean_41-75.9_2000-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
 cmip = cmip.filter(like='_45')            # To select scenario e.g. RCP4.5 from the model means
-cmip = cmip.tz_localize('UTC')
+# cmip = cmip.tz_localize('UTC')
 cmip.columns = era.columns
 cmip = cmip.resample('D').mean()                   # Already daily but wrong daytime (12:00:00 --> lesser days overall).
 cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 years, only 3 in fitting period.
