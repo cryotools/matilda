@@ -99,7 +99,7 @@ cmip = cmip.resample('D').mean()        # Already daily but wrong daytime (12:00
 # plt.show()
 
 t = slice('2007-08-10', '2014-12-31')
-d = {'ERA5': era[t]['tp'], 'AWS': aws_prec[t]['tp'], 'CMIP6': cmip[t]['tp']}
+d = {'ERA5': era_D[t]['tp'], 'AWS': aws_prec[t]['tp'], 'CMIP6': cmip[t]['tp']}
 data = pd.DataFrame(d)
 data.resample('M').sum()
 data.resample('M').sum().plot(figsize=(12, 6))
