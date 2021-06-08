@@ -948,6 +948,8 @@ def MATILDA_plots(output_MATILDA, parameter):
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
         if isinstance(output_MATILDA[1], float):
             anchored_text = AnchoredText('NS coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
+	elif obs is None:
+            anchored_text = AnchoredText(' ', loc=2, frameon=False)
         else:
             anchored_text = AnchoredText('NS coeff exceeds boundaries', loc=2, frameon=False)
         ax1.add_artist(anchored_text)
