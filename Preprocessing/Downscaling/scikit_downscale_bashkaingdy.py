@@ -37,7 +37,7 @@ from Preprocessing_functions import pce_correct
 # Apply '/Ana-Lena_Phillip/data/scripts/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
 
 in_file = home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/new_grib_conversion' +\
-          '/no182_ERA5L_1982_2019.nc'
+          '/t2m_tp_no182_ERA5L_1982_2020.nc'
 ds = xr.open_dataset(in_file)
 pick = ds.sel(latitude=41.134066, longitude=75.942381, method='nearest')           # closest to AWS location
 era = pick.to_dataframe().filter(['t2m', 'tp'])
@@ -47,8 +47,8 @@ total_precipitation = np.append(0, (era.drop(columns='t2m').diff(axis=0).values.
 total_precipitation[total_precipitation < 0] = era.tp.values[total_precipitation < 0]
 era['tp'] = total_precipitation
 
-era['tp'][era['tp'] < 0.00001] = 0               # Negative and very small positive values in the data
-era['tp'] = era['tp']*1000                      # Unit to mm
+era['tp'][era['tp'] < 0.00004] = 0         # Refer to https://confluence.ecmwf.int/display/UDOC/Why+are+there+sometimes+small+negative+precipitation+accumulations+-+ecCodes+GRIB+FAQ
+era['tp'] = era['tp']*1000                 # Unit to mm
 
 # era.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/t2m_tp_ERA5L_no182_41.1_75.9_1982_2019.csv')
 
@@ -60,6 +60,7 @@ aws_full = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/download/New/atbs_
                  parse_dates=['time'], index_col='time')
 aws_full.t2m = aws_full.t2m + 273.15
 aws_full = aws_full.resample('H').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean', 'wd': 'mean', 'rh': 'mean'})
+aws_full['tp'][aws_full['tp'] > 20] = 0     # Three most extreme outliers within 3hrs. Due to AWS maintenance?
 
 aws = aws_full.drop(columns=['wd', 'rh'])
 
@@ -127,8 +128,8 @@ cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 ye
 ## Overview
 
 # AWS location: 41.134066, 75.942381
-# aws:      2017-07-14 to 2020-09-30    --> Available from 2017-06-02 but biggest datagap: 2017-07-04 to 2017-07-14
-# era:      1981-01-01 to 2019-12-31
+# aws:      2017-07-14 to 2021-06-06    --> Available from 2017-06-02 but biggest datagap: 2017-07-04 to 2017-07-14
+# era:      1981-01-01 to 2020-12-31
 # minikin:  2018-09-07 to 2019-09-13
 # cmip:     2000-01-01 to 2100-12-30
 
@@ -137,7 +138,7 @@ cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 ye
 # data = pd.DataFrame(d)
 # data.plot(figsize=(12, 6))
 
-# t = slice('2018-09-07', '2019-09-13')
+# t = slice('2017-07-14', '2021-06-06')
 # d = {'AWS': aws_D[t]['tp'], 'ERA5': era_D[t]['tp'], 'CMIP6': cmip[t]['tp']}
 # data = pd.DataFrame(d)
 # data.plot(figsize=(12, 6))
@@ -158,20 +159,15 @@ cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 ye
 #################################
 
 
-
-#               HOURLY TEMPERATURE DATA IS FULL OF NAs. DOWNSCALING WITH DAILY BUT HOURLY FOR PRECIPITATION?
-
-
-
 ## Step 1 - Downscale ERA5 using AWS
 
 # Test for most suitable downscaling algorithm:
 
-train_slice = slice('2017-07-14', '2018-09-30')         # For best algorithm.
-predict_slice = slice('2018-09-30', '2019-12-31')       # For best algorithm.
-final_train_slice = slice('2017-07-14', '2019-12-31')
-final_predict_slice = slice('2000-01-01', '2019-12-31')
-plot_slice = slice('2017-07-14', '2019-12-31')
+train_slice = slice('2017-07-14', '2019-12-31')         # For best algorithm.
+predict_slice = slice('2020-01-01', '2020-12-31')       # For best algorithm.
+final_train_slice = slice('2017-07-14', '2020-12-31')
+final_predict_slice = slice('1982-01-01', '2020-12-31')
+plot_slice = slice('2017-07-14', '2020-12-31')
 
 # sds.overview_plot(era[plot_slice]['t2m'], aws[plot_slice]['t2m'],
 #                   labelvar1='Temperature [K]')
@@ -193,23 +189,24 @@ y_train = aws[final_train_slice].drop(columns=['tp', 'ws'])
 x_predict = era[final_predict_slice].drop(columns=['tp'])
 y_predict = aws[final_predict_slice].drop(columns=['tp', 'ws'])
 
-best_mod = prediction['models']['BCSD: BcsdTemperature']          # Pick the best model by name.
-best_mod.fit(x_train, y_train)
+best_mod = prediction['models']['BCSD: BcsdTemperature']          # GARD: LinearRegression, BCSD: BcsdTemperature, GARD: PureAnalog-sample-10
+best_mod.fit(x_train, y_train)                                     # Linear Regression works only with daily_interpol
 t_corr = pd.DataFrame(index=x_predict.index)
 t_corr['t2m'] = best_mod.predict(x_predict)
 t_corr_D = t_corr.resample('D').mean()
 
 
 # # Compare results with training and target data:
-# freq = 'M'
+# freq = 'W'
 # fig, ax = plt.subplots(figsize=(12,8))
 # t_corr['t2m'][final_train_slice].resample(freq).mean().plot(ax=ax, label='fitted', legend=True)
 # x_predict['t2m'][final_train_slice].resample(freq).mean().plot(label='era5', ax=ax, legend=True)
 # y_predict['t2m'].resample(freq).mean().plot(label='aws', ax=ax, legend=True)
-# 
+#
 # compare = pd.concat({'fitted':t_corr['t2m'][final_train_slice], 'era5': x_predict['t2m'][final_train_slice],
 #                      'aws':y_predict['t2m'][final_train_slice]}, axis=1)
 # compare.describe()
+
 
 
 ## Step 2 - Downscale CMIP6 using fitted ERA5
@@ -218,7 +215,7 @@ t_corr_D = t_corr.resample('D').mean()
 
 train_slice = slice('2000-01-01', '2009-12-31')         # For best algorithm.
 predict_slice = slice('2010-01-01', '2019-12-31')       # For best algorithm.
-final_train_slice = slice('2000-01-01', '2019-12-31')
+final_train_slice = slice('1982-01-01', '2020-12-31')
 final_predict_slice = slice('2000-01-01', '2100-12-30')
 plot_slice = slice('2010-01-01', '2019-12-31')
 
@@ -242,7 +239,7 @@ y_train = t_corr[final_train_slice]
 x_predict = cmip[final_predict_slice].drop(columns=['tp'])
 y_predict = t_corr[final_predict_slice]
 
-best_mod = prediction['models']['BCSD: BcsdTemperature']          # GARD: PureAnalog-weight-10
+best_mod = prediction['models']['BCSD: BcsdTemperature']
 best_mod.fit(x_train, y_train)
 t_corr_cmip = pd.DataFrame(index=x_predict.index)
 t_corr_cmip['t2m'] = best_mod.predict(x_predict)
@@ -254,7 +251,7 @@ t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 # t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
 # x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
 # y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
-
+#
 # compare = pd.concat({'cmip6fitted': t_corr_cmip['t2m'][final_train_slice], 'cmip6': x_predict['t2m'][final_train_slice],
 #                      'era5fitted': y_predict['t2m'][final_train_slice]}, axis=1)
 # compare.describe()
@@ -269,10 +266,10 @@ t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 
 # Test for most suitable downscaling algorithm:
 
-train_slice = slice('2017-06-03', '2018-09-30')         # First full day. For finding best algorithm.
-predict_slice = slice('2018-09-30', '2019-12-31')       # For finding best algorithm.
+train_slice = slice('2017-06-03', '2018-12-31')         # 2017-06-03 first full day
+predict_slice = slice('2019-01-01', '2019-12-31')       # Sensor appears to be corrupted in 2020
 final_train_slice = slice('2017-06-03', '2019-12-31')
-final_predict_slice = slice('2000-01-01', '2019-12-31')
+final_predict_slice = slice('1982-01-01', '2020-12-31')
 plot_slice = slice('2017-06-02', '2019-12-31')
 
 # sds.overview_plot(era[plot_slice]['tp'], aws[plot_slice]['tp'],
@@ -288,7 +285,7 @@ prediction = sds.fit_dmodels(x_train, y_train, x_predict, precip=True,
         # Doesn't work with AnalogRegression. Detrending results in negative values.
 # sds.modcomp_plot(aws[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice],
 #                  ylabel='Daily Precipitation [mm]')
-sds.dmod_score(prediction['predictions'], aws['tp'], y_predict['tp'], x_predict['tp'])
+# sds.dmod_score(prediction['predictions'], aws['tp'], y_predict['tp'], x_predict['tp'])
 
 
 # Compare results with training and target data:
@@ -314,12 +311,12 @@ p_corr['tp'] = best_mod.predict(x_predict)
 p_corr_D = p_corr.resample('D').sum()
 
 # Compare results with training and target data:
-# freq = 'M'
+# freq = 'W'
 # fig, ax = plt.subplots(figsize=(12,8))
 # x_predict['tp'][final_train_slice].resample(freq).sum().plot(label='era5', ax=ax, legend=True)
 # y_predict['tp'].resample(freq).sum().plot(label='aws', ax=ax, legend=True)
 # p_corr['tp'][final_train_slice].resample(freq).sum().plot(ax=ax, label='fitted', legend=True)
-#
+
 # compare = pd.concat({'fitted':p_corr['tp'][final_train_slice], 'era5': x_predict['tp'][final_train_slice],
 #                      'aws':y_predict['tp'][final_train_slice]}, axis=1)
 # compare.describe()
@@ -335,12 +332,12 @@ p_corr_D = p_corr.resample('D').sum()
 
 train_slice = slice('2000-01-01', '2009-12-31')         # For best algorithm.
 predict_slice = slice('2010-01-01', '2019-12-31')       # For best algorithm.
-final_train_slice = slice('2000-01-01', '2019-12-31')
+final_train_slice = slice('1982-01-01', '2020-12-31')
 final_predict_slice = slice('2000-01-01', '2100-12-30')
 plot_slice = slice('2010-01-01', '2019-12-31')
 
-sds.overview_plot(cmip[plot_slice]['tp'], p_corr_D[plot_slice]['tp'],
-                  labelvar1='Daily Precipitation [mm]')
+# sds.overview_plot(cmip[plot_slice]['tp'], p_corr_D[plot_slice]['tp'],
+#                   labelvar1='Daily Precipitation [mm]')
 
 x_train = cmip[train_slice].drop(columns=['t2m'])
 y_train = p_corr_D[train_slice]
@@ -349,7 +346,7 @@ y_predict = p_corr_D[predict_slice]
 
 prediction = sds.fit_dmodels(x_train, y_train, x_predict, precip=True)
 # sds.modcomp_plot(p_corr_D[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice], ylabel='Daily Precipitation [mm]')
-sds.dmod_score(prediction['predictions'], p_corr_D['tp'], y_predict['tp'], x_predict['tp'])
+# sds.dmod_score(prediction['predictions'], p_corr_D['tp'], y_predict['tp'], x_predict['tp'])
 
 # # Compare results with training and target data:
 # compare = pd.concat([prediction['predictions'], y_predict['tp']], axis=1)
@@ -370,13 +367,13 @@ p_corr_cmip = pd.DataFrame(index=x_predict.index)
 p_corr_cmip['tp'] = best_mod.predict(x_predict)
 
 
-# Compare results with training and target data:
+# # Compare results with training and target data:
 # freq = 'Y'
 # fig, ax = plt.subplots(figsize=(12, 8))
-# p_corr_cmip['tp'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
-# x_predict['tp'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
-# y_predict['tp'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
-#
+# p_corr_cmip['tp'].resample(freq).sum().plot(ax=ax, label='cmip6_fitted', legend=True)
+# x_predict['tp'].resample(freq).sum().plot(label='cmip6', ax=ax, legend=True)
+# y_predict['tp'].resample(freq).sum().plot(label='era5l_fitted', ax=ax, legend=True)
+
 # # compare = pd.concat({'cmip6fitted':p_corr_cmip['tp'][final_train_slice], 'cmip6': x_predict['tp'][final_train_slice],
 # #                      'era5fitted':y_predict['tp'][final_train_slice]}, axis=1)
 # # compare.describe()
@@ -393,99 +390,5 @@ era_corr = pd.concat([t_corr, p_corr], axis=1)
 cmip_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/CMIP6/'
                  + 'no182_CMIP6_ssp2_4_5_mean_2000_2100_41-75.9_fitted2ERA5Lfit.csv')
 era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
-                'no182_ERA5_Land_2000_2019_41_75.9_fitted2AWS.csv')
+                'no182_ERA5_Land_1982_2020_41_75.9_fitted2AWS.csv')
 
-
-
-
-
-
-# #########################################################################################################
-# #
-# train_slice = slice('2017-07-14', '2019-12-31')
-# predict_slice = slice('2017-07-14', '2019-12-31')
-# # predict_slice = slice('1981-01-01', '2019-12-31')
-# plot_slice = slice('2017-07-14', '2019-12-31')
-#
-#
-# ## Plot both datasets
-# sds.overview_plot(training[plot_slice]['t2m'], targets[plot_slice]['t2m'],
-#                   training[plot_slice]['tp'], targets[plot_slice]['tp'], no_var=2,
-#                   labelvar1='Temperature [K]', labelvar2='Precipitation [mm]')
-#
-# ## extract training / prediction data
-# x_train = training[train_slice]
-# y_train = targets[train_slice]
-# x_predict = training[predict_slice]
-# y_predict = targets[predict_slice]      # FRAGLICH, WEIL ZU LANG! Only for finding the best model.
-#
-# # For temperature:
-# x_train_t = x_train.drop(columns=['tp'])                            # Need to be dataframes not series!
-# y_train_t = y_train.drop(columns=['tp'])
-# x_predict_t = x_predict.drop(columns=['tp'])
-# y_predict_t = y_predict.drop(columns=['tp'])
-#
-#
-# ## Fit models and predict data series:
-#
-# prediction = sds.fit_dmodels(x_train_t, y_train_t, x_predict_t)
-#
-# sds.modcomp_plot(targets[plot_slice]['t2m'], x_predict[plot_slice]['t2m'], prediction['predictions'][plot_slice], ylabel='Temperatur [K]')
-# # sds.dmod_score(prediction['predictions'], targets['t2m'], y_predict['t2m'], x_predict)        # Welcher Zeitraum für y-predict?
-# sds.dmod_score(prediction['predictions'], targets['t2m'], targets['t2m'], x_predict['t2m'])
-#
-# ## Pick best model
-#
-# best_mod = prediction['models']['GARD: PureAnalog-weight-100']          # Pick the best model by name.
-# best_mod.fit(x_train_t, y_train_t)
-# t_corr = pd.DataFrame(index=y_predict_t.index)
-# t_corr['t_corr'] = best_mod.predict(y_predict_t)         # insert scenario data here
-#
-# sds.overview_plot(targets['t2m'], y_predict_t,
-#                   labelvar1='Temperature [K]', label_train='before', label_target='after')
-#
-# ## Apply for precipitation:
-#
-# x_train_p = x_train.drop(columns=['t2m'])
-# y_train_p = y_train.drop(columns=['t2m'])
-# x_predict_p = x_predict.drop(columns=['t2m'])
-# y_predict_p = y_predict.drop(columns=['t2m'])
-#
-# prediction = sds.fit_dmodels(x_train_p, y_train_p, x_predict_p, precip=True)
-# sds.modcomp_plot(targets[plot_slice]['tp'], x_predict[plot_slice]['tp'], prediction['predictions'][plot_slice], ylabel='Daily Precipitation [mm]')
-# sds.dmod_score(prediction['predictions'], targets['tp'], targets['tp'], x_predict['tp'])
-# comp = prediction['predictions'].agg(sum)
-# comp['obs'] = y_train_p
-# comp['era5'] = x_train_p
-# comp = comp.describe()
-# prediction['predictions'].agg(sum)
-#
-# best_mod = prediction['models']['GARD: PureAnalog-weight-100']          # Pick the best model by name.
-# best_mod = prediction['models']['Sklearn: RandomForestRegressor']
-# best_mod = prediction['models']['GARD: PureAnalog-best-1']
-# best_mod = prediction['models']['GARD: PureAnalog-weight-10']
-#
-# best_mod.fit(x_train_p, y_train_p)
-# p_corr = pd.DataFrame(index=y_predict_p.index)
-# p_corr['p_corr'] = best_mod.predict(y_predict_p)         # insert scenario data here
-#
-# sds.overview_plot(y_train_p, p_corr['p_corr'],
-#                   labelvar1='Daily Precipitation [mm]', label_train='obs', label_target='corrected')
-
-
-## example
-# dat = pd.read_csv(home + "/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/Bash-Kaindy_preprocessed_forcing_data.csv",
-#                   parse_dates=['TIMESTAMP'], index_col='TIMESTAMP')
-# # dat = dat.resample('D').mean()
-#
-# training = dat.drop(columns=['temp_era_fitted', 'temp_minikin'])        # Need to be dataframes
-# targets = dat.drop(columns=['temp_era_fitted', 'temp_era'])             # Need to be dataframes
-#
-# train_slice = slice('2018-09-07', '2019-09-13')
-# predict_slice = slice('2018-09-07', '2019-09-13')
-# plot_slice = slice('2018-09-07', '2019-09-13')
-#
-# prediction = sds.fit_dmodels(x_train, y_train, x_predict)
-#
-# sds.modcomp_plot(targets[plot_slice], x_predict[plot_slice], prediction['predictions'][plot_slice])
-# sds.dmod_score(prediction['predictions'], targets['temp_minikin'], y_predict['temp_minikin'], x_predict)
