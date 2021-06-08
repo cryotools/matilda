@@ -48,8 +48,8 @@ df = df.resample("M").sum()
 df.describe()
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
-                       sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=46.232, area_glac=2.566,
-                       ele_dat=3864, ele_glac=4042, ele_cat=3360)
+                       sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", area_cat=46.224, area_glac=2.566,
+                       ele_dat=3864, ele_glac=4035, ele_cat=3485)
 df_preproc = MATILDA.MATILDA_preproc(df, parameter)
 df_preproc = df_preproc.resample("D").agg({"T2":"mean", "RRR":"sum"})
 
