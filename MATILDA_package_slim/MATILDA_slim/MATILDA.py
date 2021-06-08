@@ -464,7 +464,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
         glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[parameter.area_glac]})
 
-        output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"]
+        output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"].copy()
         for i in range(len(glacier_change)):
             year = glacier_change["water_year"][i]
             smb_sum = glacier_change["smb_sum"][i]
