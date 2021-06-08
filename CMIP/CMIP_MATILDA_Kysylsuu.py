@@ -56,7 +56,7 @@ obs = pd.read_csv(home + "/Seafile/Azamat_AvH/workflow/data/Runoff/obs_kyzylsuu_
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='1988-01-01 00:00:00', set_up_end='1988-12-31 23:00:00',
                                       sim_start='1989-01-01 00:00:00', sim_end='2019-12-31 23:00:00', freq="W",
                                       lat=42.25, area_cat=315.69,
-                                      area_glac=32.54, ele_dat=2550, ele_glac=4000, ele_cat=3221, lr_temp=-0.005936, lr_prec=-0.0002503,
+                                      area_glac=32.51, ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
                                       LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
@@ -71,7 +71,7 @@ df = pd.read_csv(input_csv)
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2000-01-01 00:00:00', set_up_end='2000-12-31 23:00:00',
                                       sim_start='2001-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D",
-                                      lat=42.25, area_cat=315.69,
+                                      lat=42.25, area_cat=315.694,
                                       area_glac=32.54, ele_dat=2550, ele_glac=4000, ele_cat=3221, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,

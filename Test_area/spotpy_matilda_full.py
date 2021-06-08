@@ -28,7 +28,7 @@ obs["Qobs"] = obs["Qobs"] / 86400 * (46.232 * 1000000) / 1000  # Daten in mm, Um
 
 best_summary = mspot.psample(df=df, obs=obs, rep=3, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                        sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', area_cat=46.232,
-                       area_glac=2.566, ele_dat=3864, ele_glac=4042, ele_cat=3360)
+                       area_glac=2.566, ele_dat=3864, ele_glac=4035, ele_cat=3485)
 
 best_summary['par_uncertain_plot'].show()
 

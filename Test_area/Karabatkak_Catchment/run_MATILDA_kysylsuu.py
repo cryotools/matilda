@@ -63,16 +63,16 @@ if 'node' in host:
     kysyl_par = mspot_cirrus.psample(df=df, obs=obs, rep=rep, dbformat='csv', dbname='kysylsuu' + algorithm + str(rep),
                                      set_up_start='1994-01-01 00:00:00', set_up_end='1995-12-31 23:00:00',
                                      sim_start='1994-01-01 00:00:00', sim_end='1997-12-31 23:00:00', freq="D",
-                                     area_cat=315.69,
-                                     area_glac=32.54, ele_dat=2550, ele_glac=3957, ele_cat=3221, lr_temp_lo=-0.0065,
+                                     area_cat=315.694,
+                                     area_glac=32.51, ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp_lo=-0.0065,
                                      lr_temp_up=-0.005,
                                      opt_iter=False, savefig=True, algorithm=algorithm)
 else:
     kysyl_par = mspot_cirrus.psample(df=df, obs=obs, rep=3, dbformat=None, dbname='kysylsuu' + algorithm + str(rep),
                                      set_up_start='1994-01-01 00:00:00', set_up_end='1995-12-31 23:00:00',
                                      sim_start='1994-01-01 00:00:00', sim_end='1997-12-31 23:00:00', freq="D",
-                                     area_cat=315.69,
-                                     area_glac=32.54, ele_dat=2550, ele_glac=3957, ele_cat=3221, lr_temp_lo=-0.0065,
+                                     area_cat=315.694,
+                                     area_glac=32.51, ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp_lo=-0.0065,
                                      lr_temp_up=-0.005,
                                      opt_iter=False, savefig=False, algorithm=algorithm)
 
@@ -99,13 +99,13 @@ else:
 # ##
 # parameter = MATILDA.MATILDA_parameter(df, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
 #                                       sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
-#                                       area_cat=315.69, area_glac=2.95,
-#                                       ele_dat=2550, ele_glac=3957, ele_cat=3221)
+#                                       area_cat=315.694, area_glac=2.95,
+#                                       ele_dat=2550, ele_glac=4074, ele_cat=3225)
 # ## Running MATILDA
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='1989-01-01 00:00:00', set_up_end='1991-12-31 23:00:00',
                                       sim_start='1989-01-01 00:00:00', sim_end='2019-12-31 23:00:00', freq="W",
-                                      area_cat=315.69, area_glac=32.54, lat=42.33,
-                                      ele_dat=2550, ele_glac=4000, ele_cat=3221, lr_temp=-0.005936, lr_prec=-0.0002503,
+                                      area_cat=315.694, area_glac=32.51, lat=42.33,
+                                      ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
                                       LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
@@ -129,8 +129,8 @@ MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
 # # If output = output_path in function, the output will be saved to a new folder
 # output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, output=output_path, set_up_start='1993-01-01 00:00:00', set_up_end='1993-12-31 23:00:00',
 #                                       sim_start='1994-01-01 00:00:00', sim_end='1997-12-31 23:00:00', freq="D",
-#                                       area_cat=315.69, area_glac=31.51,
-#                                       ele_dat=2550, ele_glac=4000, ele_cat=3221, lr_temp=-0.006, lr_prec=0,
+#                                       area_cat=315.694, area_glac=32.51,
+#                                       ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.006, lr_prec=0,
 #                                             BETA=3.6,CET=0.10,FC=500,K0=0.39, K1=0.16, K2=0.12,LP=0.53,
 #                                             MAXBAS=2,PERC=0.42,UZL=353,PCORR=1.1,TT_snow=-1.45,TT_rain=1.1,
 #                                             CFMAX_snow=3.14,CFMAX_ice=4.48,SFCF=0.58, CFR_snow=0.08,CFR_ice=0,
