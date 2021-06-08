@@ -10,13 +10,13 @@ import warnings
 warnings.filterwarnings('ignore')
 
 ##
-# DEM_file = home + '/Seafile/Masterarbeit/Bash_Kaindy/Delineation/DEM_clipped.tif'
-DEM_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif'
+DEM_file = home + '/Seafile/Masterarbeit/Data/QGIS/Delineation/DEM_clipped.tif'
+#DEM_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif'
 output_file = home + "/Seafile/Masterarbeit/Bash_Kaindy/Delineation/catchment_Urumqi.shp"
 
 # Specify discharge point
-# x, y = 75.953079,41.125814 # Bash Kaindy
-x, y = 86.82151540, 43.11473921 # Urumqi
+x, y = 75.953079,41.125814 # Bash Kaindy
+#x, y = 86.82151540, 43.11473921 # Urumqi
 
 ##
 grid = Grid.from_raster(DEM_file, data_name='dem')
@@ -63,6 +63,8 @@ grid.clip_to('catch')
 demView = grid.view('dem', nodata=np.nan)
 plotFigure(demView,'Elevation')
 plt.show()
+
+print("Mean catchment elevation is " + str(np.nanmean(demView)) + " m")
 
 ## Create shapefile and save it
 shapes = grid.polygonize()
