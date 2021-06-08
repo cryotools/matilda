@@ -1,6 +1,6 @@
 import datetime; starttime = datetime.datetime.now().time(); print(starttime)
 from pathlib import Path ; home = str(Path.home())
-import sys; sys.path.append('/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Preprocessing/ERA5_downscaling')
+import sys; sys.path.append('/home/ana/Seafile/SHK/Scripts/centralasiawaterresources/Preprocessing/Downscaling/ERA5_downscaling')
 import numpy as np; import pandas as pd; import xarray as xr; import salem
 from misc_functions.xarray_functions import insert_var
 from misc_functions.inspect_values import mmm_nan, mmm_nan_name, check, check_for_nans_dataframe, calculate_r2_and_rmse
@@ -8,7 +8,7 @@ from fundamental_physical_constants import g, M, R, teten_a1, teten_a3, teten_a4
 from misc_functions.calculate_parameters import calculate_ew; import matplotlib.pyplot as plt
 
 working_directory = home + '/Seafile/Ana-Lena_Phillip/data/'
-shape_file = "Seafile/Masterarbeit/Bash_Kaindy/Delineation/rgi_glacierno1.shp"
+#shape_file = "Seafile/Masterarbeit/Bash_Kaindy/Delineation/rgi_glacierno1.shp"
 era5_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/global/ERA5_global_z.nc'
 
 era5_file = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/new_grib_conversion/no182_ERA5_Land_2000_202011_no182.nc'
@@ -20,14 +20,14 @@ z0 = 0.00212                                # (m) mean between roughness firn 4 
 lapse_rate_temperature = -0.006             # K/m  temperature lapse rate
 
 #Time slice
-time_start = '2017-06-02T15:00'
-time_end = '2020-09-29T14:00'
+time_start = '2001-01-01T01:00'
+time_end = '2020-11-01T01:00'
 
 era5_static = salem.open_xr_dataset(era5_static_file)
-shape_grid = salem.read_shapefile_to_grid(shape_file,grid=salem.grid_from_dataset(era5_static))
+#shape_grid = salem.read_shapefile_to_grid(shape_file,grid=salem.grid_from_dataset(era5_static))
 era5 = salem.open_xr_dataset(era5_file)
-lon_ll = shape_grid.CenLon.values - margin; lat_ll = shape_grid.CenLat.values - margin; lon_ur = shape_grid.CenLon.values + margin; lat_ur = shape_grid.CenLat.values + margin
-era5_static = era5_static.salem.subset(corners=((lon_ll,lat_ll), (lon_ur,lat_ur)), crs=salem.wgs84) ###ds1 = ds1.salem.roi(shape=shape,all_touched=False) #ds1 = ds.salem.subset(shape=shape, margin=5)
+#lon_ll = shape_grid.CenLon.values - margin; lat_ll = shape_grid.CenLat.values - margin; lon_ur = shape_grid.CenLon.values + margin; lat_ur = shape_grid.CenLat.values + margin
+#era5_static = era5_static.salem.subset(corners=((lon_ll,lat_ll), (lon_ur,lat_ur)), crs=salem.wgs84) ###ds1 = ds1.salem.roi(shape=shape,all_touched=False) #ds1 = ds.salem.subset(shape=shape, margin=5)
 
 era5 = era5.sel(time=slice(time_start, time_end))
 
@@ -45,8 +45,8 @@ era5 = era5.sel(time=slice(time_start, time_end))
 # latitude = float(era5_static.lat[idx_lat].values)
 # longitude = float(era5_static.lon[idx_lon].values)
 
-latitude2 = 41
-longitude2 = 76
+latitude = 41
+longitude = 75.9
 
 # ### Select closest gridpoint in contrast to elevation
 # altitude_differences_gp = np.abs(era5_static.z/g - target_altitude)
@@ -61,7 +61,7 @@ longitude2 = 76
 # latitude = float(era5_static.where(era5_static == era5_static.min(), drop=True).lat)
 # longitude = float(era5_static.where(era5_static == era5_static.min(), drop=True).lon)
 
-era5 = era5.sel(lat=latitude2, lon=longitude2, method='nearest'); era5_static = era5_static.sel(lat=latitude2,lon=longitude2, method='nearest')
+era5 = era5.sel(lat=latitude, lon=longitude, method='nearest'); era5_static = era5_static.sel(lat=latitude,lon=longitude, method='nearest')
 height_diff = target_altitude - era5_static.z.values/g ; print("Height difference between target_altitude: ", height_diff)
 print('First timestamp: ', era5.time[0].values, ' last timestamp: ', era5.time[-1].values)
 print("Altitude of gridpoint ", era5_static.z.values/g)
@@ -92,7 +92,6 @@ check(total_precipitation,'TP',25.0,0.0)
 raw_data = {'TIMESTAMP': time_local, 'T2': temperature, 'RRR': total_precipitation}
 df_41_76 = pd.DataFrame(raw_data, columns = ['TIMESTAMP', 'T2',  'RRR'])
 #df.to_csv(output_csv,index=False)
-print("CSV file has been stored to disc")
 
 aws = pd.read_csv("/home/ana/Seafile/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv")
 aws.rename({'datetime': 'TIMESTAMP'}, axis=1, inplace=True)
