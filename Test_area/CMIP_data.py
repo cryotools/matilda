@@ -101,12 +101,12 @@ else:
 # time = pd.to_datetime(time.astype('str'))
 
 ##
-# path = wd
-# scenarios = scen.copy()
-# var_id = variable.copy()
-# var_name = var.copy()
-# method = "nearest"
-# model_list = ["in_cm4_8"]
+path = wd
+scenarios = scen.copy()
+var_id = variable.copy()
+var_name = var.copy()
+method = "nearest"
+model_list = ["in_cm4_8"]
 def cmip_csv(path, scenarios, model_list, var_id, var_name, lat, lon, start_date, end_date, method='nearest'):
     rcp_dfs = {}
 
@@ -200,8 +200,25 @@ for i in scen:
 
 # for i in mean_dict.keys():
 #     mean_dict[i].to_csv("/data/scratch/tappeana/CMIP6_" + str(i) + "_" + str(lat) + "-" + str(lon) + "_" + start_date + "-" + end_date + ".csv")
-## multiple plots
 
+mean_df = pd.DataFrame(index=mean_dict[i].index)
+for i in mean_dict.keys():
+    if i.endswith("2_6"):
+        mean_df["temp_26"] = mean_dict[i]["tas_mean"]
+        mean_df["prec_26"] = mean_dict[i]["pr_mean"]
+    if i.endswith("4_5"):
+        mean_df["temp_45"] = mean_dict[i]["tas_mean"]
+        mean_df["prec_45"] = mean_dict[i]["pr_mean"]
+    if i.endswith("7_0"):
+        mean_df["temp_70"] = mean_dict[i]["tas_mean"]
+        mean_df["prec_70"] = mean_dict[i]["pr_mean"]
+    if i.endswith("8_5"):
+        mean_df["temp_85"] = mean_dict[i]["tas_mean"]
+        mean_df["prec_85"] = mean_dict[i]["pr_mean"]
+
+#mean_df.to_csv(wd_out + "CMIP6_mean_" + str(lat) + "-" + str(lon) + "_" + start_date + "-" + end_date + ".csv")
+
+## multiple plots
 for i in scen:
     mean_dict[i] = mean_dict[i].resample("Y").agg({"tas_mean": "mean", "pr_mean": "sum"})
     for v in variable:
@@ -253,13 +270,3 @@ for v in variable:
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12),
                       fancybox=True, shadow=True, ncol=7)
     plt.show()
-
-##
-df_2_6 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/ssp1_2_6_41-75.9_2000-01-01-2100-12-31.csv")
-df_4_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/ssp2_4_5_41-75.9_2000-01-01-2100-12-31.csv")
-df_8_5 = pd.read_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/ssp5_8_5_41-75.9_2000-01-01-2100-12-31.csv")
-
-df_all = pd.DataFrame(data=None, index=df_2_6["time"])
-df_all["prec_85"] = df_8_5["pr_mean"].values
-
-df_all.to_csv("/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/CMIP6_mean_41-75.9_2000-01-01-2100-12-31.csv")

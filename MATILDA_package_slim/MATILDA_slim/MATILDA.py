@@ -186,7 +186,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
     df_preproc = input_df.copy()
     if parameter.set_up_start > parameter.sim_start:
         print("WARNING: Spin up period starts after simulation period")
-    if isinstance(df_preproc, xr.Dataset):
+    elif isinstance(df_preproc, xr.Dataset):
         df_preproc = input_df.sel(time=slice(parameter.set_up_start, parameter.sim_end))
     else:
         df_preproc.set_index('TIMESTAMP', inplace=True)
@@ -819,7 +819,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         output_MATILDA = output_HBV.copy()
 
     if obs is not None:
-        output_MATILDA = pd.concat([output_MATILDA, obs_preproc], axis=1)
+        output_MATILDA = pd.concat([output_MATILDA, obs], axis=1)
 
     if parameter.area_glac > 0:
         if glacier_profile is not None:
@@ -948,7 +948,7 @@ def MATILDA_plots(output_MATILDA, parameter):
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
         if isinstance(output_MATILDA[1], float):
             anchored_text = AnchoredText('NS coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
-	elif obs is None:
+        elif 'Qobs' not in plot_data.columns:
             anchored_text = AnchoredText(' ', loc=2, frameon=False)
         else:
             anchored_text = AnchoredText('NS coeff exceeds boundaries', loc=2, frameon=False)
