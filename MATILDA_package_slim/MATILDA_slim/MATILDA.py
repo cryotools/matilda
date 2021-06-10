@@ -1096,14 +1096,14 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, se
             output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
         else:
             output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc)
+
     if plots:
         output_MATILDA = MATILDA_plots(output_MATILDA, parameter)   # Option to suppress plots.
-        return output_MATILDA
+        # return output_MATILDA
     else:
         return output_MATILDA
     # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
     # adding them to the output
-
     # saving the data on disc of output path is given
     if output is not None:
         MATILDA_save_output(output_MATILDA, parameter, output)
