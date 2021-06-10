@@ -121,7 +121,7 @@ cmip = pd.read_csv(home + '/EBA-CA/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kain
 cmip = cmip.filter(like='_45')            # To select scenario e.g. RCP4.5 from the model means
 # cmip = cmip.tz_localize('UTC')
 cmip.columns = era.columns
-cmip = cmip.resample('D').mean()                   # Already daily but wrong daytime (12:00:00 --> lesser days overall).
+cmip = cmip.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})       # Already daily but wrong daytime (12:00:00 --> lesser days overall).
 cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 years, only 3 in fitting period.
 
 
@@ -137,7 +137,7 @@ cmip = cmip.interpolate(method='spline', order=2)       # Only 25 days in 100 ye
 # d = {'AWS': aws[t]['t2m'], 'ERA5': era[t]['t2m'], 'Minikin': minikin[t]['t2m'], 'CMIP6': cmip[t]['t2m']}
 # data = pd.DataFrame(d)
 # data.plot(figsize=(12, 6))
-
+#
 # t = slice('2017-07-14', '2021-06-06')
 # d = {'AWS': aws_D[t]['tp'], 'ERA5': era_D[t]['tp'], 'CMIP6': cmip[t]['tp']}
 # data = pd.DataFrame(d)
@@ -178,7 +178,7 @@ x_predict = era_D[predict_slice].drop(columns=['tp'])
 y_predict = aws_D_int[predict_slice].drop(columns=['tp', 'ws'])
 
 prediction = sds.fit_dmodels(x_train, y_train, x_predict)
-# sds.modcomp_plot(aws_D_int[predict_slice]['t2m'], x_predict[predict_slice]['t2m'], prediction['predictions'][predict_slice], ylabel='Temperature [K]')
+sds.modcomp_plot(aws_D_int[predict_slice]['t2m'], x_predict[predict_slice]['t2m'], prediction['predictions'][predict_slice], ylabel='Temperature [K]')
 sds.dmod_score(prediction['predictions'], aws_D_int['t2m'], y_predict['t2m'], x_predict['t2m'])
 
 
@@ -246,16 +246,15 @@ t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 
 
 # # Compare results with training and target data:
-# freq = 'Y'
+# freq = 'M'
 # fig, ax = plt.subplots(figsize=(12,8))
 # t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
 # x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
 # y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
-#
+
 # compare = pd.concat({'cmip6fitted': t_corr_cmip['t2m'][final_train_slice], 'cmip6': x_predict['t2m'][final_train_slice],
 #                      'era5fitted': y_predict['t2m'][final_train_slice]}, axis=1)
 # compare.describe()
-
 
 
 #################################
