@@ -149,12 +149,12 @@ for d in range(len(ds)):
     cmip_mm['tp_'+names[d]+'_min'] = ds[d].filter(like='pr_').min(axis=1)
     cmip_mm['tp_'+names[d]+'_max'] = ds[d].filter(like='pr_').max(axis=1)
 
+plt.fill_between(cmip_mm.resample(freq).mean().index, cmip_mm.t2m_cmip26_min.resample(freq).mean(),
+                 cmip_mm.t2m_cmip26_max.resample(freq).mean(),
+                 color='blue', alpha=0.2)
+plt.show()
 
-
-# FANCY SHADES PLOTTING MIT MINMAX WERTEN!
-
-
-
+# Was begrenzt eigentlich die Fächer in klassischen Szenarioplots?
 
 ################################
 #   Saving final time series   #
