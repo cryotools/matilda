@@ -78,12 +78,12 @@ aws = pd.merge(aws_temp_D, aws_prec, how='outer', left_index=True, right_index=T
 ## CMIP6:
 
 cmip = pd.read_csv(home + '/EBA-CA/Tianshan_data/CMIP/CMIP6/all_models/Kysylsuu/' +
-                       'CMIP6_mean_42.25-78.25_2000-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
+                       'CMIP6_mean_42.25-78.25_1980-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
 cmip = cmip.filter(like='_45')              # To select scenario e.g. RCP4.5 from the model means
 # cmip = cmip.tz_localize('UTC')
 cmip.columns = era.columns
 cmip = cmip.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})      # Already daily but wrong daytime (12:00:00).
-
+cmip = cmip.interpolate(method='spline', order=2)       # Only 3 days in 100 years, only 3 in fitting period.
 
 
 ## Overview
@@ -157,9 +157,9 @@ final_train_slice = slice('2000-01-01', '2019-12-31')
 final_predict_slice = slice('2000-01-01', '2100-12-31')
 plot_slice = slice('2010-01-01', '2020-12-31')
 
-freq = 'D'
-sds.overview_plot(cmip[plot_slice]['t2m'].resample(freq).mean(), t_corr[plot_slice]['t2m'].resample(freq).mean(),
-                  labelvar1='Temperature [K]')
+# freq = 'D'
+# sds.overview_plot(cmip[plot_slice]['t2m'].resample(freq).mean(), t_corr[plot_slice]['t2m'].resample(freq).mean(),
+#                   labelvar1='Temperature [K]')
 
 x_train = cmip[train_slice].drop(columns=['tp'])
 y_train = t_corr_D[train_slice]

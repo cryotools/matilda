@@ -117,7 +117,7 @@ aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger da
 
 ## CMIP6 data Bash Kaingdy:
 cmip = pd.read_csv(home + '/EBA-CA/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/' +
-                       'CMIP6_mean_41-75.9_2000-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
+                       'CMIP6_mean_41-75.9_1980-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
 cmip = cmip.filter(like='_45')            # To select scenario e.g. RCP4.5 from the model means
 # cmip = cmip.tz_localize('UTC')
 cmip.columns = era.columns
