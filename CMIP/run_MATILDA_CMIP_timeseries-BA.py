@@ -29,4 +29,5 @@ df_preproc = MATILDA.MATILDA_preproc(cmip_4_5, parameter)
 output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
 output_MATILDA = MATILDA_plots(output_MATILDA, parameter)
 MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
-
+#
+output_MATILDA[6].show()

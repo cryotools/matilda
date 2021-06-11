@@ -186,7 +186,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
     df_preproc = input_df.copy()
     if parameter.set_up_start > parameter.sim_start:
         print("WARNING: Spin up period starts after simulation period")
-    elif isinstance(df_preproc, xr.Dataset):
+    if isinstance(df_preproc, xr.Dataset):
         df_preproc = input_df.sel(time=slice(parameter.set_up_start, parameter.sim_end))
     else:
         df_preproc.set_index('TIMESTAMP', inplace=True)
@@ -819,7 +819,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         output_MATILDA = output_HBV.copy()
 
     if obs is not None:
-        output_MATILDA = pd.concat([output_MATILDA, obs], axis=1)
+        output_MATILDA = pd.concat([output_MATILDA, obs_preproc], axis=1)
 
     if parameter.area_glac > 0:
         if glacier_profile is not None:
@@ -948,11 +948,7 @@ def MATILDA_plots(output_MATILDA, parameter):
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
         if isinstance(output_MATILDA[1], float):
             anchored_text = AnchoredText('NS coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
-<<<<<<< HEAD
-        elif obs is None:
-=======
-        elif 'Qobs' not in plot_data.columns:
->>>>>>> c35373e6397964164b52fd399a2fcbd48da028ea
+	elif obs is None:
             anchored_text = AnchoredText(' ', loc=2, frameon=False)
         else:
             anchored_text = AnchoredText('NS coeff exceeds boundaries', loc=2, frameon=False)
@@ -1100,14 +1096,14 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, se
             output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
         else:
             output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc)
-
     if plots:
         output_MATILDA = MATILDA_plots(output_MATILDA, parameter)   # Option to suppress plots.
-        # return output_MATILDA
+        return output_MATILDA
     else:
         return output_MATILDA
     # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
     # adding them to the output
+
     # saving the data on disc of output path is given
     if output is not None:
         MATILDA_save_output(output_MATILDA, parameter, output)
