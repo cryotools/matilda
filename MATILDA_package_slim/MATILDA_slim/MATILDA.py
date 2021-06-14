@@ -452,7 +452,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
                                             output_DDM.index.year)
         # initial smb from the glacier routine script in m w.e.
         m = sum(glacier_profile["Area"] * glacier_profile["WE"])
-        initial_smb = m / 1000
+        initial_smb = m / 1000 # ?
         # initial area
         initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
         # dataframe with the smb change per hydrological year in m w.e.
@@ -1029,6 +1029,10 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     output_MATILDA[2].to_csv(output_path + "model_stats_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
         output_MATILDA[0].index.values[-1])[:4] + ".csv")
     parameter.to_csv(output_path + "model_parameter.csv")
+
+    if parameter.area_glac > 0:
+        output_MATILDA[4].to_csv(output_path + "glacier_area_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
+            output_MATILDA[0].index.values[-1])[:4] + ".csv")
 
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
         output_MATILDA[5].savefig(
