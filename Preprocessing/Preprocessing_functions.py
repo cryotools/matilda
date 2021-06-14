@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from math import e
+import matplotlib.pyplot as plt
+
 import warnings
 
 
@@ -117,3 +119,33 @@ def pce_correct(U, t2m, tp, measurement_h=2):
         tp[cond_mix] = tp[cond_mix] / ((a_10m_mix) * e ** (-b_10m_mix * U[cond_mix]))
 
     return tp
+
+##
+
+
+def trendline(Y, **kwargs):
+    """Fits a linear trend line through a passed timeseries
+    and adds it to a plot."""
+
+    X = range(len(Y.index))
+    z = np.polyfit(X, Y, 1)
+    p = np.poly1d(z)
+    x = pd.DataFrame(p(X), index=Y.index)
+    plt.plot(x, "r--", **kwargs)
+
+##
+
+
+def consec_days(s, thresh, Nmin):
+    """Finds periods of Nmin consecutive days below a threshold."""
+
+    m = np.logical_and.reduce([s.shift(-i).le(thresh) for i in range(Nmin)])
+    if Nmin > 1:
+        m = pd.Series(m, index=s.index).replace({False: np.NaN}).ffill(limit=Nmin-1).fillna(False)
+    else:
+        m = pd.Series(m, index=s.index)
+
+    # Form consecutive groups
+    gps = m.ne(m.shift(1)).cumsum().where(m)
+
+    return gps
