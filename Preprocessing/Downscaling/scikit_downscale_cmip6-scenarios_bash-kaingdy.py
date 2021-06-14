@@ -21,18 +21,11 @@ import os
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
 import Downscaling.scikit_downscale_matilda as sds
-from Preprocessing_functions import pce_correct
+from Preprocessing_functions import pce_correct, trendline
 from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
 
 # interactive plotting?
 # plt.ion()
-
-def trendline(Y, **kwargs):
-    X = range(len(Y.index))
-    z = np.polyfit(X, Y, 1)
-    p = np.poly1d(z)
-    x = pd.DataFrame(p(X), index=Y.index)
-    plt.plot(x, "r--", **kwargs)
 
 
 ##########################
