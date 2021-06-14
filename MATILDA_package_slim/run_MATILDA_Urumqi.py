@@ -24,7 +24,7 @@ output_path = working_directory + "input_output/output/" + data_csv[:15]
 
 df = pd.read_csv(input_path_data + data_csv)
 obs = pd.read_csv(input_path_observations + observations_csv)
-glacier_profile = pd.read_csv(glacier_profile, sep="\t", header=1) # Glacier Profile
+glacier_profile2 = pd.read_csv(glacier_profile, sep="\t", header=1) # Glacier Profile
 obs["Qobs"] = obs["Qobs"] / 86400*(3.367*1000000)/1000 # in der Datei sind die mm Daten, deswegen hier nochmal umgewandelt in m3/s
 
 
@@ -40,7 +40,7 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, glacier_profile=glacier
 
 output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
+#MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
 output_MATILDA[6].show()
 
 output_MATILDA[4].to_csv("/home/ana/Desktop/2011_2018_2021-05-13_11:34:23/glacier_melt.csv")
