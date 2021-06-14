@@ -452,7 +452,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
                                             output_DDM.index.year)
         # initial smb from the glacier routine script in m w.e.
         m = sum(glacier_profile["Area"] * glacier_profile["WE"])
-        initial_smb = m / 1000 # ?
+        initial_smb = m / 1000
         # initial area
         initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
         # dataframe with the smb change per hydrological year in m w.e.
@@ -948,11 +948,7 @@ def MATILDA_plots(output_MATILDA, parameter):
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
         if isinstance(output_MATILDA[1], float):
             anchored_text = AnchoredText('NS coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
-<<<<<<< HEAD
-        elif obs is None:
-=======
         elif 'Qobs' not in plot_data.columns:
->>>>>>> c35373e6397964164b52fd399a2fcbd48da028ea
             anchored_text = AnchoredText(' ', loc=2, frameon=False)
         else:
             anchored_text = AnchoredText('NS coeff exceeds boundaries', loc=2, frameon=False)
@@ -1033,10 +1029,6 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     output_MATILDA[2].to_csv(output_path + "model_stats_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
         output_MATILDA[0].index.values[-1])[:4] + ".csv")
     parameter.to_csv(output_path + "model_parameter.csv")
-
-    if parameter.area_glac > 0:
-        output_MATILDA[4].to_csv(output_path + "glacier_area_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
-            output_MATILDA[0].index.values[-1])[:4] + ".csv")
 
     if str(output_MATILDA[0].index.values[1])[:4] == str(output_MATILDA[0].index.values[-1])[:4]:
         output_MATILDA[5].savefig(
