@@ -349,7 +349,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
              xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"),
              xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"), \
              xr.DataArray(total_melt, name="DDM_total_melt"), xr.DataArray(runoff_rate, name="Q_DDM")])
-        # glacier_melt = glacier_melt.assign_coords(water_year = ds["water_year"])
 
         # making the final dataframe
         DDM_results = glacier_melt.to_dataframe()
@@ -451,8 +450,8 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1,
                                             output_DDM.index.year)
         # initial smb from the glacier routine script in m w.e.
-        m = sum(glacier_profile["Area"] * glacier_profile["WE"])
-        initial_smb = m / 1000 # ?
+        m = sum((glacier_profile["Area"] * parameter.area_cat) * glacier_profile["WE"])
+        initial_smb = m / 1000 # in m
         # initial area
         initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
         # dataframe with the smb change per hydrological year in m w.e.
@@ -926,7 +925,7 @@ def MATILDA_plots(output_MATILDA, parameter):
                 size=14)
         else:
             fig.suptitle(
-                parameter.freq_long + " meteorological input parameters in " + str(plot_data.index.values[1])[
+                parameter.freq_long + " meteorological input parameters in " + str(plot_data.index.values[0])[
                                                                                :4] + "-" + str(
                     plot_data.index.values[-1])[:4], size=14)
         plt.tight_layout()
@@ -948,11 +947,7 @@ def MATILDA_plots(output_MATILDA, parameter):
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
         if isinstance(output_MATILDA[1], float):
             anchored_text = AnchoredText('NS coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
-<<<<<<< HEAD
-        elif obs is None:
-=======
         elif 'Qobs' not in plot_data.columns:
->>>>>>> c35373e6397964164b52fd399a2fcbd48da028ea
             anchored_text = AnchoredText(' ', loc=2, frameon=False)
         else:
             anchored_text = AnchoredText('NS coeff exceeds boundaries', loc=2, frameon=False)
@@ -975,7 +970,7 @@ def MATILDA_plots(output_MATILDA, parameter):
                 parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[-1])[:4],
                 size=14)
         else:
-            plt.suptitle(parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[1])[
+            plt.suptitle(parameter.freq_long + " MATILDA simulation for the period " + str(plot_data.index.values[0])[
                                                                                        :4] + "-" + str(
                 plot_data.index.values[-1])[:4], size=14)
         handles, labels = ax2.get_legend_handles_labels()
@@ -1006,7 +1001,7 @@ def MATILDA_plots(output_MATILDA, parameter):
                          size=14)
         else:
             fig.suptitle(parameter.freq_long + " output from the HBV model in the period " + str(
-                plot_data.index.values[1])[
+                plot_data.index.values[0])[
                                                                                              :4] + "-" + str(
                 plot_data.index.values[-1])[:4], size=14)
         plt.tight_layout()

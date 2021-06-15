@@ -14,11 +14,11 @@ from MATILDA_slim import MATILDA
 
 ## Model configuration
 # Directories
-cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/"
-glacier_profile = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/glacier_profile.txt")
-output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/bash_kaindy"
+cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Kysylsuu/"
+glacier_profile = pd.read_csv(home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/kyzulsuu_glacier_profile.csv")
+output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/kyzulsuu"
 
-cmip_mean = pd.read_csv(cmip_data + "CMIP6_mean_41-75.9_1980-01-01-2100-12-31_downscaled.csv")
+cmip_mean = pd.read_csv(cmip_data + "CMIP6_mean_42.25-78.25_1980-01-01-2100-12-31_downscaled.csv")
 scenarios = ["cmip_2_6", "cmip_4_5", "cmip_8_5"]
 cmip_2_6 = cmip_mean[["time", "temp_26", "prec_26"]]
 cmip_4_5 = cmip_mean[["time","temp_45", "prec_45"]]
@@ -32,25 +32,32 @@ for i in cmip_dfs:
 ##
 parameter = MATILDA.MATILDA_parameter(cmip_4_5, set_up_start='2015-01-01 12:00:00', set_up_end='2020-12-31 12:00:00',
                                       sim_start='2021-01-01 12:00:00', sim_end='2100-12-31 12:00:00', freq="Y",
-                                      lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2250, ele_glac=4035, ele_cat=3485,
-                                      CFMAX_ice=2.5, CFMAX_snow=5, BETA=1, CET=0.15, FC=200, K0=0.055, K1= 0.055, K2=0.04,
-                                      LP=0.7, MAXBAS=2, PERC=2.5, UZL=60, TT_snow=-0.5, TT_rain=2, SFCF=0.7, CFR_ice=0.05,
-                                      CFR_snow= 0.05, CWH=0.1)
+                                      lat=42.25, area_cat=315.69,
+                                      area_glac=32.51, ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
+                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
+                                      CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
+                                      LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
 df_preproc = MATILDA.MATILDA_preproc(cmip_4_5, parameter)
-output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-#MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
+MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
 #
 output_MATILDA[6].show()
 
 ##
 for df, scen in zip(cmip_dfs, scenarios):
-    parameter = MATILDA.MATILDA_parameter(df, set_up_start='2015-01-01 12:00:00', set_up_end='2020-12-31 12:00:00',
+    parameter = MATILDA.MATILDA_parameter(df, set_up_start='2015-01-01 12:00:00',
+                                          set_up_end='2020-12-31 12:00:00',
                                           sim_start='2021-01-01 12:00:00', sim_end='2100-12-31 12:00:00', freq="Y",
-                                          lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2250, ele_glac=4035, ele_cat=3485,
-                                          CFMAX_ice=2.5, CFMAX_snow=5, BETA=1, CET=0.15, FC=200, K0=0.055, K1= 0.055, K2=0.04,
-                                          LP=0.7, MAXBAS=2, PERC=2.5, UZL=60, TT_snow=-0.5, TT_rain=2, SFCF=0.7, CFR_ice=0.05,
-                                          CFR_snow= 0.05, CWH=0.1)
+                                          lat=42.25, area_cat=315.69,
+                                          area_glac=32.51, ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936,
+                                          lr_prec=-0.0002503,
+                                          TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574,
+                                          CFR_snow=0.08765,
+                                          CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544,
+                                          K2=0.1277,
+                                          LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874,
+                                          CWH=0.011765)
     df_preproc = MATILDA.MATILDA_preproc(df, parameter)
     output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
     output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
@@ -119,7 +126,3 @@ for df, scen in zip(cmip_dfs, scenarios):
     plt.tight_layout()
     fig.set_size_inches(10, 6)
     plt.savefig("/home/ana/Desktop/" + str(scen) + "annual_cycle_meterological_data.png")
-
-plt.show()
-##
-

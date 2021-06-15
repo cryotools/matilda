@@ -38,7 +38,7 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, glacier_profile=glacier
                        sim_start='2011-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="W", area_cat=3.367, area_glac=1.581,
                        ele_dat=4025, ele_glac=4036, ele_cat=4025, hydro_year=10)
 
-output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile) # MATILDA model run + downscaling
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc, glacier_profile=glacier_profile2) # MATILDA model run + downscaling
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 #MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
 output_MATILDA[6].show()
