@@ -72,35 +72,14 @@ aws_D = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean'})
 aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
 
 
-#
-# aws = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv',
-#                   parse_dates=['datetime'], index_col='datetime')
-#
-#     ## TO BE REPLACED WHEN FULL SDSS DATA IS AVAILABLE AGAIN:
-# aws = aws.shift(periods=6, freq="H")                                     # Data is still not aligned with UTC
-#                                     # HAT WOHL MIT DEM PREPROCESSESING ZU TUN! TRITT BEIM ORIGINALFILE NICHT AUF.
-# aws = aws.tz_convert('UTC')
-# aws_temp = aws.drop(columns=['rh', 'prec', 'ws', 'wd'])                    # Need to be dataframes not series!
-#
-# ##
-# aws_prec = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_Rain_mm_Tot_2017-20.csv',
-#                    index_col='date/time', parse_dates=['date/time'])
-# aws_prec = aws_prec.tz_localize('UTC')
-# aws_prec = aws_prec.resample('H').sum()
-#
-# aws_wind = pd.read_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/AWS_atbs/download/atbs_WS_ms_S_WVT_2017-20.csv',
-#                    index_col='date/time', parse_dates=['date/time'])
-# aws_wind = aws_wind.tz_localize('UTC')
-# aws_wind = aws_wind.resample('H').mean()
-#
-# aws = pd.merge(aws_temp, aws_prec, how='inner', left_index=True, right_index=True)
-# aws = pd.merge(aws, aws_wind, how='inner', left_index=True, right_index=True)
-# aws.columns = ['t2m', 'tp', 'ws']
-#
-#
-#     # Application of transfer function to account for solid precipitation undercatch (Kochendorfer et.al. 2020)
-# aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
-#
+    # Application of transfer function to account for solid precipitation undercatch (Kochendorfer et.al. 2020)
+aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
+
+
+
+# aws[slice('2020-01-01', '2020-12-31')]['tp'] = np.NaN
+# aws.to_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/' + 'aws_preprocessed_2017-06_2021-05.csv')
+
 #     # Downscaling cannot cope with data gaps:                   But BCSD CAN!!!!!!
 # aws_D = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean'})
 # aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
@@ -178,8 +157,8 @@ x_predict = era_D[predict_slice].drop(columns=['tp'])
 y_predict = aws_D_int[predict_slice].drop(columns=['tp', 'ws'])
 
 prediction = sds.fit_dmodels(x_train, y_train, x_predict)
-sds.modcomp_plot(aws_D_int[predict_slice]['t2m'], x_predict[predict_slice]['t2m'], prediction['predictions'][predict_slice], ylabel='Temperature [K]')
-sds.dmod_score(prediction['predictions'], aws_D_int['t2m'], y_predict['t2m'], x_predict['t2m'])
+# sds.modcomp_plot(aws_D_int[predict_slice]['t2m'], x_predict[predict_slice]['t2m'], prediction['predictions'][predict_slice], ylabel='Temperature [K]')
+# sds.dmod_score(prediction['predictions'], aws_D_int['t2m'], y_predict['t2m'], x_predict['t2m'])
 
 
 # Apply best model on full training and prediction periods
@@ -229,7 +208,7 @@ y_predict = t_corr_D[predict_slice]
 
 prediction = sds.fit_dmodels(x_train, y_train, x_predict)
 # sds.modcomp_plot(t_corr_D[plot_slice]['t2m'], x_predict[plot_slice]['t2m'], prediction['predictions'][plot_slice], ylabel='Temperature [K]')
-sds.dmod_score(prediction['predictions'], t_corr_D['t2m'], y_predict['t2m'], x_predict['t2m'])
+# sds.dmod_score(prediction['predictions'], t_corr_D['t2m'], y_predict['t2m'], x_predict['t2m'])
 
 
 # Apply best model on full training and prediction periods
@@ -246,12 +225,12 @@ t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 
 
 # # Compare results with training and target data:
-# freq = 'M'
-# fig, ax = plt.subplots(figsize=(12,8))
-# t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
-# x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
-# y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
-
+freq = 'M'
+fig, ax = plt.subplots(figsize=(12,8))
+t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
+x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
+y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
+plt.show()
 # compare = pd.concat({'cmip6fitted': t_corr_cmip['t2m'][final_train_slice], 'cmip6': x_predict['t2m'][final_train_slice],
 #                      'era5fitted': y_predict['t2m'][final_train_slice]}, axis=1)
 # compare.describe()

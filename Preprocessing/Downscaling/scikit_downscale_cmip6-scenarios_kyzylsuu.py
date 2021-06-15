@@ -27,7 +27,7 @@ from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
 # interactive plotting?
 # plt.ion()
 
-
+wd
 
 ##########################
 #   Data preparation:    #
