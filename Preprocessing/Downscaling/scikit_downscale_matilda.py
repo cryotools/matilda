@@ -8,6 +8,17 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from skdownscale.pointwise_models import PureAnalog, AnalogRegression
 from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
+from pathlib import Path
+import sys
+import socket
+host = socket.gethostname()
+if 'node' in host:
+    home = '/data/projects/ebaca'
+elif 'cirrus' in host:
+    home = '/data/projects/ebaca'
+else:
+    home = str(Path.home()) + '/Seafile'
+sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Preprocessing/Downscaling')
 from utils import prob_plots
 
 

@@ -1,7 +1,10 @@
 from pathlib import Path
 import sys
 import socket
-
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+from Preprocessing_functions import consec_days
 host = socket.gethostname()
 if 'node' in host:
     home = '/data/projects/ebaca'
@@ -10,27 +13,36 @@ elif 'cirrus' in host:
 else:
     home = str(Path.home()) + '/Seafile'
 wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-from Preprocessing_functions import consec_days
+
 
 plt.ion()
 
 ### All datasets:
 
-met = pd.read_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
-                  'kyzylsuu_ERA5_Land_1982_2020_42.2_78.2_fitted2AWS.csv', parse_dates=['time'], index_col='time')
-met.t2m = met.t2m + 700 * 0.006  # Rough linear scaling to gauging station altitude
+met = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/' + 'aws_preprocessed_2017-06_2021-05.csv',
+                  parse_dates=['time'], index_col='time')
 
-hydromet = pd.read_csv(home + '/EBA-CA/Azamat_AvH/workflow/data/Runoff/' +
-                       'obs_kyzylsuu_runoff_Hydromet.csv', parse_dates=['Date'], index_col='Date')
+manual = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
+                       'runoff_bashkaindy_2017-2019_manual_gauging.csv', parse_dates=['zeit'], index_col='zeit')
 
-bakyt = pd.read_csv(home + '/EBA-CA/Azamat_AvH/workflow/data/Runoff/' +
-                    'Kyzylsuu_bakyt_runoff.csv', parse_dates=['time'], index_col='time')
+mukhammed = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
+                        'gauging_report_mukhammed_2019.csv', parse_dates=['time'], index_col='time')
 
-kashkator = pd.read_csv(home + '/EBA-CA/Azamat_AvH/workflow/data/Runoff/' +
-                        'kashkator_bakyt_runoff.csv', parse_dates=['Date'], index_col='Date')
+
+ott = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' + 'ott_pressure_2019-2020.csv',
+                  parse_dates=['time'], index_col='time')
+
+
+pd.merge(manual, ott, how='inner', left_index=True, right_index=True)
+
+
+plt.scatter(manual['pegel'], manual['abfluss'])
+
+manual['pegel']
+z = np.polyfit(manual['abfluss'], manual['pegel'], 1)
+p = np.poly1d(z)
+x = pd.DataFrame(p(X), index=Y.index)
+plt.plot(x, "r--", **kwargs)
 
 # t = slice('2017-01-01', '2018-12-31')
 # d = {'HydroM': hydromet[t]['Qobs'], 'Bakyt': bakyt[t]['Qobs'], 'Kashkator': kashkator[t]['Qobs']}
@@ -61,17 +73,6 @@ hydromet[slice('1997-12-01', '1997-12-20')] = hydromet[slice('1997-12-01', '1997
 gaps = [slice('1991-12-01', '1992-12-31'), slice('2008-01-01', '2009-12-31'), slice('2014-01-01', '2017-05-03')]
 for i in gaps: hydromet[i] = np.NaN
 
-
-obs["Qobs"] = np.where(obs["month"] < 5, 0, obs["Qobs"])
-obs["Qobs"] = np.where(obs["month"] > 10, 0, obs["Qobs"])
-
-## Bakyt:
-bakyt.plot(figsize=(15, 6))
-
-
-
-## Kashkator:
-kashkator.plot(figsize=(15, 6))
 
 
 

@@ -36,11 +36,11 @@ def sdss_open(path, celsius=False, resample=True, tz_localize = True, timezone =
 
 def lapseR(high_values, low_values, alt_high, alt_low, unit='K/m',
            seasonal=False, season=None, summer=[4,5,6,7,8,9,10,11], winter=[12,1,2,3]):
-    if seasonal and season is 'summer':
+    if seasonal and season == 'summer':
         lapseR = (high_values[high_values.index.month.isin(summer)].mean()
                   - low_values[low_values.index.month.isin(summer)].mean()) / (alt_high - alt_low)
         print('The lapse rate between', alt_low, 'm and', alt_high, 'm in', season, 'is', round(lapseR, 5), unit)
-    elif seasonal and season is 'winter':
+    elif seasonal and season == 'winter':
         lapseR = (high_values[high_values.index.month.isin(winter)].mean()
                   - low_values[low_values.index.month.isin(winter)].mean()) / (alt_high - alt_low)
         print('Lapse rate between', alt_low, 'm and', alt_high, 'm in', season, 'is', round(lapseR, 5), unit)
