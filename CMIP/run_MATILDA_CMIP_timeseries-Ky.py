@@ -30,17 +30,17 @@ for i in cmip_dfs:
     i.columns = ['TIMESTAMP', 'T2', 'RRR']
 
 ##
-parameter = MATILDA.MATILDA_parameter(cmip_4_5, set_up_start='2015-01-01 12:00:00', set_up_end='2020-12-31 12:00:00',
+parameter = MATILDA.MATILDA_parameter(cmip_dfs[0], set_up_start='2015-01-01 12:00:00', set_up_end='2020-12-31 12:00:00',
                                       sim_start='2021-01-01 12:00:00', sim_end='2100-12-31 12:00:00', freq="Y",
                                       lat=42.25, area_cat=315.69,
                                       area_glac=32.51, ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
                                       LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
-df_preproc = MATILDA.MATILDA_preproc(cmip_4_5, parameter)
+df_preproc = MATILDA.MATILDA_preproc(cmip_dfs[0], parameter)
 output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
+#MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
 #
 output_MATILDA[6].show()
 
@@ -126,3 +126,39 @@ for df, scen in zip(cmip_dfs, scenarios):
     plt.tight_layout()
     fig.set_size_inches(10, 6)
     plt.savefig("/home/ana/Desktop/" + str(scen) + "annual_cycle_meterological_data.png")
+
+## Test
+output_DDM = output_MATILDA[0].copy()
+
+  # determining from when to when the hydrological year is
+output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1,
+                                    output_DDM.index.year)
+# initial smb from the glacier routine script in m w.e.
+m = sum((glacier_profile["Area"] * parameter.area_cat) * glacier_profile["WE"])
+initial_smb = m / 1000 # in m
+# initial area
+initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
+# dataframe with the smb change per hydrological year in m w.e.
+glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9}).reset_index()  # do we have to scale this?
+# adding the changes to get the whole change in comparison to the initial area
+glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
+# percentage of how much of the initial mass melted
+glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / initial_smb) * 100)
+
+glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[parameter.area_glac]})
+
+output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"].copy()
+for i in range(len(glacier_change)):
+    year = glacier_change["water_year"][i]
+    smb_sum = glacier_change["smb_sum"][i]
+    smb = int(-glacier_change["smb_percentage"][i])
+    if smb <=99:
+        # getting the right row from the lookup table depending on the smb
+        area_melt = lookup_table.iloc[smb]
+        # getting the new glacier area by multiplying the initial area with the area changes
+        new_area = np.nansum((area_melt.values * (initial_area.values)))*parameter.area_cat
+    else:
+        new_area = 0
+    # multiplying the output with the fraction of the new area
+    glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_sum":smb_sum}, ignore_index=True)
+    output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])

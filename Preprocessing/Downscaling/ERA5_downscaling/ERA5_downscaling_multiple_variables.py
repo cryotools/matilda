@@ -7,14 +7,14 @@ from misc_functions.inspect_values import mmm_nan, mmm_nan_name, check, check_fo
 from fundamental_physical_constants import g, M, R, teten_a1, teten_a3, teten_a4, zero_temperature
 from misc_functions.calculate_parameters import calculate_ew; import matplotlib.pyplot as plt
 
-working_directory = home + '/Seafile/Ana-Lena_Phillip/data/'
-shape_file = working_directory + 'input_output/static/Shapefiles/rgi_glacierno1.shp'
-era5_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/ERA5/global/ERA5_global_z.nc'
+working_directory = home + ""
+shape_file = working_directory + ""
+era5_static_file = home + ""
 
-era5_file = working_directory + 'input_output/ERA5/No1_Urumqi_ERA5_2000_201907.nc'
-output_csv = working_directory + 'input_output/input/20200810_Urumqi_ERA5_2000_2019.csv'
+era5_file = working_directory + ""
+output_csv = working_directory + ""
 
-target_altitude = 4025
+target_altitude = 0
 timezone_difference_to_UTC = 6
 margin = 0.2
 z0 = 0.00212                                # (m) mean between roughness firn 4 mm and fresh snow 0.24 mm
@@ -68,7 +68,6 @@ es_d2m = teten_a1 * np.exp(teten_a3 * (era5['d2m'].values-zero_temperature)/(era
 es_t2m = teten_a1 * np.exp(teten_a3 * (era5['t2m'].values-zero_temperature)/(era5['t2m'].values-teten_a4))
 relative_humidity = 100 * (es_d2m)/(es_t2m)
 
-##############################%^%%%%%%IMPORT
 ### TP, strd and ssrd cumulative value over 24 hours, therefore use diff, only for values at midnight for that use orginal value
 total_precipitation = np.append(0, (era5.tp.diff(dim='time').values.flatten())) #+ height_diff * lapse_rate_total_precipitation))         ### convert from m to mm
 total_precipitation[total_precipitation < 0] = era5.tp.values[total_precipitation < 0]
