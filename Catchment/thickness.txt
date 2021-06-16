@@ -1,6 +1,0 @@
-/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/RGI60-13.45335_thickness.tif
-/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/RGI60-13.45515_thickness.tif
-/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/RGI60-13.45514_thickness.tif
-/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/RGI60-13.45513_thickness.tif
-/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/RGI60-13.45517_thickness.tif
-/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/RGI60-13.45334_thickness.tif
