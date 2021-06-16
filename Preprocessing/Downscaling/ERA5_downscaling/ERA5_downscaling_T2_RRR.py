@@ -7,14 +7,14 @@ from misc_functions.inspect_values import mmm_nan, mmm_nan_name, check, check_fo
 from fundamental_physical_constants import g, M, R, teten_a1, teten_a3, teten_a4, zero_temperature
 from misc_functions.calculate_parameters import calculate_ew; import matplotlib.pyplot as plt
 
-working_directory = home + '/Seafile/Ana-Lena_Phillip/data/'
-#shape_file = "Seafile/Masterarbeit/Bash_Kaindy/Delineation/rgi_glacierno1.shp"
-era5_static_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/global/ERA5_global_z.nc'
+working_directory = home + ""
+shape_file = ""
+era5_static_file = home + ""
 
-era5_file = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/new_grib_conversion/no182_ERA5_Land_2000_202011_no182.nc'
-output_csv = working_directory + 'input_output/input/ERA5/Tien-Shan/At-Bashy/no182_ERA5_Land_2000_202011_no182_41_75.9.csv'
+era5_file = working_directory + ""
+output_csv = working_directory + ""
 
-target_altitude = 3360
+target_altitude = 0
 margin = 0.2
 z0 = 0.00212                                # (m) mean between roughness firn 4 mm and fresh snow 0.24 mm
 lapse_rate_temperature = -0.006             # K/m  temperature lapse rate
@@ -90,22 +90,5 @@ check(temperature,'T2',316.16,225.16)
 check(total_precipitation,'TP',25.0,0.0)
 
 raw_data = {'TIMESTAMP': time_local, 'T2': temperature, 'RRR': total_precipitation}
-df_41_76 = pd.DataFrame(raw_data, columns = ['TIMESTAMP', 'T2',  'RRR'])
+df = pd.DataFrame(raw_data, columns = ['TIMESTAMP', 'T2',  'RRR'])
 #df.to_csv(output_csv,index=False)
-
-aws = pd.read_csv("/home/ana/Seafile/Tianshan_data/AWS_atbs/atbs_met-data_2017-2020.csv")
-aws.rename({'datetime': 'TIMESTAMP'}, axis=1, inplace=True)
-aws = aws.drop([0, 29160, 29161, 29162, 29163, 29164, 29165, 29166, 29167, 29168, 29169, 29170])
-aws = aws.reset_index()
-
-data_all = pd.DataFrame(aws, columns=["TIMESTAMP", "prec"])
-data_all["df_41_76"] = df_41_76["RRR"]
-data_all["df_411_76"] = df_411_76["RRR"]
-data_all["df_411_759"] = df_411_759["RRR"]
-data_all["df_41_759"] = df_41_759["RRR"]
-
-stats = data_all.describe()
-sum = pd.DataFrame(data_all.sum())
-sum.columns = ["sum"]
-sum = sum.transpose()
-stats = stats.append(sum)
