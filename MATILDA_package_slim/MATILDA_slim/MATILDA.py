@@ -908,10 +908,14 @@ def MATILDA_plots(output_MATILDA, parameter):
     def plot_meteo(plot_data, parameter):
         fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10, 6))
         ax1.plot(plot_data.index.to_pydatetime(), (plot_data["T2"]), c="#d7191c")
-        ax2.bar(plot_data.index.to_pydatetime(), plot_data["RRR"], width=10, color="#2c7bb6")
+        if parameter.freq == "Y":
+            ax2.plot(plot_data.index.to_pydatetime(), plot_data["RRR"], color="#2c7bb6")
+        else:
+            ax2.bar(plot_data.index.to_pydatetime(), plot_data["RRR"], width=10, color="#2c7bb6")
         ax3.plot(plot_data.index.to_pydatetime(), plot_data["PE"], c="#008837")
         plt.xlabel("Date", fontsize=9)
         ax1.grid(linewidth=0.25), ax2.grid(linewidth=0.25), ax3.grid(linewidth=0.25)
+        ax3.sharey(ax2)
         ax1.set_title("Mean temperature", fontsize=9)
         ax2.set_title("Precipitation sum", fontsize=9)
         ax3.set_title("Evapotranspiration sum", fontsize=9)
