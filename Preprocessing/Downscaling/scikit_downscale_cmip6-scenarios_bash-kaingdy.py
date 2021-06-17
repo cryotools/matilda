@@ -61,6 +61,11 @@ cmip_temp = cmip.filter(like='temp').resample('D').mean()
 cmip_temp = cmip_temp.interpolate(method='spline', order=2)  
 cmip_prec = cmip.filter(like='prec').resample('D').sum()
 
+# cmip_temp[slice('2021-01-01', '2040-12-31')]['temp_26'].resample('Y').mean().plot()
+# plt.show()
+# plt.ioff()
+
+
 
 #################################
 #    Downscaling temperature    #
@@ -88,7 +93,7 @@ fig, ax = plt.subplots(figsize=(12, 8))
 # for i in list(t_corr_cmip): trendline(t_corr_cmip[i].resample(freq).mean())
 t_corr_cmip.resample(freq).mean().plot(ax=ax, legend=True)
 y_predict['t2m'].resample(freq).mean().plot(label='era5l-fitted', ax=ax, legend=True)
-
+plt.show()
 
 
 #################################
@@ -112,21 +117,23 @@ for s in list(cmip_prec):
     best_mod.fit(x_train, y_train)
     p_corr_cmip[s] = best_mod.predict(x_predict)
 
-# freq = 'Y'
-# fig, ax = plt.subplots(figsize=(12, 8))
-# for i in list(p_corr_cmip): trendline(p_corr_cmip[i].resample(freq).sum())
-# p_corr_cmip.resample(freq).sum().plot(ax=ax, legend=True, alpha=0.5)
-# y_predict['tp'].resample(freq).sum().plot(label='era5l-fitted', ax=ax, legend=True)
-#
-#
-# freq = 'Y'
-# scen = '45'
-# time = slice('1982-01-01', '2100-12-31')
-# fig, ax = plt.subplots(figsize=(12, 8))
-# trendline(p_corr_cmip['prec_' + scen][time].resample(freq).sum())
-# p_corr_cmip['prec_' + scen][time].resample(freq).sum().plot(ax=ax, label='cmip-fit_'+scen, legend=True)
-# trendline(cmip_prec['prec_' + scen][time].resample(freq).sum())
-# cmip_prec['prec_' + scen][time].resample(freq).sum().plot(label='cmip-orig_'+scen, ax=ax, legend=True)
+freq = 'Y'
+fig, ax = plt.subplots(figsize=(12, 8))
+for i in list(p_corr_cmip): trendline(p_corr_cmip[i].resample(freq).sum())
+p_corr_cmip.resample(freq).sum().plot(ax=ax, legend=True, alpha=0.5)
+y_predict['tp'].resample(freq).sum().plot(label='era5l-fitted', ax=ax, legend=True)
+plt.show()
+
+freq = 'Y'
+scen = '26'
+time = slice('1982-01-01', '2100-12-31')
+fig, ax = plt.subplots(figsize=(12, 8))
+trendline(p_corr_cmip['prec_' + scen][time].resample(freq).sum())
+ax.set_ylim([50,800])
+p_corr_cmip['prec_' + scen][time].resample(freq).sum().plot(ax=ax, label='cmip-fit_'+scen, legend=True)
+trendline(cmip_prec['prec_' + scen][time].resample(freq).sum())
+cmip_prec['prec_' + scen][time].resample(freq).sum().plot(label='cmip-orig_'+scen, ax=ax, legend=True)
+plt.show()
 
 
 #######################################
