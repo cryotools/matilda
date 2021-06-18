@@ -1,6 +1,5 @@
 ##
 import warnings
-warnings.filterwarnings("ignore")  # sklearn
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -9,6 +8,8 @@ import salem
 from pathlib import Path
 import sys
 import socket
+import os
+warnings.filterwarnings("ignore")  # sklearn
 host = socket.gethostname()
 if 'node' in host:
     home = '/data/projects/ebaca'
@@ -17,7 +18,6 @@ elif 'cirrus' in host:
 else:
     home = str(Path.home()) + '/Seafile'
 wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
-import os
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
 import Downscaling.scikit_downscale_matilda as sds
@@ -70,10 +70,6 @@ aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
     # Downscaling cannot cope with data gaps:                   But BCSD CAN!!!!!!
 aws_D = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean'})
 aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
-
-
-    # Application of transfer function to account for solid precipitation undercatch (Kochendorfer et.al. 2020)
-aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
 
 
 
@@ -214,26 +210,42 @@ prediction = sds.fit_dmodels(x_train, y_train, x_predict)
 # Apply best model on full training and prediction periods
 
 x_train = cmip[final_train_slice].drop(columns=['tp'])
-y_train = t_corr[final_train_slice]
+y_train = t_corr_D[final_train_slice]
 x_predict = cmip[final_predict_slice].drop(columns=['tp'])
-y_predict = t_corr[final_predict_slice]
+y_predict = t_corr_D[final_predict_slice]
 
-best_mod = prediction['models']['BCSD: BcsdTemperature']
+best_mod = prediction['models']['GARD: LinearRegression']        #  'BCSD: BcsdTemperature'
 best_mod.fit(x_train, y_train)
 t_corr_cmip = pd.DataFrame(index=x_predict.index)
 t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 
 
-# # Compare results with training and target data:
-freq = 'M'
-fig, ax = plt.subplots(figsize=(12,8))
-t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
-x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
-y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
-plt.show()
+# Compare results with training and target data:
+# freq = 'M'
+# fig, ax = plt.subplots(figsize=(12,8))
+# t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
+# x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
+# y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
+# plt.show()
 # compare = pd.concat({'cmip6fitted': t_corr_cmip['t2m'][final_train_slice], 'cmip6': x_predict['t2m'][final_train_slice],
 #                      'era5fitted': y_predict['t2m'][final_train_slice]}, axis=1)
 # compare.describe()
+
+
+
+t = slice('2040-01-01','2041-12-31')
+freq = 'D'
+fig, ax = plt.subplots(figsize=(12,8))
+t_corr_cmip['t2m'][t].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
+x_predict['t2m'][t].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
+plt.show()
+
+
+
+t_corr_cmip.to_csv('/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/downscaling_error/cmip6_t2m_linearRegfitted2era5llinearRegfitted_bash-kaingdy_2000-2100.csv')
+t_corr.to_csv('/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/downscaling_error/era5_t2m_linearRegfitted2awslfitted_bash-kaingdy_1982-2020.csv')
+
+
 
 
 #################################
@@ -363,10 +375,38 @@ p_corr_cmip['tp'] = best_mod.predict(x_predict)
 #   Saving final time series   #
 ################################
 
-cmip_corr = pd.concat([t_corr_cmip, p_corr_cmip], axis=1)
-era_corr = pd.concat([t_corr, p_corr], axis=1)
-cmip_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/CMIP6/'
-                 + 'no182_CMIP6_ssp2_4_5_mean_2000_2100_41-75.9_fitted2ERA5Lfit.csv')
-era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
-                'no182_ERA5_Land_1982_2020_41_75.9_fitted2AWS.csv')
+# cmip_corr = pd.concat([t_corr_cmip, p_corr_cmip], axis=1)
+# era_corr = pd.concat([t_corr, p_corr], axis=1)
+# cmip_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/CMIP6/'
+#                  + 'no182_CMIP6_ssp2_4_5_mean_2000_2100_41-75.9_fitted2ERA5Lfit.csv')
+# era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
+#                 'no182_ERA5_Land_1982_2020_41_75.9_fitted2AWS.csv')
 
+
+## Check weird peaks in downscaled data:
+
+def daily_annual_T(x, t):
+    x = x[t][['t2m']]
+    x["month"] = x.index.month
+    x["day"] = x.index.day
+    day1 = x.index[0]
+    x = x.groupby(["month", "day"]).mean()
+    date = pd.date_range(day1, freq='D', periods=len(x)).strftime('%Y-%m-%d')
+    x = x.set_index(pd.to_datetime(date))
+    return x
+
+t = slice('2000-01-01', '2100-12-30')
+cmip_annual = daily_annual_T(cmip, t)
+t_corr_annual = daily_annual_T(t_corr_cmip, t)
+fig, ax = plt.subplots()
+cmip_annual['t2m'].plot(label='original', ax=ax, legend=True)
+t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
+plt.show()
+
+t = slice('2000-01-01', '2020-12-30')
+era_annual = daily_annual_T(era, t)
+t_corr_annual = daily_annual_T(t_corr, t)
+fig, ax = plt.subplots()
+era_annual['t2m'].plot(label='original', ax=ax, legend=True)
+t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
+plt.show()

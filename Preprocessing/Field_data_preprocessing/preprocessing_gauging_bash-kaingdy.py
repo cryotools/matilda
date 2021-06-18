@@ -27,26 +27,36 @@ plt.ioff()
 met = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/' + 'aws_preprocessed_2017-06_2021-05.csv',
                   parse_dates=['time'], index_col='time')
 
-manual = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
-                       'runoff_bashkaindy_2017-2019_manual_gauging.csv', parse_dates=['zeit'], index_col='zeit')
-
 mukhammed = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
                         'gauging_report_mukhammed_2019.csv', parse_dates=['time'], index_col='time')
 # Toll, das sind gerundete Werte...
 
-ott = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' + 'ott_pressure_2019-2020.csv',
+ott20 = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' + 'ott_pressure_2019-2020.csv',
                   parse_dates=['time'], index_col='time')
+ott20 = ott20.resample('D').mean()
+
+ott19 = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' + 'OTT2019_recalculated.csv',
+                  parse_dates=['time'], index_col='time')
+ott19 = ott19[slice('2019-11-22')]
+
+ott = pd.concat([ott19[['pressure']], ott20], axis=0)
+
+manual = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
+                       'runoff_bashkaindy_2017-2019_manual_gauging.csv', parse_dates=['time'], index_col='time')
+
+manual = pd.merge(manual, ott, how='inner', left_index=True, right_index=True)
+
 
 ##  Function of pressure and water level:
 
 # Linear/Polynomial fit:
-X = mukhammed['pressure']
-Y = mukhammed['water_level']
+X = manual['pressure']
+Y = manual['water_level']
 z = np.polyfit(X, Y, 2)
 p = np.poly1d(z)
 
 fig, ax = plt.subplots()
-plt.scatter(mukhammed['pressure'], mukhammed['water_level'])
+plt.scatter(X, Y)
 plt.plot(X, p(X))
 plt.show()
 
@@ -63,8 +73,8 @@ plt.show()
 ##  Function of water level and discharge:
 
 # Linear/Polynomial fit:
-X = manual['pegel']
-Y = manual['abfluss']
+X = manual['water_level']
+Y = manual['discharge']
 z = np.polyfit(X, Y,1)
 p = np.poly1d(z)
 
@@ -85,13 +95,13 @@ plt.show()
 
 ## Can we not just make a function of pressure to discharge?
 plt.scatter(mukhammed['pressure'], mukhammed['discharge'])
-X = mukhammed['pressure']
-Y = mukhammed['discharge']
-z = np.polyfit(X, Y, 2)
+X = manual['pressure']
+Y = manual['discharge']
+z = np.polyfit(X, Y, 1)
 p = np.poly1d(z)
 
 fig, ax = plt.subplots()
-plt.scatter(mukhammed['pressure'], mukhammed['discharge'])
+plt.scatter(manual['pressure'], manual['discharge'])
 plt.plot(X, p(X))
 plt.show()
 
