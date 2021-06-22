@@ -10,12 +10,32 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from MATILDA_slim import MATILDA
+## MATILDA initial run
+df = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182_ERA5_Land_1982_2020_41_75.9_fitted2AWS.csv")
+obs_poly = pd.read_csv(home + "/Seafile/Tianshan_data/Gauging_station_Bash-Kaingdy/preprocessed/discharge_bahskaingdy_polyfitted_2019-04_11-2020.csv")
+obs_double = pd.read_csv(home + "/Seafile/Tianshan_data/Gauging_station_Bash-Kaingdy/preprocessed/discharge_bahskaingdy_double-polyfitted_2019-04_11-2020.csv")
+glacier_profile = pd.read_csv(home + "/Seafile/Masterarbeit/Data/glacier_profile.txt")
+
+df.columns = ["TIMESTAMP", "T2", "RRR"]
+obs_poly.columns = ['Date', 'Qobs']
+obs_double.columns = ['Date', 'Qobs']
+
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2018-01-01 12:00:00', set_up_end='2029-12-31 12:00:00',
+                                      sim_start='2019-01-01 12:00:00', sim_end='2020-12-31 12:00:00', freq="W",
+                                      lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2250, ele_glac=4035, ele_cat=3485,
+                                      CFMAX_ice=2.5, CFMAX_snow=5, BETA=1, CET=0.15, FC=200, K0=0.055, K1= 0.055, K2=0.04,
+                                      LP=0.7, MAXBAS=2, PERC=2.5, UZL=60, TT_snow=-0.5, TT_rain=2, SFCF=0.7, CFR_ice=0.05,
+                                      CFR_snow= 0.05, CWH=0.1)
+df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs_double)
+output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
+output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
+
+output_MATILDA[6].show()
 
 
 ## Model configuration
 # Directories
 cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/"
-glacier_profile = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/glacier_profile.txt")
 output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/bash_kaindy"
 
 cmip_mean = pd.read_csv(cmip_data + "CMIP6_mean_41-75.9_1980-01-01-2100-12-31_downscaled.csv")
@@ -122,5 +142,19 @@ for df, scen in zip(cmip_dfs, scenarios):
     plt.savefig("/home/ana/Desktop/" + str(scen) + "annual_cycle_meterological_data.png")
 
 plt.show()
-##
+## Moving average test
+output = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/bash_kaindy_cmip_2_62021_2100_2021-06-15_19:48:58/model_output_2021-2100.csv").set_index("TIMESTAMP")
+output.index = pd.to_datetime(output.index)
 
+plot_data = output.resample("Y").agg({"Q_Total": "sum"}, skipna=False)
+plot_data['Q10'] = plot_data.Q_Total.rolling(10, min_periods=1).mean()
+
+plt.plot(plot_data.index.to_pydatetime(), (plot_data["Q_Total"]), c="black")
+plt.plot(plot_data.index.to_pydatetime(), (plot_data["Q10"]), c="#d7191c")
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+plt.legend(labels =['MATILDA Output', '10-years Q'], fontsize=14)
+plt.title('Yearly runoff in Bash Kaindy for the CMIP 2.6 scenario', fontsize=14)
+plt.xlabel('Year', fontsize=10)
+plt.ylabel('Discharge [mm]', fontsize=10)
+plt.show()
