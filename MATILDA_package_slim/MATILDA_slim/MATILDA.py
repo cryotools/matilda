@@ -8,6 +8,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import scipy.signal as ss
+import hydroeval
 from datetime import date, datetime
 import os
 import matplotlib.pyplot as plt
@@ -841,13 +842,17 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             nash_sut = "error"
         return nash_sut
 
+    import hydroeval
     if obs is not None:
         nash_sut = NS(output_MATILDA)
+        kge, r, alpha, beta = hydroeval.evaluator(hydroeval.kge, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
 
         if nash_sut == "error":
             print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
         else:
             print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
+            print("The KGE coefficient of the MATILDA run is " + str(round(float(kge), 2)))
+
     if obs is None:
         nash_sut = str("No observations available to calculate the Nash–Sutcliffe model efficiency coefficient")
 
