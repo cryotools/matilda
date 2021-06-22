@@ -6,6 +6,6 @@ url='#',
 author='ana',
 author_email='testr@gmail.com',
 license='MIT',
-install_requires=['pandas' , 'xarray', 'matplotlib', 'numpy', 'scipy', 'datetime'], 
+install_requires=['pandas' , 'xarray', 'matplotlib', 'numpy', 'scipy', 'datetime', 'hydroeval'], 
 packages=['MATILDA_slim'],
 zip_safe=False)

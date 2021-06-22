@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
 from MATILDA_slim import MATILDA
+import hydroeval
 
 ## Setting file paths and parameters
 working_directory = home + "/Seafile/Ana-Lena_Phillip/data/"
@@ -44,6 +45,11 @@ output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 output_MATILDA[6].show()
 
 output_MATILDA[4].to_csv("/home/ana/Desktop/2011_2018_2021-05-13_11:34:23/glacier_melt.csv")
+
+nse = hydroeval.evaluator(hydroeval.nse, output_MATILDA[0]["Q_Total"], output_MATILDA[0]["Qobs"])
+
+kge, r, alpha, beta = hydroeval.evaluator(hydroeval.kge, output_MATILDA[0]["Q_Total"], output_MATILDA[0]["Qobs"])
+
 
 ## Preparing data to HBV Light
 data = output_MATILDA[0][["T2", "RRR", "PE", "Qobs"]]
