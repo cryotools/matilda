@@ -20,44 +20,41 @@ wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
 
 
 plt.ion()
-plt.ioff()
+# plt.ioff()
 
 ### All datasets:
 
 met = pd.read_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/' + 'aws_preprocessed_2017-06_2021-05.csv',
                   parse_dates=['time'], index_col='time')
 
-mukhammed = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
-                        'gauging_report_mukhammed_2019.csv', parse_dates=['time'], index_col='time')
+# mukhammed = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
+#                         'gauging_report_mukhammed_2019.csv', parse_dates=['time'], index_col='time')
 # Toll, das sind gerundete Werte...
 
-ott20 = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' + 'ott_pressure_2019-2020.csv',
+ott = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' + 'ott_pressure_2019-2020.csv',
                   parse_dates=['time'], index_col='time')
-ott20 = ott20.resample('D').mean()
+ott = ott.resample('D').mean()
 
-ott19 = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' + 'OTT2019_recalculated.csv',
-                  parse_dates=['time'], index_col='time')
-ott19 = ott19[slice('2019-11-22')]
 
-ott = pd.concat([ott19[['pressure']], ott20], axis=0)
-
-manual = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
+manual_full = pd.read_csv(home + '/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
                        'runoff_bashkaindy_2017-2019_manual_gauging.csv', parse_dates=['time'], index_col='time')
 
-manual = pd.merge(manual, ott, how='inner', left_index=True, right_index=True)
+manual = pd.merge(manual_full, ott, how='inner', left_index=True, right_index=True)
 
 
 ##  Function of pressure and water level:
 
 # Linear/Polynomial fit:
-X = manual['pressure']
-Y = manual['water_level']
+X = manual['pressure'].values
+Y = manual['water_level'].values
 z = np.polyfit(X, Y, 2)
 p = np.poly1d(z)
 
+x_line = np.linspace(min(X), max(X), len(X))
+
 fig, ax = plt.subplots()
 plt.scatter(X, Y)
-plt.plot(X, p(X))
+plt.plot(x_line, p(x_line))
 plt.show()
 
 # Apply function to the pressure data:
@@ -73,14 +70,16 @@ plt.show()
 ##  Function of water level and discharge:
 
 # Linear/Polynomial fit:
-X = manual['water_level']
-Y = manual['discharge']
-z = np.polyfit(X, Y,1)
+X = manual_full['water_level'].values
+Y = manual_full['discharge'].values
+z = np.polyfit(X, Y, 2)
 p = np.poly1d(z)
+
+x_line = np.linspace(min(X), max(X), len(X))
 
 fig, ax = plt.subplots()
 plt.scatter(X, Y)
-plt.plot(X, p(X), 'r--')
+plt.plot(x_line, p(x_line), 'r--')
 plt.show()
 
 # Apply function to the pressure data:
@@ -89,20 +88,22 @@ ott['discharge_from_water_level'] = p(ott['water_level_poly'])
 fig, ax = plt.subplots()
 ott['discharge_from_water_level'].plot(ax=ax, c='red')
 ax2 = ax.twinx()
-ott['discharge_poly'].plot(ax=ax2)
+ott['water_level_poly'].plot(ax=ax2)
 plt.show()
 
 
-## Can we not just make a function of pressure to discharge?
-plt.scatter(mukhammed['pressure'], mukhammed['discharge'])
+
+## Can we not just make a function of pressure and discharge directly?
 X = manual['pressure']
 Y = manual['discharge']
-z = np.polyfit(X, Y, 1)
+z = np.polyfit(X, Y, 2)
 p = np.poly1d(z)
+
+x_line = np.linspace(min(X), max(X), len(X))
 
 fig, ax = plt.subplots()
 plt.scatter(manual['pressure'], manual['discharge'])
-plt.plot(X, p(X))
+plt.plot(x_line, p(x_line))
 plt.show()
 
 # Apply function to the pressure data:
@@ -115,10 +116,18 @@ ott['discharge_poly'].plot(ax=ax2)
 plt.show()
 
 
+fig, ax = plt.subplots()
+ott['discharge_from_water_level'].plot(ax=ax, c='red')
+ott['discharge_poly'].plot(ax=ax)
+plt.show()
+
+##
+
 ott[['discharge_poly']].to_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
-                               'preprocessed/discharge_bahskaingdy_polyfitted_2019-11_11-2020.csv')
+                               'preprocessed/discharge_bahskaingdy_polyfitted_2019-04_11-2020.csv')
 
-
+ott[['discharge_from_water_level']].to_csv('/home/phillip/Seafile/EBA-CA/Tianshan_data/Gauging_station_Bash-Kaingdy/' +
+                               'preprocessed/discharge_bahskaingdy_double-polyfitted_2019-04_11-2020.csv')
 
 
 
