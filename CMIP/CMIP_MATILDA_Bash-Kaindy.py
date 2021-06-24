@@ -13,30 +13,6 @@ cmip_trend = home + "/Seafile/Tianshan_data/CMIP/CMIP5/EC-EARTH_r6i1p1_r7i1p1_r8
 
 output = "test"
 
-##
-df_old = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/Old/book_chapter_data1981-2020_newTS.csv")
-df_old = df_old.set_index("time")
-df_old.index = pd.to_datetime(df_old.index, format="%d.%m.%Y %H:%M")
-df_old.index = pd.to_datetime(df_old.index)
-df_old = df_old["2001-01-01 00:00:00":"2018-11-01 23:00:00"]
-df_old = df_old.resample("M").sum()
-df_old.describe()
-
-df_grib = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/Old/no182_ERA5_Land_2000_202011_no182_41_75.9.csv")
-df_grib = df_grib.set_index("TIMESTAMP")
-df_grib.index = pd.to_datetime(df_grib.index)
-df_grib = df_grib["2001-01-01 00:00:00":"2018-11-01 23:00:00"]
-df_grib = df_grib.resample("M").sum()
-df_grib.describe()
-
-df_grib = pd.read_csv("/home/ana/Desktop/test.csv")
-df_grib = df_grib.set_index("TIMESTAMP")
-df_grib.index = pd.to_datetime(df_grib.index)
-df_grib = df_grib["2001-01-01 00:00:00":"2018-11-01 23:00:00"]
-df_grib = df_grib.resample("M").sum()
-df_grib.describe()
-
-
 ## MATILDA preparation
 df = pd.read_csv(input_csv)
 cmip_trend = pd.read_csv(cmip_trend)
