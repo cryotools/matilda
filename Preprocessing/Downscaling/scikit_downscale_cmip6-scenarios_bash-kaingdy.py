@@ -23,6 +23,7 @@ sys.path.append(wd)
 import Downscaling.scikit_downscale_matilda as sds
 from Preprocessing_functions import pce_correct, trendline
 from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
+from sklearn.linear_model import LinearRegression
 
 # interactive plotting?
 # plt.ion()
@@ -84,7 +85,7 @@ for s in list(cmip_temp):
     x_predict = pd.DataFrame(cmip_temp[s][predict_slice])
     y_predict = t_corr_D[predict_slice]
 
-    best_mod = BcsdTemperature(return_anoms=False)
+    best_mod = LinearRegression()
     best_mod.fit(x_train, y_train)
     t_corr_cmip[s] = best_mod.predict(x_predict)
 
