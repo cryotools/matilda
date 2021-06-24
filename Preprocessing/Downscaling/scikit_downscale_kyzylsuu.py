@@ -34,6 +34,34 @@ from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
 #   Data preparation:    #
 ##########################
 
+## AWS Chong Kyzylsuu:
+aws_temp = pd.read_csv('/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Weather station/' +
+                       'temp_kyzylsuu_2007-2015.csv',
+                       parse_dates=['time'], index_col='time')
+aws_temp['t2m'] = aws_temp['t2m'] + 273.15
+aws_temp_D = aws_temp.resample('D').mean()                # Precipitation data is daily!
+
+aws_prec = pd.read_csv('/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Weather station/' +
+                       'prec_kyzylsuu_2007-2014.csv',
+                       parse_dates=['time'], index_col='time')
+
+# Interpolate shorter data gaps and exclude the larger one to avoid NAs:
+
+# temp data gaps: 2010-03-30' to '2010-04-01', '2011-10-12' to '2011-10-31', '2014-05-02' to '2014-05-03',
+# '2015-06-05' to '2015-06-06'
+aws_temp_D_int1 = aws_temp_D[slice('2007-08-10', '2011-10-11')]
+aws_temp_D_int2 = aws_temp_D[slice('2011-11-01', '2016-01-01')]
+aws_temp_D_int1 = aws_temp_D_int1.interpolate(method='spline', order=2)
+aws_temp_D_int2 = aws_temp_D_int2.interpolate(method='spline', order=2)
+aws_temp_D_int =  pd.concat([aws_temp_D_int1,aws_temp_D_int2], axis=0)      # Data gap of 18 days in October 2011
+
+
+aws = pd.merge(aws_temp_D, aws_prec, how='outer', left_index=True, right_index=True)
+# aws.to_csv('/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Weather station/' +
+# 'met_data_full_kyzylsuu_2007-2015.csv')
+
+
+
 ## ERA5L Gridpoint:
 
 # Apply '/Ana-Lena_Phillip/data/scripts/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
@@ -55,24 +83,11 @@ era['tp'] = era['tp']*1000                   # Unit to mm
 
 era_D = era.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
 
-
-## AWS Chong Kyzylsuu:
-aws_temp = pd.read_csv('/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Weather station/' +
-                       'temp_kyzylsuu_2007-2015.csv',
-                       parse_dates=['time'], index_col='time')
-aws_temp['t2m'] = aws_temp['t2m'] + 273.15
-aws_temp_D = aws_temp.resample('D').mean()                # Precipitation data is daily!
-
-aws_prec = pd.read_csv('/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Weather station/' +
-                       'prec_kyzylsuu_2007-2014.csv',
-                       parse_dates=['time'], index_col='time')
-
-aws = pd.merge(aws_temp_D, aws_prec, how='outer', left_index=True, right_index=True)
-# aws.to_csv('/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Weather station/' +
-# 'met_data_full_kyzylsuu_2007-2015.csv')
-
-# temp data gaps: 2010-03-30' to '2010-04-01', '2011-10-12' to '2011-10-31', '2014-05-02' to '2014-05-03',
-# '2015-06-05' to '2015-06-06'
+# Include datagap from AWS to align both datasets
+era_temp_D = era_D[['t2m']]
+era_temp_D_int1 = era_temp_D[slice('2007-08-10', '2011-10-11')]
+era_temp_D_int2 = era_temp_D[slice('2011-11-01', '2016-01-01')]
+era_temp_D_int =  pd.concat([era_temp_D_int1, era_temp_D_int2], axis=0)      # Data gap of 18 days in October 2011
 
 
 ## CMIP6:
@@ -120,7 +135,6 @@ cmip = cmip.interpolate(method='spline', order=2)       # Only 3 days in 100 yea
 
 ## Step 1 - Downscale ERA5 using AWS
 
-# Apply BCSD-Temperature right away because it can cope with NAs
 
 final_train_slice = slice('2007-08-10', '2016-01-01')
 final_predict_slice = slice('1982-01-01', '2020-12-31')
@@ -129,23 +143,34 @@ plot_slice = slice('2007-08-10', '2016-01-01')
 # sds.overview_plot(era[plot_slice]['t2m'], aws_temp[plot_slice]['t2m'],
 #                   labelvar1='Temperature [K]')
 
-x_train = era[final_train_slice].drop(columns=['tp'])
-y_train = aws_temp[final_train_slice]
-x_predict = era[final_predict_slice].drop(columns=['tp'])
-y_predict = aws_temp[final_predict_slice]
+x_train = era_temp_D_int[final_train_slice]         # Use datasets with gap excluded for training (avoid NAs)
+y_train = aws_temp_D_int[final_train_slice]
+x_predict = era_temp_D[final_predict_slice]         # Use full dataset for prediction
+y_predict = aws_temp_D[final_predict_slice]
 
-fit = BcsdTemperature(return_anoms=False).fit(x_train, y_train)
+fit = LinearRegression().fit(x_train, y_train)      #  RandomForestRegressor(random_state=0) LinearRegression()
 t_corr = pd.DataFrame(index=x_predict.index)
 t_corr['t2m'] = fit.predict(x_predict)
 t_corr_D = t_corr.resample('D').mean()
 
+
+# x_train = era[final_train_slice].drop(columns=['tp'])
+# y_train = aws_temp[final_train_slice]
+# x_predict = era[final_predict_slice].drop(columns=['tp'])
+# y_predict = aws_temp[final_predict_slice]
+#
+# fit = BcsdTemperature(return_anoms=False).fit(x_train, y_train)
+# t_corr = pd.DataFrame(index=x_predict.index)
+# t_corr['t2m'] = fit.predict(x_predict)
+# t_corr_D = t_corr.resample('D').mean()
+
 # freq = 'W'
 # fig, ax = plt.subplots(figsize=(12,8))
 # t_corr['t2m'][plot_slice].resample(freq).mean().plot(ax=ax, label='fitted', legend=True)
-# era['t2m'][plot_slice].resample(freq).mean().plot(label='era5', ax=ax, legend=True)
-# aws_temp['t2m'][plot_slice].resample(freq).mean().plot(label='aws', ax=ax, legend=True)
-
-
+# era_temp_D_int['t2m'][plot_slice].resample(freq).mean().plot(label='era5', ax=ax, legend=True)
+# aws_temp_D_int['t2m'][plot_slice].resample(freq).mean().plot(label='aws', ax=ax, legend=True)
+#
+# plt.show()
 
 ## Step 2 - Downscale CMIP6 using fitted ERA5
 
@@ -162,23 +187,23 @@ plot_slice = slice('2010-01-01', '2020-12-31')
 #                   labelvar1='Temperature [K]')
 
 x_train = cmip[train_slice].drop(columns=['tp'])
-y_train = t_corr_D[train_slice]
+y_train = t_corr[train_slice]
 x_predict = cmip[predict_slice].drop(columns=['tp'])
-y_predict = t_corr_D[predict_slice]
+y_predict = t_corr[predict_slice]
 
 prediction = sds.fit_dmodels(x_train, y_train, x_predict)
-sds.modcomp_plot(t_corr_D[plot_slice]['t2m'], x_predict[plot_slice]['t2m'], prediction['predictions'][plot_slice], ylabel='Temperature [K]')
-sds.dmod_score(prediction['predictions'], t_corr_D['t2m'], y_predict['t2m'], x_predict['t2m'])
+# sds.modcomp_plot(t_corr_D[plot_slice]['t2m'], x_predict[plot_slice]['t2m'], prediction['predictions'][plot_slice], ylabel='Temperature [K]')
+# sds.dmod_score(prediction['predictions'], t_corr_D['t2m'], y_predict['t2m'], x_predict['t2m'])
 
 
 # Apply best model on full training and prediction periods
 
 x_train = cmip[final_train_slice].drop(columns=['tp'])
-y_train = t_corr_D[final_train_slice]
+y_train = t_corr[final_train_slice]
 x_predict = cmip[final_predict_slice].drop(columns=['tp'])
-y_predict = t_corr_D[final_predict_slice]
+y_predict = t_corr[final_predict_slice]
 
-best_mod = prediction['models']['BCSD: BcsdTemperature']          # GARD: PureAnalog-best-1 --> better fit, less trend
+best_mod = prediction['models']['GARD: LinearRegression']          # GARD: PureAnalog-best-1 --> better fit, less trend
 best_mod.fit(x_train, y_train)
 t_corr_cmip = pd.DataFrame(index=x_predict.index)
 t_corr_cmip['t2m'] = best_mod.predict(x_predict)
@@ -190,7 +215,7 @@ t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 # t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
 # x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
 # y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
-
+#
 # compare = pd.concat({'cmip6fitted': t_corr_cmip['t2m'][final_train_slice], 'cmip6': x_predict['t2m'][final_train_slice],
 #                      'era5fitted': y_predict['t2m'][final_train_slice]}, axis=1)
 # compare.describe()
@@ -320,10 +345,39 @@ p_corr_cmip['tp'] = best_mod.predict(x_predict)
 ################################
 
 cmip_corr = pd.concat([t_corr_cmip, p_corr_cmip], axis=1)
-era_corr = pd.concat([t_corr_D, p_corr], axis=1)
+era_corr = pd.concat([t_corr, p_corr], axis=1)
 cmip_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/CMIP6/'
                  + 'kyzylsuu_CMIP6_ssp2_4_5_mean_2000_2100_42.25-78.25_fitted2ERA5Lfit.csv')
-era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
+era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu/' +
                 'kyzylsuu_ERA5_Land_1982_2020_42.2_78.2_fitted2AWS.csv')
 
 
+
+
+## Check weird peaks in downscaled data:
+
+# def daily_annual_T(x, t):
+#     x = x[t][['t2m']]
+#     x["month"] = x.index.month
+#     x["day"] = x.index.day
+#     day1 = x.index[0]
+#     x = x.groupby(["month", "day"]).mean()
+#     date = pd.date_range(day1, freq='D', periods=len(x)).strftime('%Y-%m-%d')
+#     x = x.set_index(pd.to_datetime(date))
+#     return x
+#
+# t = slice('2000-01-01', '2100-12-30')
+# cmip_annual = daily_annual_T(cmip, t)
+# t_corr_annual = daily_annual_T(t_corr_cmip, t)
+# fig, ax = plt.subplots()
+# cmip_annual['t2m'].plot(label='original', ax=ax, legend=True)
+# t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
+# plt.show()
+#
+# t = slice('2000-01-01', '2020-12-30')
+# era_annual = daily_annual_T(era, t)
+# t_corr_annual = daily_annual_T(t_corr, t)
+# fig, ax = plt.subplots()
+# era_annual['t2m'].plot(label='original', ax=ax, legend=True)
+# t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
+# plt.show()
