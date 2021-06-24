@@ -159,12 +159,12 @@ prediction = sds.fit_dmodels(x_train, y_train, x_predict)
 
 # Apply best model on full training and prediction periods
 
-x_train = era[final_train_slice].drop(columns=['tp'])
-y_train = aws[final_train_slice].drop(columns=['tp', 'ws'])
-x_predict = era[final_predict_slice].drop(columns=['tp'])
-y_predict = aws[final_predict_slice].drop(columns=['tp', 'ws'])
+x_train = era_D[final_train_slice].drop(columns=['tp'])
+y_train = aws_D_int[final_train_slice].drop(columns=['tp', 'ws'])
+x_predict = era_D[final_predict_slice].drop(columns=['tp'])
+y_predict = aws_D_int[final_predict_slice].drop(columns=['tp', 'ws'])
 
-best_mod = prediction['models']['BCSD: BcsdTemperature']          # GARD: LinearRegression, BCSD: BcsdTemperature, GARD: PureAnalog-sample-10
+best_mod = prediction['models']['GARD: LinearRegression']          # GARD: LinearRegression, BCSD: BcsdTemperature, GARD: PureAnalog-sample-10
 best_mod.fit(x_train, y_train)                                     # Linear Regression works only with daily_interpol
 t_corr = pd.DataFrame(index=x_predict.index)
 t_corr['t2m'] = best_mod.predict(x_predict)
@@ -233,17 +233,12 @@ t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 
 
 
-t = slice('2040-01-01','2041-12-31')
-freq = 'D'
-fig, ax = plt.subplots(figsize=(12,8))
-t_corr_cmip['t2m'][t].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
-x_predict['t2m'][t].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
-plt.show()
-
-
-
-t_corr_cmip.to_csv('/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/downscaling_error/cmip6_t2m_linearRegfitted2era5llinearRegfitted_bash-kaingdy_2000-2100.csv')
-t_corr.to_csv('/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/downscaling_error/era5_t2m_linearRegfitted2awslfitted_bash-kaingdy_1982-2020.csv')
+# t = slice('2040-01-01','2041-12-31')
+# freq = 'D'
+# fig, ax = plt.subplots(figsize=(12,8))
+# t_corr_cmip['t2m'][t].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
+# x_predict['t2m'][t].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
+# plt.show()
 
 
 
@@ -301,11 +296,12 @@ p_corr['tp'] = best_mod.predict(x_predict)
 p_corr_D = p_corr.resample('D').sum()
 
 # Compare results with training and target data:
-# freq = 'W'
+# freq = 'D'
 # fig, ax = plt.subplots(figsize=(12,8))
 # x_predict['tp'][final_train_slice].resample(freq).sum().plot(label='era5', ax=ax, legend=True)
 # y_predict['tp'].resample(freq).sum().plot(label='aws', ax=ax, legend=True)
 # p_corr['tp'][final_train_slice].resample(freq).sum().plot(ax=ax, label='fitted', legend=True)
+# plt.show()
 
 # compare = pd.concat({'fitted':p_corr['tp'][final_train_slice], 'era5': x_predict['tp'][final_train_slice],
 #                      'aws':y_predict['tp'][final_train_slice]}, axis=1)
@@ -363,11 +359,11 @@ p_corr_cmip['tp'] = best_mod.predict(x_predict)
 # p_corr_cmip['tp'].resample(freq).sum().plot(ax=ax, label='cmip6_fitted', legend=True)
 # x_predict['tp'].resample(freq).sum().plot(label='cmip6', ax=ax, legend=True)
 # y_predict['tp'].resample(freq).sum().plot(label='era5l_fitted', ax=ax, legend=True)
-
-# # compare = pd.concat({'cmip6fitted':p_corr_cmip['tp'][final_train_slice], 'cmip6': x_predict['tp'][final_train_slice],
-# #                      'era5fitted':y_predict['tp'][final_train_slice]}, axis=1)
-# # compare.describe()
-# # compare.sum()
+#
+# compare = pd.concat({'cmip6fitted':p_corr_cmip['tp'][final_train_slice], 'cmip6': x_predict['tp'][final_train_slice],
+#                      'era5fitted':y_predict['tp'][final_train_slice]}, axis=1)
+# compare.describe()
+# compare.sum()
 
 
 
@@ -375,38 +371,38 @@ p_corr_cmip['tp'] = best_mod.predict(x_predict)
 #   Saving final time series   #
 ################################
 
-# cmip_corr = pd.concat([t_corr_cmip, p_corr_cmip], axis=1)
-# era_corr = pd.concat([t_corr, p_corr], axis=1)
-# cmip_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/CMIP6/'
-#                  + 'no182_CMIP6_ssp2_4_5_mean_2000_2100_41-75.9_fitted2ERA5Lfit.csv')
-# era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
-#                 'no182_ERA5_Land_1982_2020_41_75.9_fitted2AWS.csv')
+cmip_corr = pd.concat([t_corr_cmip, p_corr_cmip], axis=1)
+era_corr = pd.concat([t_corr, p_corr_D], axis=1)
+cmip_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/CMIP6/'
+                 + 'no182_CMIP6_ssp2_4_5_mean_2000_2100_41-75.9_fitted2ERA5Lfit.csv')
+era_corr.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
+                'no182_ERA5_Land_1982_2020_41_75.9_fitted2AWS.csv')
 
 
 ## Check weird peaks in downscaled data:
 
-def daily_annual_T(x, t):
-    x = x[t][['t2m']]
-    x["month"] = x.index.month
-    x["day"] = x.index.day
-    day1 = x.index[0]
-    x = x.groupby(["month", "day"]).mean()
-    date = pd.date_range(day1, freq='D', periods=len(x)).strftime('%Y-%m-%d')
-    x = x.set_index(pd.to_datetime(date))
-    return x
-
-t = slice('2000-01-01', '2100-12-30')
-cmip_annual = daily_annual_T(cmip, t)
-t_corr_annual = daily_annual_T(t_corr_cmip, t)
-fig, ax = plt.subplots()
-cmip_annual['t2m'].plot(label='original', ax=ax, legend=True)
-t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
-plt.show()
-
-t = slice('2000-01-01', '2020-12-30')
-era_annual = daily_annual_T(era, t)
-t_corr_annual = daily_annual_T(t_corr, t)
-fig, ax = plt.subplots()
-era_annual['t2m'].plot(label='original', ax=ax, legend=True)
-t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
-plt.show()
+# def daily_annual_T(x, t):
+#     x = x[t][['t2m']]
+#     x["month"] = x.index.month
+#     x["day"] = x.index.day
+#     day1 = x.index[0]
+#     x = x.groupby(["month", "day"]).mean()
+#     date = pd.date_range(day1, freq='D', periods=len(x)).strftime('%Y-%m-%d')
+#     x = x.set_index(pd.to_datetime(date))
+#     return x
+#
+# t = slice('2000-01-01', '2100-12-30')
+# cmip_annual = daily_annual_T(cmip, t)
+# t_corr_annual = daily_annual_T(t_corr_cmip, t)
+# fig, ax = plt.subplots()
+# cmip_annual['t2m'].plot(label='original', ax=ax, legend=True)
+# t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
+# plt.show()
+#
+# t = slice('2000-01-01', '2020-12-30')
+# era_annual = daily_annual_T(era, t)
+# t_corr_annual = daily_annual_T(t_corr, t)
+# fig, ax = plt.subplots()
+# era_annual['t2m'].plot(label='original', ax=ax, legend=True)
+# t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
+# plt.show()
