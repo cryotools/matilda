@@ -842,7 +842,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             nash_sut = "error"
         return nash_sut
 
-    import hydroeval
     if obs is not None:
         nash_sut = NS(output_MATILDA)
         kge, r, alpha, beta = hydroeval.evaluator(hydroeval.kge, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
@@ -1038,7 +1037,7 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
         output_MATILDA[0].index.values[-1])[:4] + ".csv")
     parameter.to_csv(output_path + "model_parameter.csv")
 
-    if parameter.area_glac > 0:
+    if isinstance(output_MATILDA[4], pd.DataFrame):
         output_MATILDA[4].to_csv(output_path + "glacier_area_" + str(output_MATILDA[0].index.values[1])[:4] + "-" + str(
             output_MATILDA[0].index.values[-1])[:4] + ".csv")
 
