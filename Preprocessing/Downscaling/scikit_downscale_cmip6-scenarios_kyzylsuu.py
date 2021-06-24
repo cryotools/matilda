@@ -23,11 +23,12 @@ sys.path.append(wd)
 import Downscaling.scikit_downscale_matilda as sds
 from Preprocessing_functions import pce_correct, trendline
 from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
+from sklearn.linear_model import LinearRegression
+
 
 # interactive plotting?
 # plt.ion()
 
-wd
 
 ##########################
 #   Data preparation:    #
@@ -37,7 +38,7 @@ wd
 
 # Import fitted ERA5L data as target data
 
-era_corr = pd.read_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
+era_corr = pd.read_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu/' +
                 'kyzylsuu_ERA5_Land_1982_2020_42.2_78.2_fitted2AWS.csv', parse_dates=['time'], index_col='time')
 t_corr = era_corr.drop(columns=['tp'])
 t_corr_D = t_corr.resample('D').mean()
@@ -80,7 +81,7 @@ for s in list(cmip_temp):
     x_predict = pd.DataFrame(cmip_temp[s][predict_slice])
     y_predict = t_corr_D[predict_slice]
 
-    best_mod = BcsdTemperature(return_anoms=False)
+    best_mod = LinearRegression()
     best_mod.fit(x_train, y_train)
     t_corr_cmip[s] = best_mod.predict(x_predict)
 
@@ -89,6 +90,7 @@ fig, ax = plt.subplots(figsize=(12, 8))
 # for i in list(t_corr_cmip): trendline(t_corr_cmip[i].resample(freq).mean())
 t_corr_cmip.resample(freq).mean().plot(ax=ax, legend=True)
 y_predict['t2m'].resample(freq).mean().plot(label='era5l-fitted', ax=ax, legend=True)
+plt.show()
 
 
 
@@ -118,6 +120,7 @@ fig, ax = plt.subplots(figsize=(12, 8))
 for i in list(p_corr_cmip): trendline(p_corr_cmip[i].resample(freq).sum())
 p_corr_cmip.resample(freq).sum().plot(ax=ax, legend=True, alpha=0.5)
 y_predict['tp'].resample(freq).sum().plot(label='era5l-fitted', ax=ax, legend=True)
+plt.show()
 
 ## Test:
 
@@ -129,42 +132,47 @@ for i in range(len((p_corr_cmip.columns))):
     col = colors[i]
     trendline(p_corr_cmip.iloc[:, i].resample(freq).sum(), color=col)
     p_corr_cmip.iloc[:, [i]].resample(freq).sum().plot(ax=ax, legend=True, alpha=0.5, color=col)
+plt.show()
 
 
-# Sieht man in den nict downgecaledten Daten dieselben Trends??
+# Sieht man in den nicht downgecaledten Daten dieselben Trends??
 
 
 
 ##
 freq = 'Y'
-scen = '45'
+scen = '85'
 time = slice('1982-01-01', '2100-12-31')
 fig, ax = plt.subplots(figsize=(12, 8))
 trendline(p_corr_cmip['prec_' + scen][time].resample(freq).sum())
 p_corr_cmip['prec_' + scen][time].resample(freq).sum().plot(ax=ax, label='cmip-fit_'+scen, legend=True)
 trendline(cmip_prec['prec_' + scen][time].resample(freq).sum())
 cmip_prec['prec_' + scen][time].resample(freq).sum().plot(label='cmip-orig_'+scen, ax=ax, legend=True)
+plt.show()
+
+
+# DAS DOWNSCALING VERSTÄRKT DIE TRENDS VIEL ZU STARK!
 
 
 #######################################
 #   Calculates MinMax of all models   #
 #######################################
-ds = [cmip26, cmip45, cmip70, cmip85]
-names = ['cmip26', 'cmip45', 'cmip70', 'cmip85']
-cmip_mm = pd.DataFrame(index=cmip26.index)
-
-for d in range(len(ds)):
-    cmip_mm['t2m_'+names[d]+'_min'] = ds[d].filter(like='tas_').min(axis=1)
-    cmip_mm['t2m_'+names[d]+'_max'] = ds[d].filter(like='tas_').max(axis=1)
-    cmip_mm['tp_'+names[d]+'_min'] = ds[d].filter(like='pr_').min(axis=1)
-    cmip_mm['tp_'+names[d]+'_max'] = ds[d].filter(like='pr_').max(axis=1)
-
-plt.fill_between(cmip_mm.resample(freq).mean().index, cmip_mm.t2m_cmip26_min.resample(freq).mean(),
-                 cmip_mm.t2m_cmip26_max.resample(freq).mean(),
-                 color='blue', alpha=0.2)
-plt.show()
-
-# Was begrenzt eigentlich die Fächer in klassischen Szenarioplots?
+# ds = [cmip26, cmip45, cmip70, cmip85]
+# names = ['cmip26', 'cmip45', 'cmip70', 'cmip85']
+# cmip_mm = pd.DataFrame(index=cmip26.index)
+#
+# for d in range(len(ds)):
+#     cmip_mm['t2m_'+names[d]+'_min'] = ds[d].filter(like='tas_').min(axis=1)
+#     cmip_mm['t2m_'+names[d]+'_max'] = ds[d].filter(like='tas_').max(axis=1)
+#     cmip_mm['tp_'+names[d]+'_min'] = ds[d].filter(like='pr_').min(axis=1)
+#     cmip_mm['tp_'+names[d]+'_max'] = ds[d].filter(like='pr_').max(axis=1)
+#
+# plt.fill_between(cmip_mm.resample(freq).mean().index, cmip_mm.t2m_cmip26_min.resample(freq).mean(),
+#                  cmip_mm.t2m_cmip26_max.resample(freq).mean(),
+#                  color='blue', alpha=0.2)
+# plt.show()
+#
+# # Was begrenzt eigentlich die Fächer in klassischen Szenarioplots?
 
 ################################
 #   Saving final time series   #

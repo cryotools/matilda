@@ -19,7 +19,7 @@ plt.ion()
 
 ### All datasets:
 
-met = pd.read_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/' +
+met = pd.read_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu/' +
                   'kyzylsuu_ERA5_Land_1982_2020_42.2_78.2_fitted2AWS.csv', parse_dates=['time'], index_col='time')
 met.t2m = met.t2m + 700 * 0.006  # Rough linear scaling to gauging station altitude
 
@@ -46,6 +46,7 @@ kashkator = pd.read_csv(home + '/EBA-CA/Azamat_AvH/workflow/data/Runoff/' +
 # hydromet[t].plot(figsize=(15, 6))
 #
 hydromet.plot(figsize=(15, 6))
+plt.show()
 
 # weird column in early 1991, extra peak in late 1992 (too low before that as well), 2008 and 2009 completely,
 # 2014-2016 completely until 2017-05-04. a lot of jumps around new years eve --> filter winter periods with temperature threshold
@@ -62,8 +63,12 @@ gaps = [slice('1991-12-01', '1992-12-31'), slice('2008-01-01', '2009-12-31'), sl
 for i in gaps: hydromet[i] = np.NaN
 
 
-obs["Qobs"] = np.where(obs["month"] < 5, 0, obs["Qobs"])
-obs["Qobs"] = np.where(obs["month"] > 10, 0, obs["Qobs"])
+# obs["Qobs"] = np.where(obs["month"] < 5, 0, obs["Qobs"])
+# obs["Qobs"] = np.where(obs["month"] > 10, 0, obs["Qobs"])
+
+hydromet.to_csv(home + '/EBA-CA/Azamat_AvH/workflow/data/Runoff/obs_kyzylsuu_runoff_Hydromet_preprocessed.csv')
+
+
 
 ## Bakyt:
 bakyt.plot(figsize=(15, 6))
