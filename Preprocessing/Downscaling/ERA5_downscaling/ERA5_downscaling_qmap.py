@@ -26,7 +26,7 @@ margin = 0.2
 z0 = 0.00212                                # (m) mean between roughness firn 4 mm and fresh snow 0.24 mm
 lapse_rate_temperature = -0.006             # K/m  temperature lapse rate
 
-era5_land_static = salem.open_xr_dataset(era5_land_static_file)
+era5_land_static = salem.open_xr_dataset("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/global/ERA5_global_z.nc")
 shape_grid = salem.read_shapefile_to_grid(shape_file,grid=salem.grid_from_dataset(era5_land_static))
 era5_land = xr.open_dataset(era5_land_file)
 #era5_land = salem.open_xr_dataset(era5_land_file)
@@ -68,7 +68,7 @@ longitude = float(era5_land_static.lon[idx_lon].values)
 # latitude = float(era5_land_static.where(era5_land_static == era5_land_static.min(), drop=True).lat)
 # longitude = float(era5_land_static.where(era5_land_static == era5_land_static.min(), drop=True).lon)
 
-era5_land = era5_land.sel(lat=latitude, lon=longitude, method='nearest'); era5_land_static = era5_land_static.sel(lat=latitude,lon=longitude, method='nearest')
+era5_land = era5_land.sel(lat=latitude, lon=longitude, method='nearest'); era5_land_static = era5_land_static.sel(lat=longitude, lon=latitude, method='nearest')
 height_diff = target_altitude - era5_land_static.z.values/g ; print("Height difference between target_altitude: ", height_diff)
 era5_land = era5_land.sel(time=slice(start_date, end_date))
 print('First timestamp: ', era5_land.time[0].values, ' last timestamp: ', era5_land.time[-1].values)

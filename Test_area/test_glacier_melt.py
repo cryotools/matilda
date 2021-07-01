@@ -118,6 +118,7 @@ m = sum((glacier_profile["Area"] * area_cat) * glacier_profile["WE"])
 initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
 
 glacier_change = pd.DataFrame({"smb": test_df.groupby("water_year")["DDM_smb"].sum() * 0.9}).reset_index()  # do we have to scale this?
+glacier_change["smb"] = glacier_change["smb"]
 glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
 # percentage of how much of the initial mass melted
 glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / m) * 100)
@@ -188,6 +189,8 @@ hbv_light = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-lig
 hbv_light["Date"] = hbv_light["Date"].apply(lambda x: pd.to_datetime(str(x), format='%Y%m%d'))
 hbv_light = hbv_light.set_index("Date")
 hbv_light.index = pd.to_datetime(hbv_light.index)
+
+df["Q_Total"] = df["Q_HBV"] +test_df["Q_DDM_updated"]
 
 comparison = df.merge(hbv_light, left_index=True, right_index=True)
 comparison_yearly = comparison.resample("Y").agg(

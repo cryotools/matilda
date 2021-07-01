@@ -61,7 +61,6 @@ aws = pd.merge(aws_temp_D, aws_prec, how='outer', left_index=True, right_index=T
 # 'met_data_full_kyzylsuu_2007-2015.csv')
 
 
-
 ## ERA5L Gridpoint:
 
 # Apply '/Ana-Lena_Phillip/data/scripts/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
