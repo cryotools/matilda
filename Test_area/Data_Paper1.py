@@ -14,8 +14,7 @@ def create_statistics(df):
     stats = stats.round(2)
     return stats
 
-pd.options.display.float_format = '{:.2f}'.format
-## Data
+year ## Data
 ba_aws = pd.read_csv(home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/input/bashkaingdy/met/obs/aws_preprocessed_2017-06_2021-05.csv", index_col='time', parse_dates=['time'])
 ba_era = pd.read_csv(home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/t2m_tp_ERA5L_no182_41.1_75.9_1982_2019.csv', index_col='time', parse_dates=['time'])
 ba_era_down = pd.read_csv(home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/input/bashkaingdy/met/era5l/no182_ERA5_Land_1982_2020_41_75.9_fitted2AWS.csv", index_col='time', parse_dates=['time'])

@@ -56,15 +56,15 @@ for i in cmip_dfs:
 
 ##
 parameter = MATILDA.MATILDA_parameter(cmip_4_5, set_up_start='2015-01-01 12:00:00', set_up_end='2020-12-31 12:00:00',
-                                      sim_start='2021-01-01 12:00:00', sim_end='2030-12-31 12:00:00', freq="M",
+                                      sim_start='2021-01-01 12:00:00', sim_end='2100-12-31 12:00:00', freq="M",
                                       lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2550, ele_glac=4035, ele_cat=3485,
-                                      CFMAX_ice=4.5, CFMAX_snow=8, BETA=1, CET=0.15, FC=200, K0=0.055, K1= 0.055, K2=0.04,
-                                      LP=0.7, MAXBAS=2, PERC=2.5, UZL=60, TT_snow=-1, TT_rain=2, SFCF=0.7, CFR_ice=0.05,
+                                      CFMAX_ice=5, CFMAX_snow=2.5, BETA=1, CET=0.15, FC=200, K0=0.055, K1= 0.055, K2=0.04,
+                                      LP=0.7, MAXBAS=2, PERC=2.5, UZL=60, TT_snow=-0.5, TT_rain=2, SFCF=0.7, CFR_ice=0.05,
                                       CFR_snow= 0.05, CWH=0.1)
 df_preproc = MATILDA.MATILDA_preproc(cmip_4_5, parameter)
 output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-#MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path) # save regular MATILDA run
+MATILDA.MATILDA_save_output(output_MATILDA, parameter, "/home/ana/Desktop/") # save regular MATILDA run
 
 
 ##
