@@ -114,11 +114,11 @@ test_df["water_year"] = np.where((test_df.index.month) >= hydro_year, test_df.in
                                             test_df.index.year)
 test_df["Q_DDM_updated"] = test_df["Q_DDM"].copy()
 # total water equivalent of the glacier in mm w.
-m = sum((glacier_profile["Area"] * area_cat) * glacier_profile["WE"])
+m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
 initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
+test_df["DDM_smb_scal"] = test_df["DDM_smb"].copy() * (area_glac / area_cat)
 
 glacier_change = pd.DataFrame({"smb": test_df.groupby("water_year")["DDM_smb"].sum() * 0.9}).reset_index()  # do we have to scale this?
-glacier_change["smb"] = glacier_change["smb"]
 glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
 # percentage of how much of the initial mass melted
 glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / m) * 100)
@@ -129,7 +129,7 @@ for i in range(len(glacier_change)):
     year = glacier_change["water_year"][i]
     smb_sum = glacier_change["smb_sum"][i]
     smb = int(-glacier_change["smb_percentage"][i])
-    if smb <=99:
+    if (smb <=99) & (smb >= 0):
         # getting the right row from the lookup table depending on the smb
         area_melt = lookup_table.iloc[smb]
         # getting the new glacier area by multiplying the initial area with the area changes
@@ -138,7 +138,7 @@ for i in range(len(glacier_change)):
         new_area = 0
     # multiplying the output with the fraction of the new area
     glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_sum":smb_sum}, ignore_index=True)
-    test_df["Q_DDM_updated"] = np.where(test_df["water_year"] == year, test_df["Q_DDM"] * (new_area / area_cat), test_df["Q_DDM_updated"])
+    #test_df["Q_DDM_updated"] = np.where(test_df["water_year"] == year, test_df["Q_DDM"] * (new_area / area_cat), test_df["Q_DDM_updated"])
 
 
 ## my way, probably false
