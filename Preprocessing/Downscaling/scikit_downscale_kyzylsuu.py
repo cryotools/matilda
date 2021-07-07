@@ -178,7 +178,7 @@ t_corr_D = t_corr.resample('D').mean()
 
 train_slice = slice('2000-01-01', '2009-12-31')         # For best algorithm.
 predict_slice = slice('2010-01-01', '2020-12-31')       # For best algorithm.
-final_train_slice = slice('2000-01-01', '2019-12-31')
+final_train_slice = slice('1982-01-01', '2019-12-31')
 final_predict_slice = slice('2000-01-01', '2100-12-31')
 plot_slice = slice('2010-01-01', '2020-12-31')
 
