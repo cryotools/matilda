@@ -1,0 +1,35 @@
+,0
+set_up_start,2015-01-01 12:00:00
+set_up_end,2020-12-31 12:00:00
+sim_start,2021-01-01 12:00:00
+sim_end,2100-12-31 12:00:00
+freq,M
+freq_long,Monthly
+lat,41
+area_cat,46.23
+area_glac,2.566
+ele_dat,2550
+ele_glac,4035
+ele_cat,3485
+hydro_year,10
+lr_temp,-0.006
+lr_prec,0
+TT_snow,-0.5
+TT_rain,2
+CFMAX_snow,2.5
+CFMAX_ice,5
+CFR_snow,0.05
+CFR_ice,0.05
+BETA,1
+CET,0.15
+FC,200
+K0,0.055
+K1,0.055
+K2,0.04
+LP,0.7
+MAXBAS,2
+PERC,2.5
+UZL,60
+PCORR,1.0
+SFCF,0.7
+CWH,0.1
