@@ -67,11 +67,18 @@ aws = aws_full.drop(columns=['wd', 'rh'])
     # Application of transfer function to account for solid precipitation undercatch (Kochendorfer et.al. 2020)
 aws['tp'] = pce_correct(aws['ws'], aws['t2m'], aws['tp'])
 
+# aws['tp'][slice('2017-06-03', '2019-12-31')].describe()
+# aws['tp'][slice('2017-06-03', '2019-12-31')].sum()
+# 666.9654912649049/620.2                                       # Correction increased the tp by 7.5% (942 days)
+
     # Downscaling cannot cope with data gaps:                   But BCSD CAN!!!!!!
 aws_D = aws.resample('D').agg({'t2m': 'mean', 'tp': 'sum', 'ws': 'mean'})
 aws_D_int = aws_D.interpolate(method='spline', order=2)           # No larger data gaps after 2017-07-04
 
+aws_D[slice('2017-07-14', '2021-06-06')].isna().sum()
+aws_D_int.isna().sum()
 
+aws_D[slice('2017-07-14', '2021-06-06')][pd.isnull(aws_D.t2m)]
 
 # aws[slice('2020-01-01', '2020-12-31')]['tp'] = np.NaN
 # aws.to_csv(home + '/EBA-CA/Tianshan_data/AWS_atbs/' + 'aws_preprocessed_2017-06_2021-05.csv')
