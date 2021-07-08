@@ -149,3 +149,16 @@ def consec_days(s, thresh, Nmin):
     gps = m.ne(m.shift(1)).cumsum().where(m)
 
     return gps
+
+##
+
+
+def daily_annual_T(x, t):
+    x = x[t][['t2m']]
+    x["month"] = x.index.month
+    x["day"] = x.index.day
+    day1 = x.index[0]
+    x = x.groupby(["month", "day"]).mean()
+    date = pd.date_range(day1, freq='D', periods=len(x)).strftime('%Y-%m-%d')
+    x = x.set_index(pd.to_datetime(date))
+    return x
