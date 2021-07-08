@@ -9,81 +9,23 @@ import matplotlib.gridspec as gridspec
 from MATILDA_slim import MATILDA
 
 ##
-input_df = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Bash_Kaindy/CMIP6_mean_41-75.9_1980-01-01-2100-12-31_downscaled.csv"
-glacier_profile = home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/BA-glacier_profile.txt"
-parameter = home + "/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/Test_BA_CMIP4-5_old-para/model_parameter.csv"
+input_df = home + "/Seafile/SHK/Scripts/centralasiawaterresources/Test_area/Test_Ky_CMIP4-5/model_output_2021-2100.csv"
+glacier_profile = home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/kyzulsuu_glacier_profile.csv"
+area_cat = 315.69
+area_glac = 32.51
+hydro_year = 10
 
 df = pd.read_csv(input_df)
-glacier_profile = pd.read_csv(glacier_profile)
-parameter = pd.read_csv(parameter).set_index("Unnamed: 0")
 
-df = df[["time","temp_45", "prec_45"]]
-df.columns = ['TIMESTAMP', 'T2', 'RRR']
-df.set_index('TIMESTAMP', inplace=True)
-df.index = pd.to_datetime(df.index)
-df = df['2021-01-01 12:00:00': '2100-12-31 12:00:00']
-
-# Scaling the temperature to the glacier mean elevation
-df["T2_glac"] = (df["T2"] + (float(parameter.loc["ele_glac"].values.item())-float(parameter.loc["ele_dat"].values.item())) * float(-0.006)) - 273.15
+df["T2_glac"] = df["T2"] + (4074-3225) * float(-0.006)
 df["T2_glac"].mean()
 
-# calculation the postive degree days (sum of the temperatures over 0 °C)
-df["pdd"] = np.where(df["T2_glac"] > 0, df["T2_glac"], 0)
+glacier_profile = pd.read_csv(glacier_profile)
 
-## Calculation glacier melt and the SMB
-temp = xr.DataArray(df["T2_glac"].copy())
-prec = xr.DataArray(df["RRR"].copy())
-pdd = xr.DataArray(df["pdd"].copy())
+test_df = df[['TIMESTAMP', 'DDM_smb', 'Q_DDM']].copy().set_index("TIMESTAMP")
+test_df.index = pd.to_datetime(test_df.index)
 
-# The fraction of precipitation that falls as snow decreases linearly from one to zero between temperature thresholds
-# defined by the"TT_snow" and "TT_rain" attributes
-reduced_temp = (float(parameter.loc["TT_rain"].values.item()) - temp) / (float(parameter.loc["TT_rain"].values.item()) - float(parameter.loc["TT_snow"].values.item()))
-snowfrac = np.clip(reduced_temp, 0, 1)
-accu_rate = snowfrac * prec
-
-snow_depth = xr.zeros_like(temp)
-snow_melt_rate = xr.zeros_like(temp)
-ice_melt_rate = xr.zeros_like(temp)
-
-def melt_rates(snow, pdd):
-    # compute a potential snow melt
-    pot_snow_melt = float(parameter.loc["CFMAX_snow"].values.item()) * pdd
-    # effective snow melt can't exceed amount of snow
-    snow_melt = np.minimum(snow, pot_snow_melt)
-    # ice melt is proportional to excess snow melt
-    ice_melt = (pot_snow_melt - snow_melt) * float(parameter.loc["CFMAX_ice"].values.item()) / float(parameter.loc["CFMAX_snow"].values.item())
-    # return melt rates
-    return (snow_melt, ice_melt)
-
-# compute snow depth and melt rates (pypdd.py line 219)
-for i in np.arange(len(temp)):
-    if i > 0:
-        snow_depth[i] = snow_depth[i - 1]
-    snow_depth[i] += accu_rate[i]
-    snow_melt_rate[i], ice_melt_rate[i] = melt_rates(snow_depth[i], pdd[i])
-    snow_depth[i] -= snow_melt_rate[i]
-# all melt
-total_melt = snow_melt_rate + ice_melt_rate
-# runoff is all melt minus the refreezing of snow and ice
-# precipitation is NOT included!
-runoff_rate = total_melt - float(parameter.loc["CFR_snow"].values.item()) * snow_melt_rate \
-              - float(parameter.loc["CFR_ice"].values.item()) * ice_melt_rate
-# mass balance is the accumulation minus the runoff
-inst_smb = accu_rate - runoff_rate
-
-glacier_melt = xr.merge(
-    [xr.DataArray(inst_smb, name="DDM_smb"), xr.DataArray(pdd, name="pdd"), \
-     xr.DataArray(accu_rate, name="DDM_accumulation_rate"),
-     xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"),
-     xr.DataArray(snow_depth, name="DDM_snow_depth"),
-     xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"), \
-     xr.DataArray(total_melt, name="DDM_total_melt"), xr.DataArray(runoff_rate, name="Q_DDM")])
-
-# making the final dataframe
-DDM_results = glacier_melt.to_dataframe()
-DDM_results = DDM_results.round(3)
-
-## lookup table: validated by Marc Vis and HBV-Light returns the same table
+## lookup table
 def create_lookup_table(glacier_profile, area_cat):
     initial_area = glacier_profile["Area"]  # per elevation band
     hi_initial = glacier_profile["WE"]  # initial water equivalent of each elevation band
@@ -167,16 +109,13 @@ def create_lookup_table(glacier_profile, area_cat):
     lookup_table.iloc[-1] = 0
     return lookup_table
 
-lookup_table = create_lookup_table(glacier_profile, float(parameter.loc["area_glac"].values.item()))
+lookup_table = create_lookup_table(glacier_profile, area_cat)
 
 ##
-test_df = DDM_results.copy()
-
 test_df["water_year"] = np.where((test_df.index.month) >= hydro_year, test_df.index.year + 1,
                                             test_df.index.year)
 test_df["Q_DDM_updated"] = test_df["Q_DDM"].copy()
 # total water equivalent of the glacier in mm w.
-# IS M CORRECT?
 m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
 initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
 test_df["DDM_smb_scal"] = test_df["DDM_smb"].copy() * (area_glac / area_cat)
