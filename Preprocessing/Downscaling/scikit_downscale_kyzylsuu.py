@@ -26,12 +26,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from skdownscale.pointwise_models import PureAnalog, AnalogRegression
 from skdownscale.pointwise_models import BcsdTemperature, BcsdPrecipitation
-from Preprocessing_functions import pce_correct, trendline
+from Preprocessing_functions import pce_correct, trendline, daily_annual_T
 from forcing_data_preprocessing_kyzylsuu import era_temp_D_int, aws_temp_D_int, era_temp_D, aws_temp_D, era,\
     aws_temp, cmip, aws_prec, era_D
 
-# interactive plotting?
-# plt.ion()
+# plt.ion()         # interactive plotting?
 
 
 
@@ -54,7 +53,7 @@ y_train = aws_temp_D_int[final_train_slice]
 x_predict = era_temp_D[final_predict_slice]         # Use full dataset for prediction
 y_predict = aws_temp_D[final_predict_slice]
 
-fit = LinearRegression().fit(x_train, y_train)      #  RandomForestRegressor(random_state=0) LinearRegression()
+fit = BcsdTemperature(return_anoms=False).fit(x_train, y_train)      #  RandomForestRegressor(random_state=0) LinearRegression()
 t_corr = pd.DataFrame(index=x_predict.index)
 t_corr['t2m'] = fit.predict(x_predict)
 t_corr_D = t_corr.resample('D').mean()
@@ -77,6 +76,39 @@ t_corr_D = t_corr.resample('D').mean()
 # aws_temp_D_int['t2m'][plot_slice].resample(freq).mean().plot(label='aws', ax=ax, legend=True)
 #
 # plt.show()
+
+
+
+
+##
+from bias_correction import BiasCorrection
+
+final_train_slice = slice('2007-08-10', '2016-01-01')
+final_predict_slice = slice('1982-01-01', '2020-12-31')
+x_train = era_temp_D_int[final_train_slice]['t2m'].squeeze()
+y_train = aws_temp_D_int[final_train_slice]['t2m'].squeeze()
+x_predict = era_temp_D[final_predict_slice]['t2m'].squeeze()
+
+bc = BiasCorrection(y_train, x_train, x_predict)
+t_corr_bc = pd.DataFrame(bc.correct(method='normal_correction'))
+
+final_train_slice = slice('1982-01-01', '2020-12-31')
+final_predict_slice = slice('2000-01-01', '2100-12-31')
+
+x_train = cmip[final_train_slice]['t2m'].squeeze()
+y_train = t_corr_bc[final_train_slice]['t2m'].squeeze()
+x_predict = cmip[final_predict_slice]['t2m'].squeeze()
+
+bc_cmip = BiasCorrection(t_corr_bc[final_train_slice]['t2m'].squeeze(), cmip[final_train_slice]['t2m'].squeeze(), cmip[final_predict_slice]['t2m'].squeeze())
+t_corr_bc_cmip = pd.DataFrame(bc_cmip.correct(method='normal_correction'))
+
+t_corr_bc_cmip.mean()
+x_train.mean()
+y_train.mean()
+x_predict.mean()
+
+
+# WARUM IST t_corr_bc_cmip SO VIEL KÄLTER???
 
 ## Step 2 - Downscale CMIP6 using fitted ERA5
 
@@ -109,7 +141,7 @@ y_train = t_corr[final_train_slice]
 x_predict = cmip[final_predict_slice].drop(columns=['tp'])
 y_predict = t_corr[final_predict_slice]
 
-best_mod = prediction['models']['GARD: LinearRegression']          # GARD: PureAnalog-best-1 --> better fit, less trend
+best_mod = prediction['models']['BCSD: BcsdTemperature']          # GARD: LinearRegression GARD: PureAnalog-best-1 --> better fit, less trend
 best_mod.fit(x_train, y_train)
 t_corr_cmip = pd.DataFrame(index=x_predict.index)
 t_corr_cmip['t2m'] = best_mod.predict(x_predict)
@@ -118,15 +150,72 @@ t_corr_cmip['t2m'] = best_mod.predict(x_predict)
 
 ## Check results:
 
-# freq = 'Y'
-# fig, ax = plt.subplots(figsize=(12, 8))
-# t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_fitted', legend=True)
-# x_predict['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
-# y_predict['t2m'].resample(freq).mean().plot(label='era5l_fitted', ax=ax, legend=True)
-#
-# compare = pd.concat({'cmip6fitted': t_corr_cmip['t2m'][final_train_slice], 'cmip6': x_predict['t2m'][final_train_slice],
-#                      'era5fitted': y_predict['t2m'][final_train_slice]}, axis=1)
-# compare.describe()
+# ERA:
+t = slice('1982-01-01', '2020-12-31')
+freq = 'Y'
+fig, ax = plt.subplots(figsize=(12, 8))
+t_corr['t2m'].resample(freq).mean().plot(ax=ax, label='era_bcsd', legend=True)
+t_corr_bc['t2m'].resample(freq).mean().plot(ax=ax, label='era_sdm', legend=True)
+era_temp_D[t]['t2m'].resample(freq).mean().plot(label='era', ax=ax, legend=True)
+aws_temp_D[t]['t2m'].resample(freq).mean().plot(label='aws', ax=ax, legend=True)
+plt.show()
+
+
+# WARUM DROPPED DIE AWS AM ENDE SO KRASS??
+
+
+compare = pd.concat({'era_bcsd': t_corr['t2m'][t], 'era_sdm': t_corr_bc['t2m'][t],
+                     'era': era_temp_D['t2m'][t], 'aws': aws_temp_D[t]['t2m']}, axis=1)
+compare.describe()
+
+
+# CMIP:
+
+t = slice('2000-01-01', '2100-12-31')
+freq = 'Y'
+fig, ax = plt.subplots(figsize=(12, 8))
+t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_bcsd', legend=True)
+t_corr_bc_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip_sdm', legend=True)
+cmip[t]['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
+t_corr[t]['t2m'].resample(freq).mean().plot(label='era_bcsd', ax=ax, legend=True)
+t_corr_bc[t]['t2m'].resample(freq).mean().plot(label='era_sdm', ax=ax, legend=True)
+
+plt.show()
+
+compare = pd.concat({'cmip6fitted': t_corr_cmip['t2m'][final_train_slice], 'cmip6': x_predict['t2m'][final_train_slice],
+                     'era5fitted': y_predict['t2m'][final_train_slice]}, axis=1)
+compare.describe()
+
+
+
+freq = 'Y'
+time = slice('1982-01-01', '2100-12-31')
+fig, ax = plt.subplots(figsize=(12, 8))
+trendline(t_corr_cmip['t2m'][time].resample(freq).sum())
+t_corr_cmip['t2m'][time].resample(freq).sum().plot(ax=ax, label='cmip-fit', legend=True)
+trendline(cmip['t2m'][time].resample(freq).sum())
+cmip['t2m'][time].resample(freq).sum().plot(label='cmip-orig', ax=ax, legend=True)
+plt.show()
+
+
+# Check weird peaks in downscaled data:
+
+t = slice('2000-01-01', '2020-12-30')
+era_annual = daily_annual_T(era, t)
+t_corr_annual = daily_annual_T(t_corr, t)
+fig, ax = plt.subplots()
+era_annual['t2m'].plot(label='original', ax=ax, legend=True)
+t_corr_annual.plot(label='fitted', ax=ax, legend=True, c='red')
+plt.show()
+
+t = slice('2000-01-01', '2100-12-30')
+cmip_annual = daily_annual_T(cmip, t)
+t_corr_annual = daily_annual_T(t_corr_cmip, t)
+fig, ax = plt.subplots()
+cmip_annual['t2m'].plot(label='original', ax=ax, legend=True)
+t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
+plt.show()
+
 
 
 
@@ -238,7 +327,7 @@ p_corr_cmip = pd.DataFrame(index=x_predict.index)
 p_corr_cmip['tp'] = best_mod.predict(x_predict)
 
 
-# Compare results with training and target data:
+## Check results:
 # freq = 'Y'
 # fig, ax = plt.subplots(figsize=(12, 8))
 # p_corr_cmip['tp'].resample(freq).sum().plot(ax=ax, label='cmip6_fitted', legend=True)
@@ -249,6 +338,18 @@ p_corr_cmip['tp'] = best_mod.predict(x_predict)
 #                      'era5fitted':y_predict['tp'][final_train_slice]}, axis=1)
 # compare.describe()
 # compare.sum()
+
+
+freq = 'Y'
+time = slice('1982-01-01', '2100-12-31')
+fig, ax = plt.subplots(figsize=(12, 8))
+trendline(p_corr_cmip['prec'][time].resample(freq).sum())
+p_corr_cmip['prec'][time].resample(freq).sum().plot(ax=ax, label='cmip-fit_', legend=True)
+trendline(cmip_prec['prec'][time].resample(freq).sum())
+cmip_prec['prec'][time].resample(freq).sum().plot(label='cmip-orig_', ax=ax, legend=True)
+plt.show()
+
+
 
 
 
@@ -266,30 +367,4 @@ p_corr_cmip['tp'] = best_mod.predict(x_predict)
 
 
 
-## Check weird peaks in downscaled data:
 
-# def daily_annual_T(x, t):
-#     x = x[t][['t2m']]
-#     x["month"] = x.index.month
-#     x["day"] = x.index.day
-#     day1 = x.index[0]
-#     x = x.groupby(["month", "day"]).mean()
-#     date = pd.date_range(day1, freq='D', periods=len(x)).strftime('%Y-%m-%d')
-#     x = x.set_index(pd.to_datetime(date))
-#     return x
-#
-# t = slice('2000-01-01', '2100-12-30')
-# cmip_annual = daily_annual_T(cmip, t)
-# t_corr_annual = daily_annual_T(t_corr_cmip, t)
-# fig, ax = plt.subplots()
-# cmip_annual['t2m'].plot(label='original', ax=ax, legend=True)
-# t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
-# plt.show()
-#
-# t = slice('2000-01-01', '2020-12-30')
-# era_annual = daily_annual_T(era, t)
-# t_corr_annual = daily_annual_T(t_corr, t)
-# fig, ax = plt.subplots()
-# era_annual['t2m'].plot(label='original', ax=ax, legend=True)
-# t_corr_annual['t2m'].plot(label='fitted', ax=ax, legend=True, c='red')
-# plt.show()
