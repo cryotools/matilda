@@ -79,6 +79,10 @@ era_temp_D_int2 = era_temp_D[slice('2011-11-01', '2016-01-01')]
 era_temp_D_int =  pd.concat([era_temp_D_int1, era_temp_D_int2], axis=0)      # Data gap of 18 days in October 2011
 
 
+era_temp_D.to_csv('/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/downscaling_error/example_scikitdownscale/reanalysis.csv')
+aws_temp_D.to_csv('/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/downscaling_error/example_scikitdownscale/obs.csv')
+
+
 ## CMIP6:
 
 cmip = pd.read_csv(home + '/EBA-CA/Tianshan_data/CMIP/CMIP6/all_models/Kysylsuu/' +
@@ -88,6 +92,8 @@ cmip = cmip.filter(like='_45')              # To select scenario e.g. RCP4.5 fro
 cmip.columns = era.columns
 cmip = cmip.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})      # Already daily but wrong daytime (12:00:00).
 cmip = cmip.interpolate(method='spline', order=2)       # Only 3 days in 100 years, only 3 in fitting period.
+
+cmip[['t2m']].to_csv('/home/phillip/Seafile/Ana-Lena_Phillip/data/input_output/input/downscaling_error/example_scikitdownscale/scenario.csv')
 
 
 ## Overview
