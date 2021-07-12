@@ -56,7 +56,7 @@ The MATILDA package consists of four different modules: parameter setup, data pr
 To use the whole package, the following steps are recommended:
 - Load your data.
 - Define the spin-up and simulation periods. At least one year of spin-up is recommended.
-- Specify you catchment properties (catchment area, glacierized area, average elevation, average glacier elevation).
+- Specify your catchment properties (catchment area, glacierized area, average elevation, average glacier elevation).
 - Define the output frequency (daily, weekly, monthly or yearly).
 - Specify parameters as you please using the *MATILDA_parameter* function. If no parameters are specified, default values are applied.
 - Run the data preprocessing with the *MATILDA_preproc* function.
@@ -89,6 +89,6 @@ For PyPDD:
 	•	Seguinot, J. (2019). PyPDD: a positive degree day model for glacier surface mass balance (Version v0.3.1). Zenodo. http://doi.org/10.5281/zenodo.3467639
 
 For LHMP and HBV:
-	•	Ayzel, G. (2016). Lumped Hydrological Models Playground. github.com/hydrogo/LHMP, hub.docker.com/r/hydrogo/lhmp/, doi: 10.5281/zenodo.59680.
-	•	Ayzel G. (2016). LHMP: lumped hydrological modelling playground. Zenodo. doi: 10.5281/zenodo.59501.
+	•	Ayzel, G. (2016). Lumped Hydrological Models Playground. [github.com/hydrogo/LHMP](https://github.com/hydrogo/LHMP.git), [doi:10.5281/zenodo.59680](https://doi.org/10.5281/zenodo.59680).
+	•	Ayzel G. (2016). LHMP: lumped hydrological modelling playground. Zenodo. [doi:10.5281/zenodo.59501](https://doi.org/10.5281/zenodo.59501).
 	•	Bergström, S. (1992). The HBV model: Its structure and applications. Swedish Meteorological and Hydrological Institute.
