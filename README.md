@@ -1,53 +1,84 @@
-# Hydrological modeling routine to assess water ressources in glacierized catchments (under climate change conditions)
-This tool connects the output of the glacier mass balance model COSIPY (COupled Snow and Ice energy and MAss Balance in Python) with the HBV model (Bergström, 1986), a simple hydrological bucket model, which computes runoff and a simple DDM approach to compute the glacier melt. The aim is to generate runoff projections under different climate scenarios and use the results to help planing future water management strategies in the modeled catchments. 
+# MATILDA - Modeling Water Resources in Glacierized Catchments
+
+The MATILDA framework combines a simple positive degree-day routine (DDM) for computing glacier melt with the simple hydrological bucket model HBV (Bergström, 1986). The aim is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable useres to estimate their future water resources for different climate change scenarios.
+MATILDA is an ongoing project and therefore a work in progress.
 
 ## Overview
 
-The tool uses the output of the COSIPY model, the translation of the COSIMA model into python (https://github.com/cryotools/cosipy.git), a modified version of the pypdd tool (https://github.com/juseg/pypdd.git) to calculate runoff from the glacier(s) with a simple DegreeDayModel approach and a modified version of the LHMP tool (https://github.com/hydrogo/LHMP.git) which translates the HBV model into python. 
+In the basic setup, MATILDA uses a modified version of the pypdd tool (https://github.com/juseg/pypdd.git) to calculate runoff from the glacier(s) with a simple positive degree-day model approach and a modified version of the LHMP tool (https://github.com/hydrogo/LHMP.git). The comprehensive output contains the modeled time series for various components of the water balance, basic statistics of these variables, the Nash-Sutcliffe efficiency coefficient and optionally the KGE to evaluate the predictive skills of the model, and several plots of in- and output data.
+
+![](/MATILDA/MATILDA_slim/workflow_detailed-Full.png)
 
 ### Requirements
 
-Clone
-```
-Clone this repo to your local machine using https://scm.cms.hu-berlin.de/sneidecy/centralasiawaterresources.git
-```
+Clone this repo to your local machine using https://github.com/cryotools/matilda.git
+
 
 The tool should run with any Python3 version on any computer operating system. It was developed on Python 3.6.9 on Ubuntu 18.04.
 It requires the following Python3 libraries:
-- 	xarray
-- 	numpy
-- 	pandas
-- 	matplotlib  
+- xarray
+- numpy
+- pandas
+- matplotlib
+- scipy
+- os
+- datetime
+- hydroeval
 
+The MATILDA package and the necessary packages can be installed to you local machine by using pip (or pip3). Just navigate into the cloned folder and use the following command
+```
+pip install .
+```
+or install the package directly from the source by using
 
+```
+pip install git+https://git@github.com/cryotools/matilda.git
+
+```
 ### Data
 
-The necessary input for the tool are the two input files created by the preprocessing script of the Cosipy model, a netcdf and a csv file which consists of a time series of various meteorological variables and a data frame with observational runoff data (csv). 
-It is also possible to use input apart from the COSIPY model. To run the tool, a netcdf and a data frame with a timeseries of temperature, precipitation and a mask of the glacier areas are sufficient (for the netcdf). 
+The minimum input is a CSV-file containing timeseries of air temperature (°C), total precipitation (mm) and (if available) evapotranspiration (mm) data in the  format shown below. A series of runoff observations (mm) is used to validate the model output. At least daily data is required.
 
-It is also necessary to adjust the parameters of the DDM and the HBV model to the prevailing conditions in the test area. 
+| TIMESTAMP            | T2            | RRR            | PE            |
+| -------------        | ------------- | -------------  | ------------- |
+| 2011-01-01 00:00:00  | -18.2         | 0.00           | 0.00          |
+| 2011-01-01 01:00:00  | -18.3         | 0.1            | 0.00          |
+| 2011-01-01 02:00:00  | -18.2         | 0.1            | 0.00          |
+
+| Date          | Qobs          |
+| ------------- | ------------- |
+| 2011-01-01    | 0.00          |
+| 2011-01-01    | 0.00          |
+
+
+It is also necessary to adjust the parameters of the DDM and the HBV model to the prevailing conditions in the model area. Since the DDM model calculates the glacier melt, it is necessary to scale the input data to the glacier. In the most simple manner, this can be achieved by using a lapse rate for temperature and precipitation and the elevation difference between the reference altitudes of the data and the glacier.
 
 ### Workflow
 
-To run the tool, please make your adjustments in the file ConfigFile.py. You can then use the bash script … to run the tool.
-The tool consists of two main scripts to generate the projected runoff and build plots for a first overview of the data. 
+The MATILDA package consists of four different modules: setting up the parameters, data preprocessing, the actual simulation and the plots. All modules can be used individually or as one routine called *MATILDA_simulation*. 
+To use the whole package, the following steps are recommended:
+- Read in your data and set the parameters with the parameter function *MATILDA_parameter*.
+- Define the set up and simulation period. One year of setting up is recommended.
+- Define properties like area and elevation for your catchment for the catchment and if part of the catchment glacier area (if not set it to 0). The elevation of your data is required for the downscaling.
+- Define the output frequency (daily, weekly, monthly or yearly).
+- Set all the parameters for the glacier and hydrological routines. If no parameters are set, the standart values are used.
+- Run the data preprocessing with *MATILDA_preproc*.
+- Run the actual simulation with *MATILDA_submodules*.
+- The simulation will give you a quick overview over the data and if you have observations, the Nash–Sutcliffe model efficiency coefficient and KGE is calculated.
+- Plot runoff, meteorological parameters, and HBV output series using the plots module *MATILDA_plots*. 
+- All the output including the plots and parameters can be saved to your computer with the save_output function *MATILDA_save_output*.
 
-The model script first uses the netcdf dataset to calculate glacier runoff with the help of a simple DDM approach. For this step, the glacier mask is needed to ensure inclusion of only glaciered area. The DegreeDayModel then uses the average temperature of each day to calculate the positive degree days(PDD), the temperature sum over the given threshold. It then computes the snow fraction in the given time period and uses the PDD and snow variables to compute snow and ice melt on the glacier area. 
+An example script for the workflow can be found [here](MATILDA/example_workflow.py).
 
-To calculate the runoff from the overall catchment area, the data frame with temperature, precipitation and evapotranspiration is needed to run the HBV implementation. If evapotranspiration data is not available, it will be calculated with a formula by Oudin et. et al. (2005). The HBV model consists of different subroutines to estimate snow accumulation and melt, evapotranspiration, soil moisture and the runoff generation. Various parameters need to be adjusted to the test area in the ConfigFile. 
-
-The output of the model is a csv data frame which consists of the need meteorological parameters (temperature, precipitation and evapotranspiration) and the calculated runoff from the DDM and the HBV as well as the final total runoff. Plots to compare input parameters as well as the runoff are also generated. 
-
-## Built With
+## Built using
 * [Python](https://www.python.org) - Python
-* [COSIPY](https://github.com/cryotools/cosipy.git) - COupled Snow and Ice energy and MAss Balance in Python
-* [pypdd](ttps://github.com/juseg/pypdd.git) - Python positive degree day model for glacier surface mass balance
+* [pypdd](https://github.com/juseg/pypdd.git) - Python positive degree day model for glacier surface mass balance
 * [LHMB](https://rometools.github.io/rome/) - Lumped Hydrological Models Playgroud - HBV Model
 
 ## Authors
 
-* **Phillip Schuster** - *Initial work* - (https://scm.cms.hu-berlin.de/schustep)
-* **Ana-Lena Tappe** - *Initial work* - (https://scm.cms.hu-berlin.de/tappelen)
+* **Phillip Schuster** - *Initial work* - (https://github.com/phiscu)
+* **Ana-Lena Tappe** - *Initial work* - (https://github.com/anatappe)
 
 
 See also the list of [contributors](https://scm.cms.hu-berlin.de/sneidecy/centralasiawaterresources/-/graphs/master) who participated in this project.
@@ -57,9 +88,6 @@ See also the list of [contributors](https://scm.cms.hu-berlin.de/sneidecy/centra
 This project is licensed under the HU Berlin License - see the [LICENSE.md](LICENSE.md) file for details
 
 ### References
-
-For COSIPY:
-	•	Sauter, T. & Arndt, A (2020). COSIPY – An open-source coupled snowpack and ice surface energy and mass balance model. https://doi.org/10.5194/gmd-2020-21
 
 For PyPDD:
 	•	Seguinot, J. (2019). PyPDD: a positive degree day model for glacier surface mass balance (Version v0.3.1). Zenodo. http://doi.org/10.5281/zenodo.3467639
