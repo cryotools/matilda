@@ -21,7 +21,7 @@ df = df[["time","temp_45", "prec_45"]]
 df.columns = ['TIMESTAMP', 'T2', 'RRR']
 df.set_index('TIMESTAMP', inplace=True)
 df.index = pd.to_datetime(df.index)
-df = df['2021-01-01 12:00:00': '2100-12-31 12:00:00']
+df = df['2021-01-01 12:00:00': '2040-12-31 12:00:00']
 
 # Scaling the temperature to the glacier mean elevation
 df["T2_glac"] = (df["T2"] + (float(parameter.loc["ele_glac"].values.item())-float(parameter.loc["ele_dat"].values.item())) * float(-0.006)) - 273.15
@@ -30,7 +30,13 @@ df["T2_glac"].mean()
 # calculation the postive degree days (sum of the temperatures over 0 °C)
 df["pdd"] = np.where(df["T2_glac"] > 0, df["T2_glac"], 0)
 
-## Calculation glacier melt and the SMB
+## Calculation glacier melt and the SMB with pypdd
+# pdd uses yearly values and everything in m
+# we changed the unit to mm, so precipitation is in mm and the degree day factors too
+# we use daily values
+
+# temp is computed with the stdv and an integral formulation (Calov and Greve, 2005)
+# pdd are then multiplied by 365 to get a total sum including all days of the year
 temp = xr.DataArray(df["T2_glac"].copy())
 prec = xr.DataArray(df["RRR"].copy())
 pdd = xr.DataArray(df["pdd"].copy())
@@ -38,7 +44,9 @@ pdd = xr.DataArray(df["pdd"].copy())
 # The fraction of precipitation that falls as snow decreases linearly from one to zero between temperature thresholds
 # defined by the"TT_snow" and "TT_rain" attributes
 reduced_temp = (float(parameter.loc["TT_rain"].values.item()) - temp) / (float(parameter.loc["TT_rain"].values.item()) - float(parameter.loc["TT_snow"].values.item()))
-snowfrac = np.clip(reduced_temp, 0, 1)
+# if temperature is under threshold or within, the fraction is set to 1 to indicate that snow falls
+snowfrac = np.clip(reduced_temp, 0, 1) # this should be correct, I tested it manually in a crude way
+# accumulation rate is the snow fraction (does prec fall as snow?) times precipitation
 accu_rate = snowfrac * prec
 
 snow_depth = xr.zeros_like(temp)
@@ -51,12 +59,18 @@ def melt_rates(snow, pdd):
     # effective snow melt can't exceed amount of snow
     snow_melt = np.minimum(snow, pot_snow_melt)
     # ice melt is proportional to excess snow melt
-    ice_melt = (pot_snow_melt - snow_melt) * float(parameter.loc["CFMAX_ice"].values.item()) / float(parameter.loc["CFMAX_snow"].values.item())
-    # return melt rates
+    ice_melt = (pot_snow_melt - snow_melt) * (float(parameter.loc["CFMAX_ice"].values.item()) / float(parameter.loc["CFMAX_snow"].values.item()))
     return (snow_melt, ice_melt)
 
 # compute snow depth and melt rates (pypdd.py line 219)
-for i in np.arange(len(temp)):
+# the accumulation rate is added to the snow depth after each day
+# potential snow melt is calculated by multiplying pdd with the ddf for snow
+# actual snowmelt is calculated by checking how much snow and how much snow melt there is. The minimum is taken as the snow
+# melt can't exceed the snow
+# additional melt energy is used for ice melt
+# snow melt is removed from the snow depth for each day
+
+for i in range(len(temp)):
     if i > 0:
         snow_depth[i] = snow_depth[i - 1]
     snow_depth[i] += accu_rate[i]
@@ -66,8 +80,7 @@ for i in np.arange(len(temp)):
 total_melt = snow_melt_rate + ice_melt_rate
 # runoff is all melt minus the refreezing of snow and ice
 # precipitation is NOT included!
-runoff_rate = total_melt - float(parameter.loc["CFR_snow"].values.item()) * snow_melt_rate \
-              - float(parameter.loc["CFR_ice"].values.item()) * ice_melt_rate
+runoff_rate = total_melt - float(parameter.loc["CFR_snow"].values.item()) * snow_melt_rate - float(parameter.loc["CFR_ice"].values.item()) * ice_melt_rate
 # mass balance is the accumulation minus the runoff
 inst_smb = accu_rate - runoff_rate
 
@@ -83,8 +96,11 @@ glacier_melt = xr.merge(
 DDM_results = glacier_melt.to_dataframe()
 DDM_results = DDM_results.round(3)
 
+# different from the HBV model where the melted snow is added to the snowpack or glacier and refreezes
+
+
 ## lookup table: validated by Marc Vis and HBV-Light returns the same table
-def create_lookup_table(glacier_profile, area_cat):
+def create_lookup_table(glacier_profile, area_glac):
     initial_area = glacier_profile["Area"]  # per elevation band
     hi_initial = glacier_profile["WE"]  # initial water equivalent of each elevation band
     hi_k = glacier_profile[
@@ -170,6 +186,7 @@ def create_lookup_table(glacier_profile, area_cat):
 lookup_table = create_lookup_table(glacier_profile, float(parameter.loc["area_glac"].values.item()))
 
 ##
+hydro_year = 10
 test_df = DDM_results.copy()
 
 test_df["water_year"] = np.where((test_df.index.month) >= hydro_year, test_df.index.year + 1,
@@ -179,14 +196,13 @@ test_df["Q_DDM_updated"] = test_df["Q_DDM"].copy()
 # IS M CORRECT?
 m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
 initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
-test_df["DDM_smb_scal"] = test_df["DDM_smb"].copy() * (area_glac / area_cat)
-
-glacier_change = pd.DataFrame({"smb": test_df.groupby("water_year")["DDM_smb"].sum() * 0.9}).reset_index()  # do we have to scale this?
+test_df["DDM_smb_scal"] = - (test_df["DDM_ice_melt_rate"] - ((test_df["DDM_ice_melt_rate"] * float(parameter.loc["CFR_ice"].values.item()))))
+glacier_change = pd.DataFrame({"smb": test_df.groupby("water_year")["DDM_smb_scal"].sum() * 0.9}).reset_index()  # do we have to scale this?
 glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
 # percentage of how much of the initial mass melted
 glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / m) * 100)
 
-glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[area_glac]})
+glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[float(parameter.loc["area_glac"].values.item())]})
 
 for i in range(len(glacier_change)):
     year = glacier_change["water_year"][i]
@@ -196,7 +212,7 @@ for i in range(len(glacier_change)):
         # getting the right row from the lookup table depending on the smb
         area_melt = lookup_table.iloc[smb]
         # getting the new glacier area by multiplying the initial area with the area changes
-        new_area = np.nansum((area_melt.values * (initial_area.values)))*area_cat
+        new_area = np.nansum((area_melt.values * (initial_area.values)))*float(parameter.loc["area_cat"].values.item())
     else:
         new_area = 0
     # multiplying the output with the fraction of the new area
@@ -204,45 +220,39 @@ for i in range(len(glacier_change)):
     #test_df["Q_DDM_updated"] = np.where(test_df["water_year"] == year, test_df["Q_DDM"] * (new_area / area_cat), test_df["Q_DDM_updated"])
 
 
-## my way, probably false
-# initial smb from the glacier routine script in m w.e.
-m = sum((glacier_profile["Area"] * area_cat) * glacier_profile["WE"])
-initial_smb = m / 1000 # in m
-# initial area
-initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
-# dataframe with the smb change per hydrological year in m w.e.
-glacier_change = pd.DataFrame({"smb": test_df.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9}).reset_index()  # do we have to scale this?
-# adding the changes to get the whole change in comparison to the initial area
-glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
-# percentage of how much of the initial mass melted
-glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / initial_smb) * 100)
-
-glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[area_glac]})
-
-test_df["Q_DDM_updated"] = test_df["Q_DDM"].copy()
-for i in range(len(glacier_change)):
-    year = glacier_change["water_year"][i]
-    smb_sum = glacier_change["smb_sum"][i]
-    smb = int(-glacier_change["smb_percentage"][i])
-    if smb <=99:
-        # getting the right row from the lookup table depending on the smb
-        area_melt = lookup_table.iloc[smb]
-        # getting the new glacier area by multiplying the initial area with the area changes
-        new_area = np.nansum((area_melt.values * (initial_area.values)))*area_cat
-    else:
-        new_area = 0
-    # multiplying the output with the fraction of the new area
-    glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_sum":smb_sum}, ignore_index=True)
-    test_df["Q_DDM_updated"] = np.where(test_df["water_year"] == year, test_df["Q_DDM"] * (new_area / area_cat), test_df["Q_DDM_updated"])
-
 ## test HBV Light
+df["T2_cat"] = (df["T2"] + (float(parameter.loc["ele_cat"].values.item())-float(parameter.loc["ele_dat"].values.item())) * float(-0.006)) - 273.15
+doy = np.array(df.index.strftime('%j')).astype(int)
+lat = np.deg2rad(41)
+# Part 2. Extraterrrestrial radiation calculation
+# set solar constant (in W m-2)
+Rsc = 1367  # solar constant (in W m-2)
+# calculate solar declination dt (in radians)
+dt = 0.409 * np.sin(2 * np.pi / 365 * doy - 1.39)
+# calculate sunset hour angle (in radians)
+ws = np.arccos(-np.tan(lat) * np.tan(dt))
+# Calculate sunshine duration N (in hours)
+N = 24 / np.pi * ws
+# Calculate day angle j (in radians)
+j = 2 * np.pi / 365.25 * doy
+# Calculate relative distance to sun
+dr = 1.0 + 0.03344 * np.cos(j - 0.048869)
+# Calculate extraterrestrial radiation (J m-2 day-1)
+Re = Rsc * 86400 / np.pi * dr * (ws * np.sin(lat) * np.sin(dt) \
+                                 + np.sin(ws) * np.cos(lat) * np.cos(dt))
+# convert from J m-2 day-1 to MJ m-2 day-1
+Re = Re / 10 ** 6
 
-df_hbv = df[['TIMESTAMP', 'RRR', 'T2']].copy()
+df["PE"] = np.where(df["T2_cat"] + 5 > 0, (Re / (water_density * latent_heat_flux)) * ((df["T2_cat"] + 5) / 100) * 1000, 0)
+##
+df["TIMESTAMP"] = df.index
+df_hbv = df[['TIMESTAMP', 'RRR', 'T2_cat']].copy()
 df_hbv.columns = ["Date", "P", "T"]
 df_hbv["Q"] = 0
 df_hbv["Date"] = pd.to_datetime(df_hbv["Date"])
 df_hbv["Date"] = df_hbv["Date"].apply(lambda x: x.strftime('%Y%m%d'))
-df_hbv2 = df[['TIMESTAMP', 'PE']].copy()
+df_hbv2 = df[['PE']].copy()
+
 
 ##
 df = df.set_index("TIMESTAMP")
@@ -264,5 +274,4 @@ plt.plot(comparison_yearly.index.to_pydatetime(), comparison_yearly["Qsim"], lab
 plt.legend()
 plt.title("CMIP 4.5 run Bash Kaindy")
 plt.show()
-
 
