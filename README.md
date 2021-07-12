@@ -69,7 +69,7 @@ An example script for the workflow can be found [here](MATILDA/example_workflow.
 
 ## Built using
 * [pypdd](https://github.com/juseg/pypdd.git) - Python positive degree day model for glacier surface mass balance
-* [LHMB](https://rometools.github.io/rome/) - Lumped Hydrological Models Playgroud - HBV Model
+* [LHMP](https://rometools.github.io/rome/) - Lumped Hydrological Models Playgroud - HBV Model
 
 ## Authors
 
