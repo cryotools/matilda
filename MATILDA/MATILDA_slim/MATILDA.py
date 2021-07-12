@@ -451,7 +451,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1,
                                             output_DDM.index.year)
         # initial smb from the glacier routine script in m w.e.
-        m = sum((glacier_profile["Area"] * parameter.area_cat) * glacier_profile["WE"])
+        m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
         initial_smb = m / 1000 # in m
         # initial area
         initial_area = glacier_profile.groupby("EleZone")["Area"].sum()

@@ -23,6 +23,15 @@ df.set_index('TIMESTAMP', inplace=True)
 df.index = pd.to_datetime(df.index)
 df = df['2021-01-01 12:00:00': '2040-12-31 12:00:00']
 
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='2021-01-01 12:00:00', set_up_end='2021-12-31 12:00:00',
+                                      sim_start='2022-01-01 12:00:00', sim_end='2040-12-31 12:00:00', freq="D",
+                                      lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2250, ele_glac=4035, ele_cat=3485,
+                                      CFMAX_ice=5, CFMAX_snow=2.5, BETA=1, CET=0.15, FC=200, K0=0.055, K1= 0.055, K2=0.04,
+                                      LP=0.7, MAXBAS=2, PERC=2.5, UZL=60, TT_snow=-0.5, TT_rain=2, SFCF=0.7, CFR_ice=0.05,
+                                      CFR_snow= 0.05, CWH=0.1)
+df_preproc = MATILDA.MATILDA_preproc(df, parameter)
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
+
 # Scaling the temperature to the glacier mean elevation
 df["T2_glac"] = (df["T2"] + (float(parameter.loc["ele_glac"].values.item())-float(parameter.loc["ele_dat"].values.item())) * float(-0.006)) - 273.15
 df["T2_glac"].mean()
@@ -255,17 +264,15 @@ df_hbv2 = df[['PE']].copy()
 
 
 ##
-df = df.set_index("TIMESTAMP")
-df.index = pd.to_datetime(df.index)
 
-hbv_light = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Bash_Kaindy/Test_CMIP4-5/Results/Results.txt", sep="\t")
+hbv_light = pd.read_csv(home + "/Seafile/Ana-Lena_Phillip/data/HBV-Light/HBV-light_data/Bash_Kaindy/Test_CMIP4-5_40years/Results/Results.txt", sep="\t")
 hbv_light["Date"] = hbv_light["Date"].apply(lambda x: pd.to_datetime(str(x), format='%Y%m%d'))
 hbv_light = hbv_light.set_index("Date")
 hbv_light.index = pd.to_datetime(hbv_light.index)
 
-df["Q_Total"] = df["Q_HBV"] +test_df["Q_DDM_updated"]
+#output_MATILDA[0]["Q_Total"] = df["Q_HBV"] +test_df["Q_DDM_updated"]
 
-comparison = df.merge(hbv_light, left_index=True, right_index=True)
+comparison = output_MATILDA[0].merge(hbv_light, left_index=True, right_index=True)
 comparison_yearly = comparison.resample("Y").agg(
     {"Q_Total":"sum", "Qsim":"sum"})
 
