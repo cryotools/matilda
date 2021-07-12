@@ -1,20 +1,17 @@
 # MATILDA - Modeling Water Resources in Glacierized Catchments
 
-The MATILDA framework combines a simple positive degree-day routine (DDM) for computing glacier melt with the simple hydrological bucket model HBV (Bergström, 1986). The aim is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable useres to estimate their future water resources for different climate change scenarios.
+The MATILDA framework combines a simple positive degree-day routine (DDM) for computing glacier melt with hydrological bucket model HBV (Bergström, 1986). The aim is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable users to estimate future water resources for different climate change scenarios.
 MATILDA is an ongoing project and therefore a work in progress.
 
 ## Overview
 
-In the basic setup, MATILDA uses a modified version of the pypdd tool (https://github.com/juseg/pypdd.git) to calculate runoff from the glacier(s) with a simple positive degree-day model approach and a modified version of the LHMP tool (https://github.com/hydrogo/LHMP.git). The comprehensive output contains the modeled time series for various components of the water balance, basic statistics of these variables, the Nash-Sutcliffe efficiency coefficient and optionally the KGE to evaluate the predictive skills of the model, and several plots of in- and output data.
+In the basic setup, MATILDA uses a modified version of the [pypdd](https://github.com/juseg/pypdd.git) tool to calculate glacial melt based on a positive degree-day  approach and a modified version of HBV from the Lumped Hydrological Models Playground ([LHMP](https://github.com/hydrogo/LHMP.git)). The output contains the modeled time series for various components of the water balance, basic statistics for these variables, a choice of two model effieciency coefficients (NSE, KGE), and several plots of in- and output data.
 
 ![](/MATILDA/MATILDA_slim/workflow_detailed-Full.png)
 
 ### Requirements
 
-Clone this repo to your local machine using https://github.com/cryotools/matilda.git
-
-
-The tool should run with any Python3 version on any computer operating system. It was developed on Python 3.6.9 on Ubuntu 18.04.
+The tool should run with every Python3 version on all computer operating systems. It was developed on Python 3.6.9 on Ubuntu 18.04.
 It requires the following Python3 libraries:
 - xarray
 - numpy
@@ -25,19 +22,19 @@ It requires the following Python3 libraries:
 - datetime
 - hydroeval
 
-The MATILDA package and the necessary packages can be installed to you local machine by using pip (or pip3). Just navigate into the cloned folder and use the following command
-```
-pip install .
-```
-or install the package directly from the source by using
-
+The MATILDA package and the necessary packages can be installed to your local machine by using pip or a comparable package manager. You can either install the package by using the link to this repository:
 ```
 pip install git+https://git@github.com/cryotools/matilda.git
 
 ```
+Or clone this repository to you local machine, navigate to the top directory, and use:
+```
+pip install .
+```
+
 ### Data
 
-The minimum input is a CSV-file containing timeseries of air temperature (°C), total precipitation (mm) and (if available) evapotranspiration (mm) data in the  format shown below. A series of runoff observations (mm) is used to validate the model output. At least daily data is required.
+The minimum input is a CSV-file containing timeseries of air temperature (°C), total precipitation (mm) and (if available) evapotranspiration (mm) data in the  format shown below. If Evapotranspiration is not provided it is caclulated from air temperature following [Oudin et.al. 2010](https://doi.org/10.1080/02626660903546118). A series of runoff observations (mm) is used to calibrate/validate the model. All data sets need at least daily resolution.
 
 | TIMESTAMP            | T2            | RRR            | PE            |
 | -------------        | ------------- | -------------  | ------------- |
@@ -51,27 +48,26 @@ The minimum input is a CSV-file containing timeseries of air temperature (°C), 
 | 2011-01-01    | 0.00          |
 
 
-It is also necessary to adjust the parameters of the DDM and the HBV model to the prevailing conditions in the model area. Since the DDM model calculates the glacier melt, it is necessary to scale the input data to the glacier. In the most simple manner, this can be achieved by using a lapse rate for temperature and precipitation and the elevation difference between the reference altitudes of the data and the glacier.
+The forcing data is scaled to the mean glacier elevation and the mean catchment elevation respectively using linear lapse rates. Reference altitudes for the input data, the whole catchment, and the glacierized fraction need to be provided. Automated routines for catchment delineation and the download of public glacier data will be added to MATILDA in future versions.
 
 ### Workflow
 
-The MATILDA package consists of four different modules: setting up the parameters, data preprocessing, the actual simulation and the plots. All modules can be used individually or as one routine called *MATILDA_simulation*. 
+The MATILDA package consists of four different modules: parameter setup, data preprocessing, core simulation, and postprocessing. All modules can be used individually or via the superior *MATILDA_simulation* function. 
 To use the whole package, the following steps are recommended:
-- Read in your data and set the parameters with the parameter function *MATILDA_parameter*.
-- Define the set up and simulation period. One year of setting up is recommended.
-- Define properties like area and elevation for your catchment for the catchment and if part of the catchment glacier area (if not set it to 0). The elevation of your data is required for the downscaling.
+- Load your data.
+- Define the spin-up and simulation periods. At least one year of spin-up is recommended.
+- Specify you catchment properties (catchment area, glacierized area, average elevation, average glacier elevation).
 - Define the output frequency (daily, weekly, monthly or yearly).
-- Set all the parameters for the glacier and hydrological routines. If no parameters are set, the standart values are used.
-- Run the data preprocessing with *MATILDA_preproc*.
-- Run the actual simulation with *MATILDA_submodules*.
-- The simulation will give you a quick overview over the data and if you have observations, the Nash–Sutcliffe model efficiency coefficient and KGE is calculated.
-- Plot runoff, meteorological parameters, and HBV output series using the plots module *MATILDA_plots*. 
-- All the output including the plots and parameters can be saved to your computer with the save_output function *MATILDA_save_output*.
+- Specify parameters as you please using the *MATILDA_parameter* function. If no parameters are specified, default values are applied.
+- Run the data preprocessing with the *MATILDA_preproc* function.
+- Run the actual simulation with the *MATILDA_submodules* function.
+- The simulation will give you a quick overview of your output and (if you provide observations), model efficiency coefficients are calculated.
+- Plot runoff, meteorological parameters, and HBV output variables using *MATILDA_plots* function. 
+- All the output including the plots and parameters can be saved to your local disk with the *MATILDA_save_output* function.
 
 An example script for the workflow can be found [here](MATILDA/example_workflow.py).
 
 ## Built using
-* [Python](https://www.python.org) - Python
 * [pypdd](https://github.com/juseg/pypdd.git) - Python positive degree day model for glacier surface mass balance
 * [LHMB](https://rometools.github.io/rome/) - Lumped Hydrological Models Playgroud - HBV Model
 
