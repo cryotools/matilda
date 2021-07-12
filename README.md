@@ -1,16 +1,7 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-# Hydrological modeling of melt water and runoff availability under conditions of climate change
-=======
-# Hydrological modeling routine to assess water ressources in glacierized catchments (under climate change conditions)
->>>>>>> 6699b021886e3bac84d4f370a7f684dff58caa50
-This tool connects the output of the glacier mass balance model COSIPY (COupled Snow and Ice energy and MAss Balance in Python) with the HBV model (Bergström, 1986), a simple hydrological bucket model, which computes runoff and a simple DDM approach to compute the glacier melt. The aim is to generate runoff projections under different climate scenarios and use the results to help planing future water management strategies in the modeled catchments. 
-=======
 # MATILDA - Modeling Water Resources in Glacierized Catchments
 
 The MATILDA framework combines a simple positive degree-day routine (DDM) for computing glacier melt with the simple hydrological bucket model HBV (Bergström, 1986). The aim is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable useres to estimate their future water resources for different climate change scenarios.
 MATILDA is an ongoing project and therefore a work in progress.
->>>>>>> d469f024acb0721bab811bdb0e38d9cf051a9970
 
 ## Overview
 
