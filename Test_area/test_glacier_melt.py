@@ -23,6 +23,9 @@ df.set_index('TIMESTAMP', inplace=True)
 df.index = pd.to_datetime(df.index)
 df = df['2021-01-01 12:00:00': '2040-12-31 12:00:00']
 
+df_preproc["T2"] = (df_preproc["T2"] - 273.15) - 3
+
+
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2021-01-01 12:00:00', set_up_end='2021-12-31 12:00:00',
                                       sim_start='2022-01-01 12:00:00', sim_end='2040-12-31 12:00:00', freq="D",
                                       lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2250, ele_glac=4035, ele_cat=3485,
@@ -34,7 +37,7 @@ output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profi
 
 # Scaling the temperature to the glacier mean elevation
 df["T2_glac"] = (df["T2"] + (float(parameter.loc["ele_glac"].values.item())-float(parameter.loc["ele_dat"].values.item())) * float(-0.006)) - 273.15
-df["T2_glac"].mean()
+df["T2_glac"] = df["T2_glac"] - 3
 
 # calculation the postive degree days (sum of the temperatures over 0 °C)
 df["pdd"] = np.where(df["T2_glac"] > 0, df["T2_glac"], 0)
@@ -206,7 +209,7 @@ test_df["Q_DDM_updated"] = test_df["Q_DDM"].copy()
 m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
 initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
 test_df["DDM_smb_scal"] = - (test_df["DDM_ice_melt_rate"] - ((test_df["DDM_ice_melt_rate"] * float(parameter.loc["CFR_ice"].values.item()))))
-glacier_change = pd.DataFrame({"smb": test_df.groupby("water_year")["DDM_smb_scal"].sum() * 0.9}).reset_index()  # do we have to scale this?
+glacier_change = pd.DataFrame({"smb": test_df.groupby("water_year")["DDM_smb"].sum() * 0.9}).reset_index()  # do we have to scale this?
 glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
 # percentage of how much of the initial mass melted
 glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / m) * 100)
