@@ -92,20 +92,37 @@ x_predict = era_temp_D[final_predict_slice]['t2m'].squeeze()
 bc = BiasCorrection(y_train, x_train, x_predict)
 t_corr_bc = pd.DataFrame(bc.correct(method='normal_correction'))
 
+t_corr_bc.plot()
+plt.show()
+
+# CMIP DIREKT MIT ERA DOWNGECALED FUNKTIONIERT. LIEGT ES AN DEN DATENLUECKEN?? ODER KANN MAN SDM EINFACH NICHT ZWEI MAL MACHEN?
+
 final_train_slice = slice('1982-01-01', '2020-12-31')
 final_predict_slice = slice('2000-01-01', '2100-12-31')
 
 x_train = cmip[final_train_slice]['t2m'].squeeze()
-y_train = t_corr_bc[final_train_slice]['t2m'].squeeze()
+y_train = era_temp_D[final_train_slice]['t2m'].squeeze()
 x_predict = cmip[final_predict_slice]['t2m'].squeeze()
 
-bc_cmip = BiasCorrection(t_corr_bc[final_train_slice]['t2m'].squeeze(), cmip[final_train_slice]['t2m'].squeeze(), cmip[final_predict_slice]['t2m'].squeeze())
+bc_cmip = BiasCorrection(y_train, x_train, x_predict)
 t_corr_bc_cmip = pd.DataFrame(bc_cmip.correct(method='normal_correction'))
 
 t_corr_bc_cmip.mean()
 x_train.mean()
 y_train.mean()
 x_predict.mean()
+
+
+# final_train_slice = slice('1982-01-01', '2020-12-31')
+# final_predict_slice = slice('2000-01-01', '2100-12-31')
+#
+# x_train = cmip[final_train_slice]['t2m'].squeeze()
+# y_train = t_corr_bc[final_train_slice]['t2m'].squeeze()
+# x_predict = cmip[final_predict_slice]['t2m'].squeeze()
+#
+# bc_cmip = BiasCorrection(y_train, x_train, x_predict)
+# t_corr_bc_cmip = pd.DataFrame(bc_cmip.correct(method='normal_correction'))
+
 
 
 # WARUM IST t_corr_bc_cmip SO VIEL KÄLTER???
