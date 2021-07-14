@@ -27,7 +27,7 @@ df_preproc["T2"] = (df_preproc["T2"] - 273.15) - 3
 
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2021-01-01 12:00:00', set_up_end='2021-12-31 12:00:00',
-                                      sim_start='2022-01-01 12:00:00', sim_end='2050-12-31 12:00:00', freq="Y",
+                                      sim_start='2022-01-01 12:00:00', sim_end='2100-12-31 12:00:00', freq="Y",
                                       lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2250, ele_glac=4035, ele_cat=3485,
                                       CFMAX_ice=5, CFMAX_snow=2.5, BETA=1, CET=0.15, FC=200, K0=0.055, K1= 0.055, K2=0.04,
                                       LP=0.7, MAXBAS=2, PERC=2.5, UZL=60, TT_snow=-0.5, TT_rain=2, SFCF=0.7, CFR_ice=0.05,
@@ -36,7 +36,7 @@ df_preproc = MATILDA.MATILDA_preproc(df, parameter)
 output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path="/home/ana/Desktop/")
-output_MATILDA[9].show()
+output_MATILDA[6].show()
 
 # Scaling the temperature to the glacier mean elevation
 df["T2_glac"] = (df["T2"] + (parameter.ele_glac - parameter.ele_dat) * float(-0.006)) - 273.15
