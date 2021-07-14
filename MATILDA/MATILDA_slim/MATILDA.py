@@ -353,7 +353,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
         # making the final dataframe
         DDM_results = glacier_melt.to_dataframe()
-        DDM_results = DDM_results.round(3)
         print("Finished Degree-Day Melt Routine")
         return DDM_results
 
@@ -447,33 +446,39 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     # calculating the new glacier area for each hydrological year
     def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
+        # creating the column for the updated runoff
+        output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"].copy()
+
         # determining from when to when the hydrological year is
         output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1,
                                             output_DDM.index.year)
         # initial smb from the glacier routine script in m w.e.
         m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
-        initial_smb = m / 1000 # in m
+        m = m / 1000 # in m
         # initial area
         initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
         # dataframe with the smb change per hydrological year in m w.e.
         glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9}).reset_index()  # do we have to scale this?
-        # adding the changes to get the whole change in comparison to the initial area
-        glacier_change["smb_sum"] = np.cumsum(glacier_change["smb"])
-        # percentage of how much of the initial mass melted
-        glacier_change["smb_percentage"] = round((glacier_change["smb_sum"] / initial_smb) * 100)
 
         glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[parameter.area_glac]})
 
-        output_DDM["Q_DDM_updated"] = output_DDM["Q_DDM"].copy()
+        # setting initial values for the loop
+        new_area = parameter.area_glac
+        smb_sum = 0
         for i in range(len(glacier_change)):
             year = glacier_change["water_year"][i]
-            smb_sum = glacier_change["smb_sum"][i]
-            smb = int(-glacier_change["smb_percentage"][i])
-            if smb <=99:
+            smb = glacier_change["smb"][i]
+            # scaling the smb to the catchment
+            smb = smb * (new_area / parameter.area_cat)
+            # adding the smb from the previous year(s) to the new year
+            smb_sum = smb_sum + smb
+            # calculating the percentage of melt in comparison to the initial mass
+            smb_percentage = round((-smb_sum / m) * 100)
+            if (smb_percentage <= 99) & (smb_percentage >= 0):
                 # getting the right row from the lookup table depending on the smb
-                area_melt = lookup_table.iloc[smb]
+                area_melt = lookup_table.iloc[smb_percentage]
                 # getting the new glacier area by multiplying the initial area with the area changes
-                new_area = np.nansum((area_melt.values * (initial_area.values)))*parameter.area_cat
+                new_area = np.nansum((area_melt.values * initial_area.values))*parameter.area_cat
             else:
                 new_area = 0
             # multiplying the output with the fraction of the new area
@@ -481,6 +486,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             output_DDM["Q_DDM_updated"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated"])
 
         return output_DDM, glacier_change_area
+
     if parameter.area_glac > 0:
         if glacier_profile is not None:
             lookup_table = create_lookup_table(glacier_profile, parameter)
@@ -805,7 +811,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         hbv_results = pd.DataFrame(
             {"T2": Temp, "RRR": Prec, "PE": Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
              "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=input_df_hbv.index)
-        hbv_results = hbv_results.round(3)
         print("Finished HBV routine")
         return hbv_results
 
@@ -869,6 +874,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print(stats)
     print("End of the MATILDA simulation")
     print("---")
+    output_MATILDA = output_MATILDA.round(3)
     output_all = [output_MATILDA, nash_sut, stats, lookup_table, glacier_change_area]
 
     return output_all
