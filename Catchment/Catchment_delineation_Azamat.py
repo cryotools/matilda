@@ -11,11 +11,12 @@ warnings.filterwarnings('ignore')
 
 ##
 DEM_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/static/srtm_catchment_clip.tif'
-output_file = home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/Catchment_shapefile_new.shp"
+output_file = home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/kashkator_catchment.shp"
 
 # Specify discharge point
-y, x = 42.32703430, 78.06141496 # hydro klappt (selbst gewählt)
-y,x = 42.30029106, 78.09146228 # hydro new
+y, x = 42.30029106, 78.09146228 # hydro new
+y, x = 42.16268596, 78.26632477 # hydro Kashkator
+
 
 ##
 grid = Grid.from_raster(DEM_file, data_name='dem')
