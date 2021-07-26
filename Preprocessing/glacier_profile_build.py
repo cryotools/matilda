@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 
 ##
-gis_thickness = "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/thickness_mean.csv"
-catchment_area = 315.694
+gis_thickness = "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/thickness_mean_karabatkak_farinotti.csv"
+catchment_area = 295.76
 elezone_interval = 100
 def round_elezones(x, base=100):
     return base * round(x/base)
@@ -21,6 +21,6 @@ glacier_profile["EleZone"] = round_elezones(glacier_profile["Elevation"], base=e
 glacier_profile = glacier_profile.sort_values(by='Elevation',ascending=True).reset_index(drop=True)
 
 ##
-glacier_profile.to_csv("/home/ana/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/kyzulsuu_glacier_profile.csv", index=False)
+glacier_profile.to_csv("/home/ana/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/karabatkak_glacier_profile_farinotti.csv", index=False)
 
 
