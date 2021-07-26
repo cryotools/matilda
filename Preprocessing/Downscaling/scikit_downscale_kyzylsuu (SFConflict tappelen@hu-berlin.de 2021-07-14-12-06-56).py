@@ -17,7 +17,7 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-wd = home + '/Ana-Lena_Phillip/data/matilda/Preprocessing'
+wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
 import os
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
@@ -85,13 +85,15 @@ from bias_correction import BiasCorrection
 
 final_train_slice = slice('2007-08-10', '2016-01-01')
 final_predict_slice = slice('1982-01-01', '2020-12-31')
-x_train = era_temp_D[final_train_slice]['t2m'].squeeze()
-y_train = aws_temp_D[final_train_slice]['t2m'].squeeze()
+x_train = era_temp_D_int[final_train_slice]['t2m'].squeeze()
+y_train = aws_temp_D_int[final_train_slice]['t2m'].squeeze()
 x_predict = era_temp_D[final_predict_slice]['t2m'].squeeze()
 
 bc = BiasCorrection(y_train, x_train, x_predict)
 t_corr_bc = pd.DataFrame(bc.correct(method='normal_correction'))
 
+t_corr_bc.plot()
+plt.show()
 
 # CMIP DIREKT MIT ERA DOWNGECALED FUNKTIONIERT. LIEGT ES AN DEN DATENLUECKEN?? ODER KANN MAN SDM EINFACH NICHT ZWEI MAL MACHEN?
 
@@ -99,30 +101,16 @@ final_train_slice = slice('1982-01-01', '2020-12-31')
 final_predict_slice = slice('2000-01-01', '2100-12-31')
 
 x_train = cmip[final_train_slice]['t2m'].squeeze()
-y_train = t_corr_bc[final_train_slice]['t2m'].squeeze()        # add +6.8 and it fits perfectly
+y_train = era_temp_D[final_train_slice]['t2m'].squeeze()
 x_predict = cmip[final_predict_slice]['t2m'].squeeze()
 
 bc_cmip = BiasCorrection(y_train, x_train, x_predict)
 t_corr_bc_cmip = pd.DataFrame(bc_cmip.correct(method='normal_correction'))
 
-t_corr_bc_cmip.describe()
-x_train.describe()
-y_train.describe()
-x_predict.describe()
-
-
-slice('2007-08-10', '2016-01-01')
-slice('1982-01-01', '2020-12-31')
-
-t = slice('2007-08-10', '2016-01-01')
-freq = 'M'
-fig, ax = plt.subplots(figsize=(12, 8))
-aws_temp_D[t]['t2m'].resample(freq).mean().plot(ax=ax, label='aws', legend=True)
-era_temp_D[t]['t2m'].resample(freq).mean().plot(ax=ax, label='era', legend=True)
-t_corr_bc[t]['t2m'].resample(freq).mean().plot(label='era_sdm', ax=ax, legend=True)
-
-plt.show()
-
+t_corr_bc_cmip.mean()
+x_train.mean()
+y_train.mean()
+x_predict.mean()
 
 
 # final_train_slice = slice('1982-01-01', '2020-12-31')
@@ -190,6 +178,9 @@ aws_temp_D[t]['t2m'].resample(freq).mean().plot(label='aws', ax=ax, legend=True)
 plt.show()
 
 
+# WARUM DROPPED DIE AWS AM ENDE SO KRASS??
+
+
 compare = pd.concat({'era_bcsd': t_corr['t2m'][t], 'era_sdm': t_corr_bc['t2m'][t],
                      'era': era_temp_D['t2m'][t], 'aws': aws_temp_D[t]['t2m']}, axis=1)
 compare.describe()
@@ -203,8 +194,8 @@ fig, ax = plt.subplots(figsize=(12, 8))
 t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_bcsd', legend=True)
 t_corr_bc_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip_sdm', legend=True)
 cmip[t]['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
-# t_corr[t]['t2m'].resample(freq).mean().plot(label='era_bcsd', ax=ax, legend=True)
-# t_corr_bc[t]['t2m'].resample(freq).mean().plot(label='era_sdm', ax=ax, legend=True)
+t_corr[t]['t2m'].resample(freq).mean().plot(label='era_bcsd', ax=ax, legend=True)
+t_corr_bc[t]['t2m'].resample(freq).mean().plot(label='era_sdm', ax=ax, legend=True)
 
 plt.show()
 

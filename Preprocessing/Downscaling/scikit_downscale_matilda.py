@@ -18,7 +18,7 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Preprocessing/Downscaling')
+sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/Preprocessing/Downscaling')
 from utils import prob_plots
 
 

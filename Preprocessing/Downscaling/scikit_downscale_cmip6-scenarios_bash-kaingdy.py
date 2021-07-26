@@ -16,7 +16,7 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
+wd = home + '/Ana-Lena_Phillip/data/matilda/Preprocessing'
 import os
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)

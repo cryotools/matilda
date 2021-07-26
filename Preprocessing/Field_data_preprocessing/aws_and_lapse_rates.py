@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import sys
 import glob
 home = str(Path.home())
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/')
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/matilda/Preprocessing/ERA5_downscaling/')
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/matilda/Preprocessing/')
 from Preprocessing_functions import *
 working_directory = home + '/Seafile/EBA-CA/Tianshan_data/'
 working_directory = home + '/Seafile/Tianshan_data/'

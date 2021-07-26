@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path; home = str(Path.home())      ### Zieht sich home vom system
-working_directory = home + '/Seafile/Ana-Lena_Phillip/data/scripts/pypdd'
+working_directory = home + '/Seafile/Ana-Lena_Phillip/data/matilda/pypdd'
 input_path = home + '/Seafile/Ana-Lena_Phillip/data/input_output/input/'
 static_path = home + '/Seafile/Ana-Lena_Phillip/data/input_output/static/'
 

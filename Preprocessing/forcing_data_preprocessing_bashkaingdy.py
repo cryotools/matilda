@@ -17,7 +17,7 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
+wd = home + '/Ana-Lena_Phillip/data/matilda/Preprocessing'
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
 import Downscaling.scikit_downscale_matilda as sds
@@ -34,7 +34,7 @@ from Preprocessing_functions import pce_correct
 
 ## ERA5 closest gridpoint:
 
-# Apply '/Ana-Lena_Phillip/data/scripts/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
+# Apply '/Ana-Lena_Phillip/data/matilda/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
 
 in_file = home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/new_grib_conversion' +\
           '/t2m_tp_no182_ERA5L_1982_2020.nc'

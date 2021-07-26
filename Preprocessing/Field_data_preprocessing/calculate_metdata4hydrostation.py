@@ -1,7 +1,7 @@
 import numpy as np; import pandas as pd; import xarray as xr; import salem
 from pathlib import Path
 import matplotlib.pyplot as plt
-import sys; sys.path.append('/home/phillip/Seafile/Ana-Lena_Phillip/data/scripts/Preprocessing/ERA5_downscaling/')
+import sys; sys.path.append('/home/phillip/Seafile/Ana-Lena_Phillip/data/matilda/Preprocessing/ERA5_downscaling/')
 from fundamental_physical_constants import g, M, R
 
 home = str(Path.home())

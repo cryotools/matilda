@@ -15,7 +15,7 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-wd = home + '/Ana-Lena_Phillip/data/scripts/Preprocessing'
+wd = home + '/Ana-Lena_Phillip/data/matilda/Preprocessing'
 import os
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
@@ -53,7 +53,7 @@ aws = pd.merge(aws_temp_D, aws_prec, how='outer', left_index=True, right_index=T
 
 ## ERA5L Gridpoint:
 
-# Apply '/Ana-Lena_Phillip/data/scripts/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
+# Apply '/Ana-Lena_Phillip/data/matilda/Tools/ERA5_Subset_Routine.sh' for ncdf-subsetting
 
 in_file = home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu/t2m_tp_kysylsuu_ERA5L_1982_2020.nc'
 ds = xr.open_dataset(in_file)
