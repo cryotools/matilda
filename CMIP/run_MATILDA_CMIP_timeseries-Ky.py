@@ -15,7 +15,7 @@ from MATILDA_slim import MATILDA
 # Directories
 cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Kysylsuu/"
 glacier_profile = pd.read_csv(home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/kyzulsuu_glacier_profile.csv")
-output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/kyzulsuu"
+output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/new_deltaH/Kyzylzuu"
 
 cmip_mean = pd.read_csv(cmip_data + "CMIP6_mean_42.25-78.25_1980-01-01-2100-12-31_downscaled.csv")
 scenarios = ["cmip_2_6", "cmip_4_5", "cmip_8_5"]
@@ -44,7 +44,6 @@ output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 output_MATILDA[6].show()
 
 ##
-scen = "cmip_4-5"
 
 for df, scen in zip(cmip_dfs, scenarios):
     parameter = MATILDA.MATILDA_parameter(df, set_up_start='2015-01-01 12:00:00',
@@ -62,7 +61,7 @@ for df, scen in zip(cmip_dfs, scenarios):
     df_preproc = MATILDA.MATILDA_preproc(df, parameter)
     output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
     output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-    MATILDA.MATILDA_save_output(output_MATILDA, parameter, "/home/ana/Desktop/")
+    MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
     output_path2 = output_path + "_" + str(scen)
     MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path2) # save regular MATILDA run
 

@@ -40,7 +40,7 @@ MATILDA_save_output(output_MATILDA, parameter, output_path)
 ## Model configuration
 # Directories
 cmip_data = home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/input/bashkaingdy/met/cmip6/"
-output_path = home + "/Desktop/CMIP/"
+output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/new_deltaH/Bash_Kaindy"
 
 cmip_mean = pd.read_csv(cmip_data + "CMIP6_mean_41-75.9_1980-01-01-2100-12-31_downscaled.csv")
 scenarios = ["cmip_2_6", "cmip_4_5", "cmip_8_5"]
@@ -77,7 +77,7 @@ for df, scen in zip(cmip_dfs, scenarios):
     df_preproc = MATILDA.MATILDA_preproc(df, parameter)
     output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
     output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-    MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path="/home/ana/Desktop/")
+    MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path=output_path)
     output_path2 = output_path + "_" + str(scen)
     MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path2) # save regular MATILDA run
 
