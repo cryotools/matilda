@@ -465,6 +465,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         # setting initial values for the loop
         new_area = parameter.area_glac
         smb_sum = 0
+        i = 1
         for i in range(len(glacier_change)):
             year = glacier_change["water_year"][i]
             smb = glacier_change["smb"][i]

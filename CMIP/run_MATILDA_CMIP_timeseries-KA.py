@@ -14,7 +14,7 @@ from MATILDA_slim import MATILDA
 ## Model configuration
 # Directories
 cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/Kysylsuu/"
-glacier_profile = pd.read_csv(home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/karabatkak_glacier_profile_glabtop.csv")
+glacier_profile = pd.read_csv(home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/karabatkak_glacier_profile_tricht.csv")
 output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/new_deltaH/Kashkator"
 
 cmip_mean = pd.read_csv(cmip_data + "CMIP6_mean_42.25-78.25_1980-01-01-2100-12-31_downscaled.csv")
@@ -36,7 +36,7 @@ for df, scen in zip(cmip_dfs, scenarios):
                                           set_up_end='2020-12-31 12:00:00',
                                           sim_start='2021-01-01 12:00:00', sim_end='2100-12-31 12:00:00', freq="Y",
                                           lat=42.25,
-                                          area_cat=7.527, area_glac=2.046, ele_dat=2550, ele_glac=3830, ele_cat= 3830, lr_temp=-0.005936,
+                                          area_cat=7.527, area_glac=2.271, ele_dat=2550, ele_glac=3830, ele_cat= 3830, lr_temp=-0.005936,
                                           lr_prec=-0.0002503, TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824,
                                           CFMAX_ice=5.574,CFR_snow=0.08765, CFR_ice=0.01132, BETA=2.03, CET=0.0471,
                                           FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277, LP=0.4917, MAXBAS=2.494, PERC=1.723,
@@ -56,8 +56,7 @@ for df, scen in zip(cmip_dfs, scenarios):
              "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
 
     plot_area = output_MATILDA[4].copy()
-    plot_area['time'].iloc[0] == float(2020)
-    plot_area['time'] = plot_area['time']
+    plot_area['time'].iloc[0] = float(2020)
     plot_area['time'] = pd.to_numeric(plot_area['time'], errors='coerce')
     plot_area["time"] = pd.to_datetime(plot_area["time"], format='%Y')
 
@@ -110,3 +109,4 @@ for df, scen in zip(cmip_dfs, scenarios):
     plt.tight_layout()
     fig.set_size_inches(10, 6)
     plt.savefig("/home/ana/Desktop/" + str(scen) + "annual_cycle_meterological_data.png")
+
