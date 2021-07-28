@@ -7,19 +7,19 @@ import GlabTop2
 
 ## Vergleich van der Tricht und Farinotti
 
-farinotti = pd.read_csv("/home/ana/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/thickness_mean_karabatkak_farinotti.csv")
+tricht_glabtop = pd.read_csv("/home/ana/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/thickness_mean_karabatkak_tricht_glabtop.csv")
 tricht = pd.read_csv("/home/ana/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/thickness_mean_karabatkak_tricht.csv")
-glabtop = pd.read_csv("/home/ana/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/thickness_mean_karabatkak_glabtop.csv")
+azamat_glabtop = pd.read_csv("/home/ana/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Kysylsuu/thickness_mean_karabatkak_glabtop_azamat_2018.csv")
 
-farinotti = farinotti.sort_values('elev_min')
+tricht_glabtop = tricht_glabtop.sort_values('elev_min')
 tricht = tricht.sort_values('elev_min')
-glabtop = glabtop.sort_values('elev_min')
+azamat_glabtop = azamat_glabtop.sort_values('elev_min')
 
 
-plt.plot(farinotti["elev_min"], farinotti["_mean"], label="Farinotti")
-plt.plot(tricht["elev_min"], tricht["_mean"], label="Tricht")
-plt.plot(glabtop["elev_min"], glabtop["_mean"], label="Glabtop")
-plt.legend()
+plt.plot(tricht_glabtop["elev_min"], tricht_glabtop["_mean"], label="Tricht (2017) + Glabtop")
+plt.plot(tricht["elev_min"], tricht["_mean"], label="Tricht (2017 - 2.271 km2)")
+plt.plot(azamat_glabtop["elev_min"], azamat_glabtop["_mean"], label="Azamat Shp (2018 - 2.903 km2) + Glabtop + DEM Tricht (2017)")
+plt.legend(fontsize=9)
 plt.xlabel("Elevation [m]"), plt.ylabel("Thickness [m]")
 plt.show()
 

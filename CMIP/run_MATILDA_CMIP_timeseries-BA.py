@@ -41,6 +41,8 @@ MATILDA_save_output(output_MATILDA, parameter, output_path)
 # Directories
 cmip_data = home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/input/bashkaingdy/met/cmip6/"
 output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/output/new_deltaH/Bash_Kaindy"
+glacier_profile = pd.read_csv(home + "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/bash-kaindy_glacier_profile_glabtop.csv")
+
 
 cmip_mean = pd.read_csv(cmip_data + "CMIP6_mean_41-75.9_1980-01-01-2100-12-31_downscaled.csv")
 scenarios = ["cmip_2_6", "cmip_4_5", "cmip_8_5"]
