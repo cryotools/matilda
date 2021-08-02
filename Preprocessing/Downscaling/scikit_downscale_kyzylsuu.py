@@ -200,11 +200,11 @@ compare.describe()
 t = slice('2000-01-01', '2100-12-31')
 freq = 'Y'
 fig, ax = plt.subplots(figsize=(12, 8))
-t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_bcsd', legend=True)
-t_corr_bc_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip_sdm', legend=True)
-cmip[t]['t2m'].resample(freq).mean().plot(label='cmip6', ax=ax, legend=True)
+# t_corr_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip6_bcsd', legend=True)
+t_corr_bc_cmip['t2m'].resample(freq).mean().plot(ax=ax, label='cmip_sdm (result)', legend=True)
+cmip[t]['t2m'].resample(freq).mean().plot(label='cmip6 (scen)', ax=ax, legend=True)
 # t_corr[t]['t2m'].resample(freq).mean().plot(label='era_bcsd', ax=ax, legend=True)
-# t_corr_bc[t]['t2m'].resample(freq).mean().plot(label='era_sdm', ax=ax, legend=True)
+t_corr_bc[t]['t2m'].resample(freq).mean().plot(label='era_sdm (obs)', ax=ax, legend=True)
 
 plt.show()
 
