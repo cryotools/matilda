@@ -57,8 +57,8 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
             TT_rain = parameter_df.loc["TT_rain"].values.item()
         if "CFMAX_snow" in parameter_df.index:
             CFMAX_snow = parameter_df.loc["CFMAX_snow"].values.item()
-        if "CFRMAX_ice" in parameter_df.index:
-            CFRMAX_ice = parameter_df.loc["CFRMAX_ice"].values.item()
+        if "CFMAX_ice" in parameter_df.index:
+            CFMAX_ice = parameter_df.loc["CFMAX_ice"].values.item()
         if "SFCF" in parameter_df.index:
             SFCF = parameter_df.loc["SFCF"].values.item()
         if "CFR_snow" in parameter_df.index:
@@ -202,11 +202,11 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         obs_preproc["Qobs"] = obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
         obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
         # expanding the observation period a whole one year, filling the NAs with 0
-        #idx_first = obs_preproc.index.year[1]
-        #idx_last = obs_preproc.index.year[-1]
-        #idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
-        #obs_preproc = obs_preproc.reindex(idx)
-        #obs_preproc = obs_preproc.fillna(0)
+        idx_first = obs_preproc.index.year[1]
+        idx_last = obs_preproc.index.year[-1]
+        idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
+        obs_preproc = obs_preproc.reindex(idx)
+        obs_preproc = obs_preproc.fillna(0)
 
     if obs is not None:
         return df_preproc, obs_preproc

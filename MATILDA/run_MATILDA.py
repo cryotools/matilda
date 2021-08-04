@@ -56,9 +56,12 @@ output_MATILDA[4].show()
 output_MATILDA[0].Q_Total
 
 ##
+obs = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/bash_kaindy/runoff_bashkaindy_04_2019-11_2020_temp_limit.csv")
+obs_poly = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/Input/discharge_bashkaingdy_polyfitted_2019-04_11-2020.csv")
 
 plt.plot(obs["Qobs"], label="Obs old (mm?)")
-plt.plot(obs_poly["discharge_poly"], label="Obs poly (m3/s)")
-plt.plot((obs["Qobs"] / 86400*(46.232*1000000)/1000), label="Obs (old) calc from mm to m/3")
+#plt.plot(obs_poly["discharge_poly"], label="Obs poly (m3/s)")
+#plt.plot((obs["Qobs"] / 86400*(46.232*1000000)/1000), label="Obs (old) calc from mm to m/3")
+plt.plot((obs_poly["discharge_poly"] * 86400 / (46.232 * 1000000) * 1000), label="Obs poly from m/3 to mm")
 plt.legend()
 plt.show()

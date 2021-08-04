@@ -10,7 +10,7 @@ from spotpy.objectivefunctions import nashsutcliffe
 from spotpy import analyser  # Load the Plotting extension
 import mspot
 home = str(Path.home())
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
+sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/MATILDA/MATILDA_slim')
 from MATILDA_slim import MATILDA
 
 
@@ -41,7 +41,7 @@ def yesno(question):
 
 
 def setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", area_cat=None, area_glac=None,
-          ele_dat=None, ele_glac=None, ele_cat=None,
+          ele_dat=None, ele_glac=None, ele_cat=None, lat=None,
           lr_temp_lo=-0.008, lr_prec_lo=-0.0005, BETA_lo=1, CET_lo=0, FC_lo=50, K0_lo=0.01, K1_lo=0.01, K2_lo=0.001,
           LP_lo=0.3, MAXBAS_lo=2, PERC_lo=0, UZL_lo=0, PCORR_lo=0.5, TT_snow_lo=-1.5, TT_rain_lo=-1.5, CFMAX_snow_lo=1,
           CFMAX_ice_lo=1, SFCF_lo=0.4, CFR_snow_lo=0, CFR_ice_lo=0, CWH_lo=0, lr_temp_up=-0.004, lr_prec_up=0,
@@ -102,7 +102,7 @@ def setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq
                                                  output=None, set_up_start=set_up_start, set_up_end=set_up_end,
                                                  sim_start=sim_start, sim_end=sim_end, freq=freq,
                                                  area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
-                                                 ele_glac=ele_glac, ele_cat=ele_cat, plots=False)
+                                                 ele_glac=ele_glac, ele_cat=ele_cat, lat=lat, plots=False)
 
             # return sim[366:]  # excludes the first year as a spinup period
             return sim[0].Q_Total
@@ -137,12 +137,12 @@ def setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq
 
 def psample(df, obs, rep=10, dbname='matilda_par_smpl', dbformat=None, obj_func=None, opt_iter=False, savefig=False,
             set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", area_cat=None,
-            area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, interf=4, freqst=2, parallel=False, ngs=2,
+            area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, lat=None, interf=4, freqst=2, parallel=False, ngs=2,
             algorithm='sceua', **kwargs):
 
     setup = mspot.setup(set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end,
                         freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
-                        ele_cat=ele_cat, interf=interf, freqst=freqst, **kwargs)
+                        ele_cat=ele_cat, lat=lat, interf=interf, freqst=freqst, **kwargs)
 
     spot_setup = setup(df, obs, obj_func)  # Define objective function using obj_func=, otherwise NS-eff is used.
     alg_selector = {'mc': spotpy.algorithms.mc, 'sceua': spotpy.algorithms.sceua, 'mcmc': spotpy.algorithms.mcmc,
