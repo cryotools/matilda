@@ -54,11 +54,3 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, set_up_start='2018-01-0
 output_MATILDA[4].show()
 
 output_MATILDA[0].Q_Total
-
-##
-
-plt.plot(obs["Qobs"], label="Obs old (mm?)")
-plt.plot(obs_poly["discharge_poly"], label="Obs poly (m3/s)")
-plt.plot((obs["Qobs"] / 86400*(46.232*1000000)/1000), label="Obs (old) calc from mm to m/3")
-plt.legend()
-plt.show()

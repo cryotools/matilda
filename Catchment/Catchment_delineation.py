@@ -3,19 +3,20 @@ from pathlib import Path; home = str(Path.home())
 import numpy as np
 import matplotlib.pyplot as plt
 from pysheds.grid import Grid
-import fiona
-import geopandas as gpd
-import gdal
+# import fiona
+# import geopandas as gpd
+# import gdal
 import warnings
 warnings.filterwarnings('ignore')
 
 ##
-DEM_file = home + '/Seafile/Masterarbeit/Data/QGIS/Delineation/DEM_clipped.tif'
+DEM_file = home + '/Desktop/MA_Test/SRTM_DEM3.tif'
 #DEM_file = home + '/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif'
-output_file = home + "/Seafile/Masterarbeit/Bash_Kaindy/Delineation/catchment_Urumqi.shp"
+output_file = home + "/Desktop/MA_Test/catchment_BA.shp"
 
 # Specify discharge point
 x, y = 75.953079,41.125814 # Bash Kaindy
+y,x= 41.12579305, 75.95317773
 #x, y = 86.82151540, 43.11473921 # Urumqi
 
 ##

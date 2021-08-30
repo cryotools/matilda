@@ -1,3 +1,4 @@
+## Merge CMIP time series into a single csv file
 import xarray as xr
 import pandas as pd
 from pathlib import Path

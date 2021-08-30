@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 ##
+# the following file is from the zonal statistics function from QGIS which calculates the mean ice thickness per elevation band
 gis_thickness = "/Seafile/Papers/No1_Kysylsuu_Bash-Kaingdy/data/GIS/Bash-Kaindy/thickness_mean_glabtop.csv"
 catchment_area = 46.224
 elezone_interval = 100

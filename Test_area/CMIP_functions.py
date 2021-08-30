@@ -1,3 +1,4 @@
+## Calculate factors to determine the mean change in temperature and precipitation of specified time periods of CMIP data in comparison to the historical ERA5 run
 from datetime import datetime
 from pathlib import Path; home = str(Path.home())
 import pandas as pd
@@ -8,8 +9,9 @@ import matplotlib.gridspec as gridspec
 from MATILDA_slim import MATILDA
 
 ## Data
+# CMIP timeseries
 cmip_data = home + "/Seafile/Tianshan_data/CMIP/CMIP6/all_models/CMIP6_mean_42.25-78.25_2000-01-01-2099-12-31.csv"
-
+#ERA5 data to calculate the factor
 input_csv = home + "/Seafile/Ana-Lena_Phillip/data/input_output/input/observations/karabatkak/ERA5/20210313_42.25-78.25_kyzylsuu_awsq_1982_2019.csv"
 
 hist_period_start=2001; hist_period_end = 2020; period_start = 2021; period_end = 2099; period_length = 20
