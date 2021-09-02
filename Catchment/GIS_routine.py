@@ -23,68 +23,45 @@ ele_bands, ele_zones = 20, 100
 
 output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/"
 
-## Catchment delineation
-grid = Grid.from_raster(input_DEM, data_name='dem')
 
+##
 #Define a function to plot the digital elevation model
 def plotFigure(data, label, cmap='Blues'):
     plt.figure(figsize=(12,10))
     plt.imshow(data, extent=grid.extent)
     plt.colorbar(label=label)
     plt.grid()
-#Minnor slicing on borders to enhance colobars
-elevDem=grid.dem[:-1,:-1]
-plotFigure(elevDem, 'Elevation (m)')
-plt.show()
 
-# Detect depressions
-depressions = grid.detect_depressions('dem')
+## Catchment delineation with pysheds
+# https://github.com/mdbartos/pysheds
 
-# Plot depressions
-plt.imshow(depressions)
-plt.show()
+# Plot the DEM
+grid = Grid.from_raster(DEM_file, data_name='dem')
+grid.view('dem')
 
+# Fill depressions in DEM
+grid.fill_depressions('dem', out_name='flooded_dem')
+# Resolve flats in DEM
+grid.resolve_flats('flooded_dem', out_name='inflated_dem')
 
-# Fill depressions
-grid.fill_depressions(data='dem', out_name='flooded_dem')
-# Test result
-depressions = grid.detect_depressions('flooded_dem')
-plt.imshow(depressions)
-plt.show()
-
-# Detect flats
-flats = grid.detect_flats('flooded_dem')
-
-# Plot flats
-plt.imshow(flats)
-plt.show()
-
-grid.resolve_flats(data='flooded_dem', out_name='inflated_dem')
-plt.imshow(grid.inflated_dem[:-1,:-1])
-plt.show()
-
-
-# Create a flow direction grid
+# Specify directional mapping
 #N    NE    E    SE    S    SW    W    NW
-dirmap = (64,  128,  1,   2,    4,   8,    16,  32)
+dirmap = (64, 128, 1, 2, 4, 8, 16, 32)
+# Compute flow directions
 grid.flowdir(data='inflated_dem', out_name='dir', dirmap=dirmap)
-plotFigure(grid.dir,'Flow Direction','viridis')
-plt.show()
 
-
-# Delineate the catchment
+# Delineate the catchment based on the pouring point
 grid.catchment(data='dir', x=x, y=y, dirmap=dirmap, out_name='catch',
-               recursionlimit=15000, xytype='label', nodata_out=0)
-# Clip the bounding box to the catchment
+               recursionlimit=15000, xytype='label')
+
+# Clip the DEM to the catchment
 grid.clip_to('catch')
-# Get a view of the catchment
 demView = grid.view('dem', nodata=np.nan)
-plotFigure(demView, 'Elevation')
+plotFigure(demView,'Elevation')
 plt.show()
 
 # save as clipped TIF
 grid.to_raster(demView, output_path + "catchment_DEM.tif")
-print("Mean catchment elevation is " + str(np.nanmean(demView)) + " m")
 
 # Create shapefile and save it
 shapes = grid.polygonize()
@@ -107,6 +84,9 @@ shapes = grid.polygonize()
 #         c.write(rec)
 #         i += 1
 # c.close()
+
+##
+print("Mean catchment elevation is " + str(np.nanmean(demView)) + " m")
 
 ## Cutting all glaciers within the catchment from the RGI shapefile
 rgi_shapefile = gpd.GeoDataFrame.from_file(RGI_files)

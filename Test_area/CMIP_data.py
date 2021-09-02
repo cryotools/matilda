@@ -86,28 +86,12 @@ else:
           ' and '.join(var) + ' under the RCP(s) ' +
           ' and '.join([i.split('_')[1] + '.' + i.split('_')[2] for i in scen]) + '.' + '\n')
 
-
-## find models: bash version
-# os.putenv('EXPERIMENT', ' '.join(scen))
-# os.putenv('MODEL', ' '.join(model))
-#
-# os.chdir(path="/home/ana/Desktop/")
-# subprocess.call(['./cmip_test3', working_directory, str(lon), str(lat)])
-
-##
-# ds = xr.open_dataset("/home/ana/Desktop/in_cm4_8/near_surface_air_temperature/ssp2_4_5/tas_day_INM-CM4-8_ssp245_r1i1p1f1_gr1_20150101-20460916.nc")
-# resampled = ds.resample(time="MS").mean()
-#
-# time = ds.indexes['time']
-# time = pd.to_datetime(time.astype('str'))
-
 ##
 path = wd
 scenarios = scen.copy()
 var_id = variable.copy()
 var_name = var.copy()
-method = "nearest"
-model_list = ["in_cm4_8"]
+
 def cmip_csv(path, scenarios, model_list, var_id, var_name, lat, lon, start_date, end_date, method='nearest'):
     rcp_dfs = {}
 

@@ -851,12 +851,17 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     if obs is not None:
         nash_sut = NS(output_MATILDA)
         kge, r, alpha, beta = hydroeval.evaluator(hydroeval.kge, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
+        rmse = hydroeval.evaluator(hydroeval.rmse, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
+        mare = hydroeval.evaluator(hydroeval.mare, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
 
         if nash_sut == "error":
             print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
         else:
             print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
             print("The KGE coefficient of the MATILDA run is " + str(round(float(kge), 2)))
+            print("The RMSE of the MATILDA run is " + str(round(float(rmse), 2)))
+            print("The MARE coefficient of the MATILDA run is " + str(round(float(mare), 2)))
+
 
     if obs is None:
         nash_sut = str("No observations available to calculate the Nash–Sutcliffe model efficiency coefficient")

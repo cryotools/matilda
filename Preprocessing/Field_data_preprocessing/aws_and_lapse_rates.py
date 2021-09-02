@@ -83,7 +83,7 @@ plt.legend(compare_slim.columns.tolist(), loc="upper center")
 # plt.savefig('/home/phillip/Seafile/EBA-CA/Workshops/Final_workshop_October2020/Bilder/temp_cognac.png', bbox_inches='tight', dpi=300)
 plt.show()
 
-compare_slim.to_csv("/home/ana/Desktop/compare_slim.csv")
+
 ## Calculate lapse rates
 lapseR(minikin_up.temp, aws.temp, alt_minikin_up,alt_minikin_down)
 lapseR(hobo1.temp, aws.temp, alt_hobo1,alt_minikin_down)
