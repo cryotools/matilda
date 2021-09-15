@@ -3,7 +3,7 @@
 MATILDA (Modeling wATer resources In gLacierizeD cAtchments) is a combination of a degree day model and the HBV model (Bergstöm 1976) to compute total runoff of glacierized catchments.
 This file may use the input files created by the COSIPY-utility "aws2cosipy" as forcing data and or a simple dataframe with temperature, precipitation and if possible evapotranspiration and additional observation runoff data to validate it.
 """
-# Import all necessary python packages
+## Import all necessary python packages
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ import matplotlib.dates as mdates
 from matplotlib.offsetbox import AnchoredText
 from MATILDA_slim import MATILDA
 
-
+##
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
@@ -1152,8 +1152,9 @@ df = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/Input/no182_ERA5_Land_2000
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                                       sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D",
-                                      lat=41, area_cat=46.23, area_glac=2.566, ele_dat=2250, ele_glac=4035,
+                                      lat=41, area_cat=46.23, area_glac=2.566, ele_dat=3864, ele_glac=4035,
                                       ele_cat=3485, CFMAX_ice=5.5, CFMAX_snow=3)
+
 
 # load the right package for the right resolution
 input_df_glacier = df[parameter.sim_start:parameter.sim_end]

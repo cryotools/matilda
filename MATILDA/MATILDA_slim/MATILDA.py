@@ -509,7 +509,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     in the unit mm / day.
     """
 
-    def hbv_simulation(input_df_catchment, parameter):
+    def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         print("Running HBV routine")
         # 1. new temporary dataframe from input with daily values
         if "PE" in input_df_catchment.columns:
@@ -573,7 +573,21 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         SNOW_cal = snowfrac_cal * Prec_cal
         # snow correction factor
         SNOW_cal = parameter.SFCF * SNOW_cal
-        SNOW_cal =SNOW_cal * (1-(parameter.area_glac / parameter.area_cat))
+        # get the new glacier area for each year
+        if glacier_area is not None:
+            glacier_area = glacier_area.iloc[1:, :]
+            glacier_area["time"] = glacier_area["time"].astype(str).astype(float).astype(int)
+            SNOW2 = pd.DataFrame(SNOW_cal)
+            SNOW2["area"] = 0
+            for year in range(len(glacier_area)):
+                SNOW2["area"] = np.where(SNOW2.index.year == glacier_area["time"].iloc[year],
+                                         glacier_area["glacier_area"].iloc[year],
+                                         SNOW2["area"])
+
+            SNOW2["T2"] = SNOW2["T2"] * (1 - (SNOW2["area"] / parameter.area_cat))
+            SNOW_cal = SNOW2['T2'].squeeze()
+        else:
+            SNOW_cal["T2"] = SNOW_cal["T2"] * (1 - (parameter.area_glac / parameter.area_cat))
         # evaporation correction
         # a. calculate long-term averages of daily temperature
         Temp_mean_cal = np.array([Temp_cal.loc[Temp_cal.index.dayofyear == x].mean() \
@@ -676,8 +690,21 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         SNOW = parameter.SFCF * SNOW
         # snow correction factor
         SNOW = parameter.SFCF * SNOW
-        SNOW = SNOW * (1-(parameter.area_glac / parameter.area_cat))
-        # evaporation correction
+        # get the new glacier area for each year
+        if glacier_area is not None:
+            glacier_area = glacier_area.iloc[1:, :]
+            glacier_area["time"] = glacier_area["time"].astype(str).astype(float).astype(int)
+            SNOW2 = pd.DataFrame(SNOW)
+            SNOW2["area"] = 0
+            for year in range(len(glacier_area)):
+                SNOW2["area"] = np.where(SNOW2.index.year == glacier_area["time"].iloc[year],
+                                         glacier_area["glacier_area"].iloc[year],
+                                         SNOW2["area"])
+
+            SNOW2["T2"] = SNOW2["T2"] * (1 - (SNOW2["area"] / parameter.area_cat))
+            SNOW = SNOW2['T2'].squeeze()
+        else:
+            SNOW["T2"] = SNOW["T2"] * (1 - (parameter.area_glac / parameter.area_cat))        # evaporation correction
         # a. calculate long-term averages of daily temperature
         Temp_mean = np.array([Temp.loc[Temp.index.dayofyear == x].mean() \
                               for x in range(1, 367)])
@@ -815,7 +842,10 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         print("Finished HBV routine")
         return hbv_results
 
-    output_HBV = hbv_simulation(input_df_catchment, parameter)
+    if glacier_profile is not None:
+        output_HBV = hbv_simulation(input_df_catchment, parameter, glacier_area=glacier_change_area)
+    else:
+        output_HBV = hbv_simulation(input_df_catchment, parameter)
     output_HBV = output_HBV[parameter.sim_start:parameter.sim_end]
 
     # Output postprocessing
