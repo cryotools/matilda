@@ -17,6 +17,17 @@ from matplotlib.offsetbox import AnchoredText
 from MATILDA_slim import MATILDA
 
 ##
+# Parameters
+# CFMAX mm/day
+# FC mm
+# LP mm
+# UZL mm
+# PERC mm/day
+# K0-K2 all daily?
+# MAXBAS is also used on days --> problem
+# Q (result) is mm/day
+
+
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
@@ -527,9 +538,9 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         print("Running HBV routine")
         # 1. new temporary dataframe from input with daily values
         if "PE" in input_df_catchment.columns:
-            input_df_hbv = input_df_catchment.resample("D").agg({"T2": 'mean', "RRR": 'sum', "PE": "sum"})
+            input_df_hbv = input_df_catchment.resample(parameter.freq).agg({"T2": 'mean', "RRR": 'sum', "PE": "sum"})
         else:
-            input_df_hbv = input_df_catchment.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
+            input_df_hbv = input_df_catchment.resample(parameter.freq).agg({"T2": 'mean', "RRR": 'sum'})
 
         Temp = input_df_hbv['T2']
         if Temp[1] >= 100:  # making sure the temperature is in Celsius
@@ -620,7 +631,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             SNOWPACK_cal[t] = SNOWPACK_cal[t - 1] + SNOW_cal[t]
             # how snowpack melts
             # day-degree simple melting
-            melt = parameter.CFMAX_snow * (Temp_cal[t] - parameter.TT_snow)
+            melt = (parameter.CFMAX_snow) * (Temp_cal[t] - parameter.TT_snow)
             # control melting
             if melt < 0: melt = 0
             melt = min(melt, SNOWPACK_cal[t])
@@ -629,7 +640,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             # snowpack after melting
             SNOWPACK_cal[t] = SNOWPACK_cal[t] - melt
             # refreezing accounting
-            refreezing = parameter.CFR_snow * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
+            refreezing = parameter.CFR_snow * (parameter.CFMAX_snow) * (parameter.TT_snow - Temp_cal[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
             refreezing = min(refreezing, MELTWATER_cal[t])
@@ -731,7 +742,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             SNOWPACK[t] = SNOWPACK[t - 1] + SNOW[t]
             # how snowpack melts
             # day-degree simple melting
-            melt = parameter.CFMAX_snow * (Temp[t] - parameter.TT_snow)
+            melt = (parameter.CFMAX_snow) * (Temp[t] - parameter.TT_snow)
             # control melting
             if melt < 0: melt = 0
             melt = min(melt, SNOWPACK[t])
@@ -740,7 +751,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             # snowpack after melting
             SNOWPACK[t] = SNOWPACK[t] - melt
             # refreezing accounting
-            refreezing = parameter.CFR_snow * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
+            refreezing = parameter.CFR_snow * (parameter.CFMAX_snow) * (parameter.TT_snow - Temp[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
             refreezing = min(refreezing, MELTWATER[t])
@@ -789,7 +800,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             # upper groudwater box
             SUZ[t] = SUZ[t - 1] + recharge + excess
             # percolation control
-            perc = min(SUZ[t], parameter.PERC)
+            perc = min(SUZ[t], (parameter.PERC))
             # update upper groudwater box
             SUZ[t] = SUZ[t] - perc
             # runoff from the highest part of upper grondwater box (surface runoff)
@@ -1149,16 +1160,22 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, se
 
 ## test
 df = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/Input/no182_ERA5_Land_2000_202011_no182_41_75.9_fitted.csv", parse_dates=['TIMESTAMP'], index_col='TIMESTAMP')
+df = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/Input/no182_ERA5_Land_2000_202011_no182_41_75.9_fitted.csv")
+
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
                                       sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D",
                                       lat=41, area_cat=46.23, area_glac=2.566, ele_dat=3864, ele_glac=4035,
                                       ele_cat=3485, CFMAX_ice=5.5, CFMAX_snow=3)
 
+df_preproc = MATILDA.MATILDA_preproc(df, parameter)
+output_MATILDA = MATILDA_submodules(df_preproc, parameter)
+output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 
 # load the right package for the right resolution
-input_df_glacier = df[parameter.sim_start:parameter.sim_end]
+input_df_glacier = df_preproc.copy()
 if parameter.area_glac > 0:
     degreedays_ds = calculate_PDD(input_df_glacier)
     output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
+input_df_catchment = df_preproc.copy()
