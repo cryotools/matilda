@@ -53,10 +53,10 @@ The forcing data is scaled to the mean glacier elevation and the mean catchment 
 To include the deltaH parameterization from [Huss and Hock 2010] () within the DDM routine to calculate glacier area evolution over the study period, information on the glaciers is necessary. The routine needs a initial glacier profile where the glaciers are divided into individual elevation bands which describes the glaciers at the beginning of the study period in form of a dataframe:
 | Elevation     | Area         | WE            | EleZone       |
 | ------------- | ------------ | ------------- | ------------- |
-| 3720  | 0.005 | 0.00         | 10786.061     | 3700	       |
-| 3730  | 0.001 | 0.1          | 13687.801     | 3700 	       |
-| 3740  | 0.001 | 0.1          | 12571.253     | 3700 	       |
-| 3750  | 0.002 | 0.1          | 12357.987     | 3800 	       |
+| 3720 		| 0.005        | 10786.061     | 3700	       |
+| 3730  	| 0.001        | 13687.801     | 3700 	       |
+| 3740  	| 0.001        | 12571.253     | 3700 	       |
+| 3750  	| 0.002        | 12357.987     | 3800 	       |
 
 Elevation shows the elevation of each elevation bands (10 m zones are recommended), Area the area of each band as a fraction of the whole glacier area, WE the ice thickness in m w.e. and EleZone the combinded bands over 100-200 m.
 
