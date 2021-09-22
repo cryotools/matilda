@@ -23,6 +23,7 @@ parameter = MATILDA.MATILDA_parameter(df, set_up_start='2010-01-01 00:00:00', se
 df, obs = MATILDA.MATILDA_preproc(df, parameter, obs=obs)
 
 # running the submodules --> MATILDA model run + downscaling
+# if you want to use the deltaH, include "glacier_profile =" and your glacier profile as a dataframe with Elevations (m), Area (fraction of the whole catchment) and WE (ice thickness in m w.e.) (see example glacier_profile) 
 output_MATILDA = MATILDA.MATILDA_submodules(df, parameter, obs=obs)
 
 # Creating plot for the input data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3)

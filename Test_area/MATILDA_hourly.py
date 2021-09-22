@@ -1159,12 +1159,12 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, se
     return output_MATILDA
 
 ## test
-df = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/Input/no182_ERA5_Land_2000_202011_no182_41_75.9_fitted.csv", parse_dates=['TIMESTAMP'], index_col='TIMESTAMP')
-df = pd.read_csv("/home/ana/Seafile/Masterarbeit/Data/Input/no182_ERA5_Land_2000_202011_no182_41_75.9_fitted.csv")
+
+df = pd.read_csv("/home/ana/Seafile/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/At-Bashy/no182_ERA5_Land_2000_2019_41_75.9_fitted2AWS.csv")
 
 
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2018-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
-                                      sim_start='2019-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D",
+                                      sim_start='2019-06-01 00:00:00', sim_end='2019-06-04 23:00:00', freq="D",
                                       lat=41, area_cat=46.23, area_glac=2.566, ele_dat=3864, ele_glac=4035,
                                       ele_cat=3485, CFMAX_ice=5.5, CFMAX_snow=3)
 
