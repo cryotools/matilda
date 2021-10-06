@@ -588,7 +588,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             SNOW2["T2"] = SNOW2["T2"] * (1 - (SNOW2["area"] / parameter.area_cat))
             SNOW_cal = SNOW2['T2'].squeeze()
         else:
-            SNOW_cal["T2"] = SNOW_cal["T2"] * (1 - (parameter.area_glac / parameter.area_cat))
+            SNOW_cal = SNOW_cal * (1 - (parameter.area_glac / parameter.area_cat))
         # evaporation correction
         # a. calculate long-term averages of daily temperature
         Temp_mean_cal = np.array([Temp_cal.loc[Temp_cal.index.dayofyear == x].mean() \
@@ -705,7 +705,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             SNOW2["T2"] = SNOW2["T2"] * (1 - (SNOW2["area"] / parameter.area_cat))
             SNOW = SNOW2['T2'].squeeze()
         else:
-            SNOW["T2"] = SNOW["T2"] * (1 - (parameter.area_glac / parameter.area_cat))        # evaporation correction
+            SNOW = SNOW * (1 - (parameter.area_glac / parameter.area_cat))        # evaporation correction
         # a. calculate long-term averages of daily temperature
         Temp_mean = np.array([Temp.loc[Temp.index.dayofyear == x].mean() \
                               for x in range(1, 367)])
