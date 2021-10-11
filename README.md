@@ -44,8 +44,8 @@ The minimum input is a CSV-file containing timeseries of air temperature (°C), 
 
 | Date          | Qobs          |
 | ------------- | ------------- |
-| 2011-01-01    | 0.00          |
-| 2011-01-01    | 0.00          |
+| 2011-01-01    | 0.17          |
+| 2011-01-01    | 0.19          |
 
 
 The forcing data is scaled to the mean glacier elevation and the mean catchment elevation respectively using linear lapse rates. Reference altitudes for the input data, the whole catchment, and the glacierized fraction need to be provided. Automated routines for catchment delineation and the download of public glacier data will be added to MATILDA in future versions.
