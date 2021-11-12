@@ -7,7 +7,7 @@ MATILDA is an ongoing project and therefore a work in progress.
 
 In the basic setup, MATILDA uses a modified version of the [pypdd](https://github.com/juseg/pypdd.git) tool to calculate glacial melt based on a positive degree-day  approach and a modified version of HBV from the Lumped Hydrological Models Playground ([LHMP](https://github.com/hydrogo/LHMP.git)). The output contains the modeled time series for various components of the water balance, basic statistics for these variables, a choice of two model effieciency coefficients (NSE, KGE), and several plots of in- and output data.
 
-![](/MATILDA/MATILDA_slim/workflow_detailed-final.png)
+![](/MATILDA/MATILDA_slim/workflow_detailed-CORRECTED.png)
 
 ### Requirements
 
