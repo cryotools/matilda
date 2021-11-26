@@ -1,4 +1,10 @@
-## Merge CMIP time series into a single csv file
+"""
+{Tool to iterate through CMIP6 ensemble outputs downloaded to the 'CIRRUS' HPC at Humboldt-University.
+Outputs various combinations of CSV timeseries.}
+
+{Authors: Phillip Schuster & Ana-Lena Tappe}
+"""
+
 import xarray as xr
 import pandas as pd
 from pathlib import Path
@@ -7,15 +13,19 @@ import subprocess
 import matplotlib.pyplot as plt
 import os
 home = str(Path.home())
-wd = home + "/Seafile/Tianshan_data/CMIP/CMIP6/dir_test"
-wd = "/home/ana/Desktop/in_cm4_8/"
-#wd = "/data/projects/ensembles/cmip6"
+#wd = home + "/Seafile/Tianshan_data/CMIP/CMIP6/dir_test"
+#wd = "/home/ana/Desktop/in_cm4_8/"
+wd = "/data/projects/ensembles/cmip6"
+output = "/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/CMIP6/jyrgalang/"
 ## output information
 var = ['near_surface_air_temperature', 'precipitation']
 variable = ["tas", "pr"]
-scen = ['historical', 'ssp1_2_6', 'ssp2_4_5']
-start_date = '2010-01-01'; end_date = '2039-12-31'
-lat = 42.25; lon = 78.25
+scen = ['historical', 'ssp1_2_6', 'ssp2_4_5', 'ssp3_7_0', 'ssp5_8_5']   #  'historical', 'ssp1_2_6', 'ssp2_4_5', 'ssp3_7_0', 'ssp5_8_5'
+start_date = '1982-01-01'; end_date = '2100-12-31'
+lat = 42.516; lon = 79.0167
+
+plot = False
+write_files = True
 
 ## find models: python version
 def list_files(directory):
@@ -165,9 +175,10 @@ def cmip_csv(path, scenarios, model_list, var_id, var_name, lat, lon, start_date
 
 rcp_dfs = cmip_csv(wd, scen, model_list, variable, var, lat, lon, start_date, end_date)
 
-# ## save dataframes
-# for i in rcp_dfs.keys():
-#     rcp_dfs[i].to_csv(wd + "/CMIP6_" + i + "_" + str(lat) + "-" + str(lon) + "_" + str(start_date[:4]) + "-" + str(end_date[:4]) + ".csv")
+if write_files:
+    ## save dataframes
+    for i in rcp_dfs.keys():
+        rcp_dfs[i].to_csv(output + i + "_" + str(lat) + "-" + str(lon) + "_" + str(start_date[:4]) + "-" + str(end_date[:4]) + ".csv")
 
 ## calculate mean
 if "historical" in scen:
@@ -182,9 +193,11 @@ for i in scen:
             mean_dict[i][str(v) + "_" + str(k)] = rcp_dfs[k][str(v) + "_" + str(i)]
         mean_dict[i][str(v) + "_" + "mean"] = mean_dict[i].filter(regex=str(v)).mean(axis=1)
 
+if write_files:
+    for i in mean_dict.keys():
+        mean_dict[i].to_csv(output + str(i) + "_" + str(lat) + "-" + str(lon) + "_" + start_date + "-" + end_date + ".csv")
 
-# for i in mean_dict.keys():
-#     mean_dict[i].to_csv("/data/scratch/tappeana/CMIP6_" + str(i) + "_" + str(lat) + "-" + str(lon) + "_" + start_date + "-" + end_date + ".csv")
+
 
 mean_df = pd.DataFrame(index=mean_dict[i].index)
 for i in mean_dict.keys():
@@ -201,57 +214,60 @@ for i in mean_dict.keys():
         mean_df["temp_85"] = mean_dict[i]["tas_mean"]
         mean_df["prec_85"] = mean_dict[i]["pr_mean"]
 
-#mean_df.to_csv(wd_out + "CMIP6_mean_" + str(lat) + "-" + str(lon) + "_" + start_date + "-" + end_date + ".csv")
+if write_files:
+    mean_df.to_csv(output + "CMIP6_mean_" + str(lat) + "-" + str(lon) + "_" + start_date + "-" + end_date + ".csv")
 
 ## multiple plots
-for i in scen:
-    mean_dict[i] = mean_dict[i].resample("Y").agg({"tas_mean": "mean", "pr_mean": "sum"})
-    for v in variable:
-        for key in rcp_dfs.keys():
-            if v == "tas":
-                yearly_df = rcp_dfs[key].resample("Y").agg("mean")
-            if v == "pr":
-                yearly_df = rcp_dfs[key].resample("Y").agg("sum")
-            plt.plot(yearly_df.index.to_pydatetime(), yearly_df[str(v) + "_" +str(i)], label=key, alpha=0.8)
-            if v == "tas":
-                plt.title("CMIP6 yearly mean temperature for the " + str(i) + " scenario", size=10)
-            if v == "pr":
-                plt.title("CMIP6 yearly precipitation sum for the " + str(i) + " scenario", size=10)
-            plt.xlabel("Date")
-            if v == "tas":
-                plt.ylabel("Temperature [K]")
-            if v == "pr":
-                plt.ylabel("Precipitation [mm]")
-        plt.plot(yearly_df.index.to_pydatetime(), mean_dict[i][str(v) + "_" + "mean"], label="mean", color="k")
-        plt.legend()
+if plot:
+    for i in scen:
+        mean_dict[i] = mean_dict[i].resample("Y").agg({"tas_mean": "mean", "pr_mean": "sum"})
+        for v in variable:
+            for key in rcp_dfs.keys():
+                if v == "tas":
+                    yearly_df = rcp_dfs[key].resample("Y").agg("mean")
+                if v == "pr":
+                    yearly_df = rcp_dfs[key].resample("Y").agg("sum")
+                plt.plot(yearly_df.index.to_pydatetime(), yearly_df[str(v) + "_" +str(i)], label=key, alpha=0.8)
+                if v == "tas":
+                    plt.title("CMIP6 yearly mean temperature for the " + str(i) + " scenario", size=10)
+                if v == "pr":
+                    plt.title("CMIP6 yearly precipitation sum for the " + str(i) + " scenario", size=10)
+                plt.xlabel("Date")
+                if v == "tas":
+                    plt.ylabel("Temperature [K]")
+                if v == "pr":
+                    plt.ylabel("Precipitation [mm]")
+            plt.plot(yearly_df.index.to_pydatetime(), mean_dict[i][str(v) + "_" + "mean"], label="mean", color="k")
+            plt.legend()
 
-        plt.show()
+            plt.show()
 
 ## all in one plot
-if "historical" in scen:
-    scen.remove("historical")
+if plot:
+    if "historical" in scen:
+        scen.remove("historical")
 
-for v in variable:
-    fig, axs = plt.subplots(len(scen), sharex=True, sharey=True)
-    if v == "tas":
-        fig.suptitle("CMIP6 yearly mean temperature")
-    if v == "pr":
-        fig.suptitle("CMIP6 yearly precipitation sum")
-    for s, i in zip(scen, range(len(scen))):
-        mean_dict[s] = mean_dict[s].resample("Y").agg({"tas_mean": "mean", "pr_mean": "sum"})
-        for key in rcp_dfs.keys():
-            if v == "tas":
-                yearly_df = rcp_dfs[key].resample("Y").agg("mean")
-            if v == "pr":
-                yearly_df = rcp_dfs[key].resample("Y").agg("sum")
-            axs[i].plot(yearly_df.index.to_pydatetime(), yearly_df[v + "_" + str(s)], label=key, alpha=0.8)
-            axs[i].set_title(s + " scenario", fontsize=9)
-            if v == "tas":
-                axs[i].set_ylabel("Temperature [K]")
-            if v == "pr":
-                axs[i].set_ylabel("Precipitation [mm]")
-        axs[i].plot(yearly_df.index.to_pydatetime(), mean_dict[s][v + "_" + "mean"], label="mean", color="k")
+    for v in variable:
+        fig, axs = plt.subplots(len(scen), sharex=True, sharey=True)
+        if v == "tas":
+            fig.suptitle("CMIP6 yearly mean temperature")
+        if v == "pr":
+            fig.suptitle("CMIP6 yearly precipitation sum")
+        for s, i in zip(scen, range(len(scen))):
+            mean_dict[s] = mean_dict[s].resample("Y").agg({"tas_mean": "mean", "pr_mean": "sum"})
+            for key in rcp_dfs.keys():
+                if v == "tas":
+                    yearly_df = rcp_dfs[key].resample("Y").agg("mean")
+                if v == "pr":
+                    yearly_df = rcp_dfs[key].resample("Y").agg("sum")
+                axs[i].plot(yearly_df.index.to_pydatetime(), yearly_df[v + "_" + str(s)], label=key, alpha=0.8)
+                axs[i].set_title(s + " scenario", fontsize=9)
+                if v == "tas":
+                    axs[i].set_ylabel("Temperature [K]")
+                if v == "pr":
+                    axs[i].set_ylabel("Precipitation [mm]")
+            axs[i].plot(yearly_df.index.to_pydatetime(), mean_dict[s][v + "_" + "mean"], label="mean", color="k")
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12),
-                      fancybox=True, shadow=True, ncol=7)
-    plt.show()
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12),
+                          fancybox=True, shadow=True, ncol=7)
+        plt.show()
