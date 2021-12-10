@@ -21,8 +21,9 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
-sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
+
+sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/MATILDA/MATILDA_slim')
+sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/Test_area/SPOTPY')
 import mspot_cirrus
 from MATILDA_slim import MATILDA
 

@@ -2,7 +2,7 @@
 from pathlib import Path
 import sys
 home = str(Path.home())
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area/SPOTPY')
 import mspot
 from matilda_sample import df, obs, set_up_start, set_up_end, sim_start, sim_end,freq, area_cat, area_glac, ele_dat, ele_glac,ele_cat
 import spotpy

@@ -12,7 +12,7 @@ from spotpy import analyser  # Load the Plotting extension
 import mspot
 
 home = str(Path.home())
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/matilda/MATILDA/MATILDA_slim')
 from MATILDA_slim import MATILDA
 
 # Create the MATILDA-SPOTPy-class

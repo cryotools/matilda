@@ -1,10 +1,12 @@
-Metadata-Version: 1.1
+Metadata-Version: 2.1
 Name: MATILDA-slim
 Version: 0.1
 Summary: Modeling wATer resources In gLacierizeD cAtchments
-Home-page: https://github.com/cryotools/matilda
-Author: Phillip Schuster & Ana-Lena Tappe		
-Author-email: phillip.schuster@posteo.de
+Home-page: #
+Author: ana
+Author-email: testr@gmail.com
 License: MIT
-Description:  Tool for modeling water resources in glacierized catchments. Combines a temperature-index melt model with the conceptual catchment model HBV and a parameterized glacier area/volume re-scaling routine.
-Platform: Python
+Platform: UNKNOWN
+
+UNKNOWN
+

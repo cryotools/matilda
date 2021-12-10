@@ -14,7 +14,7 @@ obs = pd.read_csv(working_directory + obs_csv)
 # Setting the parameter
 # Specify the spin up and simulation period. One year spin up period is recommened
 # Specify catchment properties like mean elevation, latitude and area
-# Specify the individual model parameters, if none are specified, the standart parameters are used
+# Specify the individual model parameters, if none are specified, the standard parameters are used
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='2010-01-01 00:00:00', set_up_end='2010-12-31 23:00:00',
                                      sim_start='2011-01-01 00:00:00', sim_end='2020-11-01 23:00:00', freq="D", 						
                                       lat=40, area_cat=5.5, area_glac=2.2, ele_dat=3500, ele_glac=4000, 						

@@ -6,7 +6,7 @@ import spotpy  # Load the SPOT package into your working storage
 import numpy as np
 from spotpy import analyser  # Load the Plotting extension
 home = str(Path.home())
-sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/scripts/Test_area')
+sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/matilda/Test_area/SPOTPY')
 import mspot
 
 ## Creating an example file
