@@ -1,6 +1,5 @@
 ##
 import warnings
-warnings.filterwarnings("ignore")  # sklearn
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -8,6 +7,10 @@ import xarray as xr
 from pathlib import Path
 import sys
 import socket
+import os
+from bias_correction import BiasCorrection
+
+warnings.filterwarnings("ignore")  # sklearn
 host = socket.gethostname()
 if 'node' in host:
     home = '/data/projects/ebaca'
@@ -16,7 +19,6 @@ elif 'cirrus' in host:
 else:
     home = str(Path.home()) + '/Seafile'
 wd = home + '/Ana-Lena_Phillip/data/matilda/Preprocessing'
-import os
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
 
@@ -43,7 +45,7 @@ aws_temp_D_int1 = aws_temp_D[slice('2007-08-10', '2011-10-11')]
 aws_temp_D_int2 = aws_temp_D[slice('2011-11-01', '2016-01-01')]
 aws_temp_D_int1 = aws_temp_D_int1.interpolate(method='spline', order=2)
 aws_temp_D_int2 = aws_temp_D_int2.interpolate(method='spline', order=2)
-aws_temp_D_int =  pd.concat([aws_temp_D_int1,aws_temp_D_int2], axis=0)      # Data gap of 18 days in October 2011
+aws_temp_D_int = pd.concat([aws_temp_D_int1, aws_temp_D_int2], axis=0)      # Data gap of 18 days in October 2011
 
 
 aws = pd.merge(aws_temp_D, aws_prec, how='outer', left_index=True, right_index=True)

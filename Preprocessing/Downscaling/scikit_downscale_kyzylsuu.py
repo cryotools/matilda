@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import xarray as xr
-import salem
 import scipy.stats as stats
 from pathlib import Path
 import sys

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 sns.set(style='darkgrid')
+import sklearn
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from skdownscale.pointwise_models import PureAnalog, AnalogRegression

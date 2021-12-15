@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import socket
 from bias_correction import BiasCorrection
+import os
 
 warnings.filterwarnings("ignore")  # sklearn
 host = socket.gethostname()
@@ -17,7 +18,6 @@ elif 'cirrus' in host:
 else:
     home = str(Path.home()) + '/Seafile'
 wd = home + '/Ana-Lena_Phillip/data/matilda/Preprocessing'
-import os
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
 
