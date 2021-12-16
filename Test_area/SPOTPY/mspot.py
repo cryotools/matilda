@@ -11,7 +11,7 @@ from spotpy import analyser  # Load the Plotting extension
 import mspot
 home = str(Path.home())
 sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/MATILDA/MATILDA_slim')
-from MATILDA_slim import MATILDA
+import MATILDA
 
 
 # Create the MATILDA-SPOTPy-class
