@@ -13,15 +13,26 @@ import warnings
 warnings.filterwarnings('ignore')
 
 ## Input
-working_directory = home + "/Seafile/SHK/Scripts/centralasiawaterresources/Catchment/"
-input_DEM = home + "/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif"
-RGI_files = home + "/Seafile/Tianshan_data/GLIMS/13_rgi60_CentralAsia/13_rgi60_CentralAsia.shp"
-ice_thickness_files = home + "/Seafile/Tianshan_data/01_original/"
 
-x, y = 86.82151540, 43.11473921 # pouring point
+working_directory = home + "/Seafile/Ana-Lena_Phillip/data/matilda/Catchment/"
+input_DEM = home + "/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/jyrgalang_dem_alos.tif"
+RGI_files = home + "/Seafile/EBA-CA/Tianshan_data/GLIMS/13_rgi60_CentralAsia/13_rgi60_CentralAsia.shp"
+ice_thickness_files = home + "/Seafile/EBA-CA/Tianshan_data/Ice_thickness-original/"
+
+x, y = 78.921583, 42.653278 # pouring point
 ele_bands, ele_zones = 20, 100
 
-output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/"
+output_path = home + "/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/"
+
+# working_directory = home + "/Seafile/SHK/Scripts/centralasiawaterresources/Catchment/"
+# input_DEM = home + "/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif"
+# RGI_files = home + "/Seafile/Tianshan_data/GLIMS/13_rgi60_CentralAsia/13_rgi60_CentralAsia.shp"
+# ice_thickness_files = home + "/Seafile/Tianshan_data/01_original/"
+#
+# x, y = 86.82151540, 43.11473921 # pouring point
+# ele_bands, ele_zones = 20, 100
+#
+# output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/"
 
 
 ##
@@ -36,7 +47,7 @@ def plotFigure(data, label, cmap='Blues'):
 # https://github.com/mdbartos/pysheds
 
 # Plot the DEM
-grid = Grid.from_raster(DEM_file, data_name='dem')
+grid = Grid.from_raster(input_DEM, data_name='dem')
 grid.view('dem')
 
 # Fill depressions in DEM
@@ -57,7 +68,7 @@ grid.catchment(data='dir', x=x, y=y, dirmap=dirmap, out_name='catch',
 # Clip the DEM to the catchment
 grid.clip_to('catch')
 demView = grid.view('dem', nodata=np.nan)
-plotFigure(demView,'Elevation')
+plotFigure(demView, 'Elevation')
 plt.show()
 
 # save as clipped TIF
@@ -65,25 +76,25 @@ grid.to_raster(demView, output_path + "catchment_DEM.tif")
 
 # Create shapefile and save it
 shapes = grid.polygonize()
-#
-# schema = {
-#     'geometry': 'Polygon',
-#     'properties': {'LABEL': 'float:16'}
-# }
-#
-# with fiona.open(output_path + "catchment_shapefile.shp", 'w',
-#                 driver='ESRI Shapefile',
-#                 crs=grid.crs.srs,
-#                 schema=schema) as c:
-#     i = 0
-#     for shape, value in shapes:
-#         rec = {}
-#         rec['geometry'] = shape
-#         rec['properties'] = {'LABEL' : str(value)}
-#         rec['id'] = str(i)
-#         c.write(rec)
-#         i += 1
-# c.close()
+
+schema = {
+    'geometry': 'Polygon',
+    'properties': {'LABEL': 'float:16'}
+}
+
+with fiona.open(output_path + "catchment_shapefile.shp", 'w',
+                driver='ESRI Shapefile',
+                crs=grid.crs.srs,
+                schema=schema) as c:
+    i = 0
+    for shape, value in shapes:
+        rec = {}
+        rec['geometry'] = shape
+        rec['properties'] = {'LABEL' : str(value)}
+        rec['id'] = str(i)
+        c.write(rec)
+        i += 1
+c.close()
 
 ##
 print("Mean catchment elevation is " + str(np.nanmean(demView)) + " m")
@@ -100,7 +111,7 @@ plt.show()
 
 
 ## Copy/get ice thickness files for each glacier
-glaciers_catchment.to_file(driver = 'ESRI Shapefile', filename= output_path + "result.shp")
+glaciers_catchment.to_file(driver = 'ESRI Shapefile', filename= output_path + "glaciers_in_catchment.shp")
 
 glaciers_catchment.drop('geometry', axis=1).to_csv(working_directory + 'rgi_csv.csv', index=False) # gets deleted after
 

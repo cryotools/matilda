@@ -1,0 +1,7 @@
+/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/RGI60-13.07695_thickness.tif
+/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/RGI60-13.07698_thickness.tif
+/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/RGI60-13.07697_thickness.tif
+/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/RGI60-13.05799_thickness.tif
+/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/RGI60-13.07696_thickness.tif
+/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/RGI60-13.07694_thickness.tif
+/home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/RGI60-13.05798_thickness.tif

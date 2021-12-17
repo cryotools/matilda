@@ -3,14 +3,11 @@ from pathlib import Path
 import sys
 import spotpy
 import numpy as np
-from spotpy import analyser  # Plotting extension
 home = str(Path.home())
 sys.path.append(home + '/Seafile/Ana-Lena_Phillip/data/matilda/Test_area/SPOTPY')
-import mspot
-
 ##
 wd = '/home/phillip/Seafile/Ana-Lena_Phillip/data/matilda/Test_area/Jyrgalang_catchment/'
-filename = '20211210_sceua_jyrgalang_5y_10000rep'
+filename = '20211210_sceua_jyrgalang_10y_10000rep'
 
 
 ##
@@ -43,4 +40,4 @@ best_param_df.transpose().to_csv(wd + 'best_param_' + filename + '_0.' + str(max
 #
 # kysyl1.reset_index(level=0, inplace=True)
 # kysyl2.reset_index(level=0, inplace=True)
-karab.reset_index(level=0, inplace=True)
+# karab.reset_index(level=0, inplace=True)
