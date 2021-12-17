@@ -139,14 +139,48 @@ f.close()
 subprocess.call(["./ice_thickness_files", output_path])
 
 
+
+
+# ZONAL STATISTICS ARE MISSING!
+# Executed in QGIS using contour polygons (gdal) and zonal statistics.
+# For zonal statistics in QGIS we need elevation zones as polygons not as lines. The code from the "Contour polygons" tool is:
+# gdal_contour -p -amax ELEV_MAX -amin ELEV_MIN -b 1 -i 10.0 -f "ESRI Shapefile" /home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/catchment_DEM.tif /home/phillip/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/glacier_contours_polygon.shp
+
+# --> for 10m elevation bands
+# A tiny splinter polygon in elevation band 3680 had to be removed manually because it contained 0 ice and caused NaNs. --> FILTER!
+
+
 ##
-file = "/home/ana/Desktop/Thickness/contours.shp"
-output = "/home/ana/Desktop/Thickness/contours2.shp"
-gdf1 = gpd.read_file(file)
-gdf2 = gpd.read_file(output_shapefile)
+# calculate the mean ice thickness per elevation band and write table
+gis_thickness = "/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/ice_thickness_profile.csv"
+catchment_area = 252
+elezone_interval = 100
+def round_elezones(x, base=100):
+    return base * round(x/base)
+
+glacier_profile = pd.read_csv(home + gis_thickness)
+glacier_profile.rename(columns={'ELEV_MAX':'Elevation'}, inplace=True)
+glacier_profile["WE"] = glacier_profile["_mean"]*0.908*1000
+glacier_profile = glacier_profile.drop(columns=["ID", "ELEV_MIN", "_mean"])
+glacier_profile["Area"] = glacier_profile["Area"]/catchment_area
+
+glacier_profile["EleZone"] = round_elezones(glacier_profile["Elevation"], base=elezone_interval)
+glacier_profile = glacier_profile.sort_values(by='Elevation',ascending=True).reset_index(drop=True)
+
+glacier_profile.to_csv(output_path + "ice_thickness_profile_final.csv", index=False)
 
 
-gdf = gpd.GeoDataFrame(pd.concat([gdf1, gdf2]))
-gdf.plot()
-plt.show()
+
+
+
+##
+# file = "/home/ana/Desktop/Thickness/contours.shp"
+# output = "/home/ana/Desktop/Thickness/contours2.shp"
+# gdf1 = gpd.read_file(file)
+# gdf2 = gpd.read_file(output_shapefile)
+#
+#
+# gdf = gpd.GeoDataFrame(pd.concat([gdf1, gdf2]))
+# gdf.plot()
+# plt.show()
 ## combine into elevation zones and create dataframe.
