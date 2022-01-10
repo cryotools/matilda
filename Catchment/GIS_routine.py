@@ -24,16 +24,6 @@ ele_bands, ele_zones = 20, 100
 
 output_path = home + "/Seafile/EBA-CA/Azamat_AvH/workflow/data/Jyrgalang/static/catchment/"
 
-# working_directory = home + "/Seafile/SHK/Scripts/centralasiawaterresources/Catchment/"
-# input_DEM = home + "/Seafile/Ana-Lena_Phillip/data/input_output/static/DEM/n43_e086_3arc_v2.tif"
-# RGI_files = home + "/Seafile/Tianshan_data/GLIMS/13_rgi60_CentralAsia/13_rgi60_CentralAsia.shp"
-# ice_thickness_files = home + "/Seafile/Tianshan_data/01_original/"
-#
-# x, y = 86.82151540, 43.11473921 # pouring point
-# ele_bands, ele_zones = 20, 100
-#
-# output_path = home + "/Seafile/Ana-Lena_Phillip/data/input_output/static/GIS_routine/"
-
 
 ##
 #Define a function to plot the digital elevation model
@@ -165,7 +155,7 @@ glacier_profile = glacier_profile.drop(columns=["ID", "ELEV_MIN", "_mean"])
 glacier_profile["Area"] = glacier_profile["Area"]/catchment_area
 
 glacier_profile["EleZone"] = round_elezones(glacier_profile["Elevation"], base=elezone_interval)
-glacier_profile = glacier_profile.sort_values(by='Elevation',ascending=True).reset_index(drop=True)
+glacier_profile = glacier_profile.sort_values(by='Elevation', ascending=True).reset_index(drop=True)
 
 glacier_profile.to_csv(output_path + "ice_thickness_profile_final.csv", index=False)
 
