@@ -1,7 +1,7 @@
 import os
 
 wd = '/data/projects/ensembles/cmip6'
-wd = '/home/ana/Seafile/Tianshan_data/CMIP/CMIP6/dir_test'
+wd = '/home/phillip/Seafile/Tianshan_data/CMIP/CMIP6/dir_test'
 var = ['near_surface_air_temperature', 'precipitation']
 scen = ['ssp1_2_6', 'ssp2_4_5']     #  'historical', 'ssp1_2_6', 'ssp2_4_5', 'ssp3_7_0', 'ssp5_8_5'
 

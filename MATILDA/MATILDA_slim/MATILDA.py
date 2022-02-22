@@ -1028,6 +1028,7 @@ def MATILDA_plots(output_MATILDA, parameter):
         fig.legend(handles, labels, loc='lower center', ncol=4, bbox_to_anchor=(0.5, -0.02),
                    bbox_transform=plt.gcf().transFigure)
         plt.tight_layout()
+        fig.subplots_adjust(bottom=0.12)
         return fig
 
     # Plotting the HBV output parameters

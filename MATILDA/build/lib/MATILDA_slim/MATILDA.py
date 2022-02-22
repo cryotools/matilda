@@ -173,7 +173,7 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
          "CFMAX_ice": CFMAX_ice, "CFR_snow": CFR_snow, "CFR_ice": CFR_ice, "BETA": BETA, "CET": CET, \
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, \
          "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH})
-    print("Parameter for the MATILDA simulation are set")
+    print("Parameters are set")
     return parameter
 
 
@@ -888,10 +888,10 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         if nash_sut == "error":
             print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
         else:
-            print("The Nash–Sutcliffe model efficiency coefficient of the MATILDA run is " + str(round(nash_sut, 2)))
-            print("The KGE coefficient of the MATILDA run is " + str(round(float(kge), 2)))
-            print("The RMSE of the MATILDA run is " + str(round(float(rmse), 2)))
-            print("The MARE coefficient of the MATILDA run is " + str(round(float(mare), 2)))
+            print("The Nash–Sutcliffe model efficiency coefficien: " + str(round(nash_sut, 2)))
+            print("The KGE coefficient: " + str(round(float(kge), 2)))
+            print("The RMSE: " + str(round(float(rmse), 2)))
+            print("The MARE coefficient: " + str(round(float(mare), 2)))
 
 
     if obs is None:
@@ -1028,6 +1028,7 @@ def MATILDA_plots(output_MATILDA, parameter):
         fig.legend(handles, labels, loc='lower center', ncol=4, bbox_to_anchor=(0.5, -0.02),
                    bbox_transform=plt.gcf().transFigure)
         plt.tight_layout()
+        fig.subplots_adjust(bottom=0.12)
         return fig
 
     # Plotting the HBV output parameters

@@ -70,7 +70,7 @@ era['tp'] = total_precipitation
 era['tp'][era['tp'] < 0.000004] = 0          # Refer to https://confluence.ecmwf.int/display/UDOC/Why+are+there+sometimes+small+negative+precipitation+accumulations+-+ecCodes+GRIB+FAQ
 era['tp'] = era['tp']*1000                   # Unit to mm
 
-# era.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu/t2m_tp_ERA5L_kyzylsuu_42.2_78.2_1982_2019.csv')
+era.to_csv(home + '/Ana-Lena_Phillip/data/input_output/input/ERA5/Tien-Shan/Kysylsuu/t2m_tp_ERA5L_kyzylsuu_42.2_78.2_1982_2020.csv')
 
 era_D = era.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
 

@@ -1,5 +1,5 @@
 """
-{Tool to iterate through CMIP6 ensemble outputs downloaded to the 'CIRRUS' HPC at Humboldt-University.
+{Tool to iterate through CMIP6 ensemble outputs downloaded to 'CIRRUS' HPC at Humboldt-University.
 Outputs various combinations of CSV timeseries.}
 
 {Authors: Phillip Schuster & Ana-Lena Tappe}
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import os
 home = str(Path.home())
 #wd = home + "/Seafile/Tianshan_data/CMIP/CMIP6/dir_test"
-#wd = "/home/ana/Desktop/in_cm4_8/"
+#wd = "/home/phillip/Desktop/in_cm4_8/"
 wd = "/data/projects/ensembles/cmip6"
 output = "/data/projects/ebaca/Ana-Lena_Phillip/data/input_output/input/CMIP6/jyrgalang/"
 ## output information
