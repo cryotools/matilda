@@ -169,7 +169,7 @@ def dmod_score(predict_df, targets, x_predict, figsize=(10, 10), shape=(3, 3), *
 # One plot per SSP (4) with 7 models each plus mean and ERA5 (COMPARE BEFORE AND AFTER ADJUSTMENT):
 
 # Temperature:
-figure, axis = plt.subplots(2, 2, constrained_layout=True, figsize=(8, 8), sharex="col", sharey="all")
+figure, axis = plt.subplots(2, 2, figsize=(8, 8), sharex="col", sharey="all")
 cmip_plot(axis[0, 0], cmip_corrT_mod, 'ssp1', era_label=True)       # cmip_T_mod
 cmip_plot(axis[0, 1], cmip_corrT_mod, 'ssp2')
 cmip_plot(axis[1, 0], cmip_corrT_mod, 'ssp3')
@@ -181,7 +181,7 @@ figure.suptitle('10y Mean of Air Temperature', fontweight='bold')
 plt.show()
 
 # Precipitation:
-figure, axis = plt.subplots(2, 2, constrained_layout=True, figsize=(8, 8), sharex="col", sharey="all")
+figure, axis = plt.subplots(2, 2, figsize=(8, 8), sharex="col", sharey="all")
 cmip_plot(axis[0, 0], cmip_P_mod, 'ssp1', precip=True, era_label=True)         # cmip_P_mod
 cmip_plot(axis[0, 1], cmip_P_mod, 'ssp2', precip=True)
 cmip_plot(axis[1, 0], cmip_P_mod, 'ssp3', precip=True)
@@ -204,7 +204,7 @@ cmip_plot_ensemble(cmip_corrT_mod, era_corrT, intv_mean='Y')
 cmip_plot_ensemble(cmip_corrP_mod, era_corrP, precip=True, intv_sum='Y', intv_mean='Y')
 
 
-# Violinplots for all models per scenario
+## Violinplots for all models per scenario
 
     # All models (1980-2100)
 
@@ -228,7 +228,6 @@ plt.show()
 
 
     # Training period incl. target data:
-
 
 df_vioT = cmip_corrT_mod.copy()
 for i in df_vioT.keys():
@@ -260,7 +259,7 @@ plt.show()
 
 
 
-    # For raw AND adjusted data:
+    ## For raw AND adjusted data:
     
 df_vioTcorr = cmip_corrT_mod.copy()
 df_vioT = cmip_T_mod.copy()
@@ -276,7 +275,7 @@ for i in df_vioTcorr.keys():
     df_vioTcorr[i].drop('mean', axis=1, inplace=True)
 
 
-fig = plt.figure(figsize=(20, 20))#, constrained_layout=True)
+fig = plt.figure(figsize=(20, 20))
 outer = fig.add_gridspec(1, 2)
 
 inner = outer[0].subgridspec(4, 1)
@@ -354,7 +353,89 @@ fig.subplots_adjust(top=0.93)
 plt.show()
 
 
-    # Stats
+    ## For full scenario:
+
+df_vioTcorr = cmip_corrT_mod.copy()
+df_vioT = cmip_T_mod.copy()
+
+for i in df_vioTcorr.keys():
+    df_vioTcorr[i].drop('mean', axis=1, inplace=True)
+
+fig = plt.figure(figsize=(20, 20))
+outer = fig.add_gridspec(1, 2)
+
+inner = outer[0].subgridspec(4, 1)
+axis = inner.subplots(sharex='col')
+for (i, k) in zip(df_vioT.keys(), range(0, 4, 1)):
+    df = df2long(df_vioT[i], rm_col=False)
+    axis[k].grid()
+    sns.violinplot(ax=axis[k], x='t2m', y='model', data=df, scale="count", bw=.2)
+    axis[k].set(xlabel=None, ylabel=i, xlim=(267.5, 291.5))
+    if k == 0:
+        axis[k].set_title('Before Scaled Distribution Mapping')
+plt.xlabel('Air Temperature [K]')
+
+inner = outer[1].subgridspec(4, 1)
+axis = inner.subplots(sharex='col')
+for (i, k) in zip(df_vioTcorr.keys(), range(0, 4, 1)):
+    df = df2long(df_vioTcorr[i], rm_col=False)
+    axis[k].grid()
+    sns.violinplot(ax=axis[k], x='t2m', y='model', data=df, scale="count", bw=.2)
+    axis[k].set(xlabel=None, ylabel=i, xlim=(267.5, 291.5))
+    axis[k].get_yaxis().set_visible(False)
+    if k == 0:
+        axis[k].set_title('After Scaled Distribution Mapping')
+plt.xlabel('Air Temperature [K]')
+
+fig.suptitle('Kernel Density Estimation of Mean Annual Air Temperature (1982-2100)', fontweight='bold', fontsize=20)
+fig.tight_layout()
+fig.subplots_adjust(top=0.93)
+plt.show()
+
+
+
+
+df_vioPcorr = cmip_corrP_mod.copy()
+df_vioP = cmip_P_mod.copy()
+
+for i in df_vioPcorr.keys():
+    df_vioPcorr[i].drop('mean', axis=1, inplace=True)
+
+
+fig = plt.figure(figsize=(20, 20))
+outer = fig.add_gridspec(1, 2)
+
+inner = outer[0].subgridspec(4, 1)
+axis = inner.subplots(sharex='col')
+for (i, k) in zip(df_vioP.keys(), range(0, 4, 1)):
+    df = df2long(df_vioP[i], rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
+    axis[k].grid()
+    sns.violinplot(ax=axis[k], x='tp', y='model', data=df, scale="count", bw=.2)
+    axis[k].set(xlabel=None, ylabel=i, xlim=(0,2000))
+    if k == 0:
+        axis[k].set_title('Before Scaled Distribution Mapping')
+plt.xlabel('Annual Precipitation [mm]')
+
+inner = outer[1].subgridspec(4, 1)
+axis = inner.subplots(sharex='col')
+for (i, k) in zip(df_vioPcorr.keys(), range(0, 4, 1)):
+    df = df2long(df_vioPcorr[i], rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
+    axis[k].grid()
+    sns.violinplot(ax=axis[k], x='tp', y='model', data=df, scale="count", bw=.2)
+    axis[k].set(xlabel=None, ylabel=i, xlim=(0,2000))
+    axis[k].get_yaxis().set_visible(False)
+    if k == 0:
+        axis[k].set_title('After Scaled Distribution Mapping')
+plt.xlabel('Annual Precipitation [mm]')
+
+fig.suptitle('Kernel Density Estimation of Annual Precipitation (1982-2100)', fontweight='bold', fontsize=20)
+fig.tight_layout()
+fig.subplots_adjust(top=0.93)
+plt.show()
+
+
+
+## Stats
 stats = {}
 stats_corr = {}
 for i in scen:
@@ -414,7 +495,7 @@ predict_slice = slice('2000-01-01', '2020-12-31')
 
 cmip_check = bc_check(cmip_corrT_mod['ssp1'].iloc[:,:1], era_corrT[train_slice], cmip_corrT_mod['ssp1'].iloc[:,:1], era_corrT,
          train_slice, predict_slice)
-q_assess(**era_check)
+q_assess(**cmip_check)
 plt.show()
 
 for m in cmip_corrT_mod['ssp1'].columns:
