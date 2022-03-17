@@ -888,7 +888,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         if nash_sut == "error":
             print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
         else:
-            print("The Nash–Sutcliffe model efficiency coefficien: " + str(round(nash_sut, 2)))
+            print("The Nash–Sutcliffe model efficiency coefficient: " + str(round(nash_sut, 2)))
             print("The KGE coefficient: " + str(round(float(kge), 2)))
             print("The RMSE: " + str(round(float(rmse), 2)))
             print("The MARE coefficient: " + str(round(float(mare), 2)))

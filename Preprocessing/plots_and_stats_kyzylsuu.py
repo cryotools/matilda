@@ -33,8 +33,8 @@ era_temp = pd.read_csv(era_path + 't2m_era5l_42.516-79.0167_1982-01-01-2020-12-3
 era_temp_int = pd.read_csv(era_path + 't2m-with-gap_era5l_42.516-79.0167_2007-08-10-2016-01-01.csv', index_col='time', parse_dates=['time'])
 era_prec = pd.read_csv(era_path + 'tp_era5l_42.516-79.0167_1982-01-01-2020-12-31.csv', index_col='time', parse_dates=['time'])
 
-era_corrT = pd.read_csv(era_path + 't2m_era5l_adjust_42.516-79.0167_1982-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
-era_corrP = pd.read_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2100-12-31.csv', index_col='time', parse_dates=['time'])
+era_corrT = pd.read_csv(era_path + 't2m_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv', index_col='time', parse_dates=['time'])
+era_corrP = pd.read_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv', index_col='time', parse_dates=['time'])
 
 scen = ['ssp1', 'ssp2', 'ssp3', 'ssp5']
 status = ['raw', 'adjusted']

@@ -123,7 +123,7 @@ y_train = aws_temp_int[final_train_slice].squeeze()
 x_predict = era_temp[final_predict_slice].squeeze()
 bc_era = BiasCorrection(y_train, x_train, x_predict)
 era_corrT = pd.DataFrame(bc_era.correct(method='normal_mapping'))
-era_corrT.to_csv(era_path + 't2m_era5l_adjust_42.516-79.0167_1982-01-01-2100-12-31.csv')
+era_corrT.to_csv(era_path + 't2m_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
 
 
 # Precipitation:
@@ -133,7 +133,7 @@ y_train = aws_prec[final_train_slice].squeeze()
 x_predict = era_prec[final_predict_slice].squeeze()
 bc_era = BiasCorrection(y_train, x_train, x_predict)
 era_corrP = pd.DataFrame(bc_era.correct(method='gamma_mapping'))
-era_corrP.to_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2100-12-31.csv')
+era_corrP.to_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
 
 
 ### CMIP:
