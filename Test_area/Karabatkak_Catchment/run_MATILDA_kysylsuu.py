@@ -18,8 +18,8 @@ elif 'cirrus' in host:
     home = '/data/projects/ebaca'
 else:
     home = str(Path.home()) + '/Seafile'
-sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/MATILDA_package_slim')
-sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
+# sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/MATILDA')
+# sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
 from MATILDA_slim import MATILDA
 
 run_series = "kyzylsuu_base_1982-2020"
@@ -43,50 +43,21 @@ obs = pd.read_csv(input_path + runoff_obs)
 
 
 # Basic overview plot
-obs_fig = obs.copy()
-obs_fig.set_index('Date', inplace=True)
-obs_fig.index = pd.to_datetime(obs_fig.index)
-# obs_fig = obs_fig[slice('1984-10-01','1985-01-31')]
-plt.figure()
-ax = obs_fig.plot(label='Kyzylsuu (Hydromet)')
-ax.set_ylabel('Discharge [m³/s]')
-
-plt.show()
-
-# ##
-# parameter = MATILDA.MATILDA_parameter(df, set_up_start='2017-01-01 00:00:00', set_up_end='2018-12-31 23:00:00',
-#                                       sim_start='2017-01-01 00:00:00', sim_end='2018-12-31 23:00:00', freq="D",
-#                                       area_cat=315.694, area_glac=2.95,
-#                                       ele_dat=2550, ele_glac=4074, ele_cat=3225)
-# ## Running MATILDA
-parameter = MATILDA.MATILDA_parameter(df, set_up_start='1982-01-01 00:00:00', set_up_end='1985-12-31 23:00:00',
-                                      sim_start='1982-01-01 00:00:00', sim_end='2021-07-30 23:00:00', freq="M",
-                                      area_cat=315.694, area_glac=32.51, lat=42.33,
-                                      ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
-                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
-                                      CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
-                                      LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
-
-df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs)  # Data preprocessing
+# obs_fig = obs.copy()
+# obs_fig.set_index('Date', inplace=True)
+# obs_fig.index = pd.to_datetime(obs_fig.index)
+# # obs_fig = obs_fig[slice('1984-10-01','1985-01-31')]
+# plt.figure()
+# ax = obs_fig.plot(label='Kyzylsuu (Hydromet)')
+# ax.set_ylabel('Discharge [m³/s]')
 #
-output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc)  # MATILDA model run + downscaling
-#
-output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
-# # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
-# # adding them to the output
-# output_MATILDA[6].show()
-#
-# output = plot_data(output_MATILDA, parameter)
-# test = plot_runoff(output, parameter)
-# test.show()
-#
-MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
+# plt.show()
 
 ## This function is a standalone function to run the whole MATILDA simulation
 # If output = output_path in function, the output will be saved to a new folder
-output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, output=output_path, set_up_start='1982-01-01 00:00:00', set_up_end='1985-12-31 23:00:00',
-                                      sim_start='1982-01-01 00:00:00', sim_end='2021-07-30 23:00:00', freq="D",
-                                      area_cat=315.694, area_glac=32.51, lat=42.33,
+output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs,  output=None, set_up_start='1982-01-01 00:00:00', set_up_end='1983-12-31 23:00:00',
+                                      sim_start='1982-01-01 00:00:00', sim_end='1986-07-30 23:00:00', freq="D",
+                                      area_cat=315.694, area_glac=32.51, lat=42.33, soi=[5, 10],
                                       ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
@@ -94,6 +65,15 @@ output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs, output=output_path, set
 output_MATILDA[6].show()
 
 output_MATILDA[0].Q_Total
+
+
+# HIER WEITER MACHEN:
+
+# - Include only non-zero runoff values in calculation of coeffs
+# - OR: Include only periods within the SOI
+# - is it possible to set omitted periods NA or will it fuck up the rest of the process?
+
+
 
 ## Tod-dos:
 
@@ -107,3 +87,36 @@ output_MATILDA[0].Q_Total
 # -
 # -
 
+
+
+
+
+
+
+
+## Running MATILDA
+parameter = MATILDA.MATILDA_parameter(df, set_up_start='1982-01-01 00:00:00', set_up_end='1983-12-31 23:00:00',
+                                      sim_start='1982-01-01 00:00:00', sim_end='1985-12-31 23:00:00', freq="D",
+                                      area_cat=315.694, area_glac=32.51, lat=42.33,
+                                      ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
+                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
+                                      CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
+                                      LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
+
+df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs)  # Data preprocessing
+#
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc)  # MATILDA model run + downscaling
+#
+output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
+output_MATILDA[6].show()
+
+
+# # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
+# # adding them to the output
+# output_MATILDA[6].show()
+#
+# output = plot_data(output_MATILDA, parameter)
+# test = plot_runoff(output, parameter)
+# test.show()
+# #
+# MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)

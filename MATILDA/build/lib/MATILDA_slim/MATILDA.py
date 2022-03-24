@@ -4,6 +4,7 @@ MATILDA (Modeling wATer resources In gLacierizeD cAtchments) is a combination of
 This file may use the input files created by the COSIPY-utility "aws2cosipy" as forcing data and or a simple dataframe with temperature, precipitation and if possible evapotranspiration and additional observation runoff data to validate it.
 """
 # Import all necessary python packages
+import sys
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -18,7 +19,7 @@ from matplotlib.offsetbox import AnchoredText
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
-                      lr_temp=-0.006, lr_prec=0, \
+                      soi = None, lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, \
                       CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, **kwargs):
@@ -122,7 +123,17 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print(
             "WARNING: Data frequency " + freq + " is not supported. Choose either 'D' (daily), 'W' (weekly), 'M' (monthly) or 'Y' (yearly).")
 
-    # Checking the model parameters
+    # Check if season of interest is specified
+    if soi is not None:
+        if type(soi) is not list:
+            print("Error: The season of interest (soi) needs to be specified as 2-element list: [first_calendar_month, last_calendar_month]")
+            sys.exit()
+        elif len(soi) is not 2:
+            print("Error: The season of interest (soi) needs to be specified as 2-element list: [first_calendar_month, last_calendar_month]")
+            sys.exit()
+
+
+    # Check model parameters
     if 1 > BETA or BETA > 6:
         print("WARNING: Parameter BETA exceeds boundaries [1, 6].")
     if 0 > CET or CET > 0.3:
@@ -168,12 +179,12 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end, \
          "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac, "ele_dat": ele_dat, \
-         "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "lr_temp": lr_temp, \
-         "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "CFMAX_snow": CFMAX_snow, \
+         "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "soi": soi, \
+         "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "CFMAX_snow": CFMAX_snow, \
          "CFMAX_ice": CFMAX_ice, "CFR_snow": CFR_snow, "CFR_ice": CFR_ice, "BETA": BETA, "CET": CET, \
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, \
          "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH})
-    print("Parameters are set")
+    print("Parameters set")
     return parameter
 
 
@@ -202,12 +213,16 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         # Changing the input unit from m/3 to mm.
         obs_preproc["Qobs"] = obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
         obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
-        # expanding the observation period a whole one year, filling the NAs with 0
+        # Omit everything outside the specified season of interest (soi)
+        if parameter.soi is not None:
+            obs_preproc = obs_preproc[obs_preproc.index.month.isin(range(parameter.soi[0], parameter.soi[1] + 1))]
+        # Expanding the observation period full years, filling the NAs with 0
         idx_first = obs_preproc.index.year[1]
         idx_last = obs_preproc.index.year[-1]
         idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
         obs_preproc = obs_preproc.reindex(idx)
         obs_preproc = obs_preproc.fillna(0)
+
 
     if obs is not None:
         return df_preproc, obs_preproc
@@ -888,7 +903,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         if nash_sut == "error":
             print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
         else:
-            print("The Nash–Sutcliffe model efficiency coefficien: " + str(round(nash_sut, 2)))
+            print("The Nash–Sutcliffe model efficiency coefficient: " + str(round(nash_sut, 2)))
             print("The KGE coefficient: " + str(round(float(kge), 2)))
             print("The RMSE: " + str(round(float(rmse), 2)))
             print("The MARE coefficient: " + str(round(float(mare), 2)))
@@ -1118,7 +1133,7 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
 
 
 def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, set_up_start=None, set_up_end=None, \
-                       sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None, area_glac=None, ele_dat=None,
+                       sim_start=None, sim_end=None, freq="D", lat=None, soi=None, area_cat=None, area_glac=None, ele_dat=None,
                        ele_glac=None, ele_cat=None, plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
                        TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
@@ -1128,7 +1143,7 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, se
     parameter = MATILDA_parameter(input_df, set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start,
                                   sim_end=sim_end, freq=freq, lat=lat, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
                                   ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, parameter_df = parameter_df, lr_temp=lr_temp,
-                                  lr_prec=lr_prec, TT_snow=TT_snow, \
+                                  lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, \
                                   TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, CFR_snow=CFR_snow, \
                                   CFR_ice=CFR_ice, BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
                                   MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH)
