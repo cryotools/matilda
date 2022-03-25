@@ -5,11 +5,17 @@ This file may use the input files created by the COSIPY-utility "aws2cosipy" as 
 """
 # Import all necessary python packages
 import sys
+
+import numpy
 import xarray as xr
 import numpy as np
 import pandas as pd
 import scipy.signal as ss
+import copy
 import hydroeval
+import HydroErr as he
+import warnings
+warnings.filterwarnings(action='ignore',module='HydroErr')
 from datetime import date, datetime
 import os
 import matplotlib.pyplot as plt
@@ -221,7 +227,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         idx_last = obs_preproc.index.year[-1]
         idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
         obs_preproc = obs_preproc.reindex(idx)
-        obs_preproc = obs_preproc.fillna(0)
+        obs_preproc = obs_preproc.fillna(np.NaN)
 
 
     if obs is not None:
@@ -883,34 +889,26 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
 
+    # if obs is not None:
+    #     output_MATILDA.loc[output_MATILDA.isnull().any(axis=1), :] = np.nan
+
+
+    # Model efficiency coefficients
     if obs is not None:
-        output_MATILDA.loc[output_MATILDA.isnull().any(axis=1), :] = np.nan
-
-    # Nash–Sutcliffe model efficiency coefficient
-    def NS(output_MATILDA):
-        nash_sut = 1 - np.sum((output_MATILDA["Qobs"] - output_MATILDA["Q_Total"]) ** 2) / (
-            np.sum((output_MATILDA["Qobs"] - output_MATILDA["Qobs"].mean()) ** 2))
-        if nash_sut > 1 or nash_sut < -1:
-            nash_sut = "error"
-        return nash_sut
-
-    if obs is not None:
-        nash_sut = NS(output_MATILDA)
-        kge, r, alpha, beta = hydroeval.evaluator(hydroeval.kge, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
-        rmse = hydroeval.evaluator(hydroeval.rmse, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
-        mare = hydroeval.evaluator(hydroeval.mare, output_MATILDA["Q_Total"], output_MATILDA["Qobs"])
-
-        if nash_sut == "error":
-            print("ERROR. The Nash–Sutcliffe model efficiency coefficient is outside the range of -1 to 1")
-        else:
-            print("The Nash–Sutcliffe model efficiency coefficient: " + str(round(nash_sut, 2)))
-            print("The KGE coefficient: " + str(round(float(kge), 2)))
-            print("The RMSE: " + str(round(float(rmse), 2)))
-            print("The MARE coefficient: " + str(round(float(mare), 2)))
-
-
-    if obs is None:
-        nash_sut = str("No observations available to calculate the Nash–Sutcliffe model efficiency coefficient")
+        sim = output_MATILDA["Q_Total"]
+        target = output_MATILDA["Qobs"]
+        nash_sut = he.nse(sim, target, remove_zero=True)
+        kge = he.kge_2012(sim, target, remove_zero=True)
+        rmse = he.rmse(sim, target)
+        mare = hydroeval.evaluator(hydroeval.mare, sim, target)
+        print("*-------------------*")
+        print("KGE coefficient: " + str(round(float(kge), 2)))
+        print("Nash–Sutcliffe coefficient: " + str(round(nash_sut, 2)))
+        print("RMSE: " + str(round(float(rmse), 2)))
+        print("MARE coefficient: " + str(round(float(mare), 2)))
+        print("*-------------------*")
+    else:
+        kge = str("No observations available to calculate model efficiency coefficients.")
 
     def create_statistics(output_MATILDA):
         stats = output_MATILDA.describe()
@@ -921,13 +919,16 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         stats = stats.round(3)
         return stats
 
-    stats = create_statistics(output_MATILDA)
+    if obs is not None:
+        dat_stats = copy.deepcopy(output_MATILDA)
+        dat_stats.loc[dat_stats.isnull().any(axis=1), :] = np.nan
+        stats = create_statistics(dat_stats)
 
     print(stats)
     print("End of the MATILDA simulation")
     print("---")
     output_MATILDA = output_MATILDA.round(3)
-    output_all = [output_MATILDA, nash_sut, stats, lookup_table, glacier_change_area]
+    output_all = [output_MATILDA, kge, stats, lookup_table, glacier_change_area]
 
     return output_all
 
@@ -952,7 +953,7 @@ def MATILDA_plots(output_MATILDA, parameter):
                  "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
         if "Qobs" in output_MATILDA[0].columns:
             plot_data["Qobs"] = obs
-        plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
+        # plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
 
 
         plot_annual_data = output_MATILDA[0].copy()
@@ -1000,7 +1001,7 @@ def MATILDA_plots(output_MATILDA, parameter):
 
     def plot_runoff(plot_data, plot_annual_data, parameter):
         plot_data["plot"] = 0
-        plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
+        # plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(14, 4.5), gridspec_kw={'width_ratios': [2.75, 1]})
         if 'Qobs' in plot_data.columns:
             ax1.plot(plot_data.index.to_pydatetime(), plot_data["Qobs"], c="#E69F00", label="", linewidth=1.2)
@@ -1012,11 +1013,11 @@ def MATILDA_plots(output_MATILDA, parameter):
                              alpha=.75, label="")
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
         if isinstance(output_MATILDA[1], float):
-            anchored_text = AnchoredText('NS coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
+            anchored_text = AnchoredText('KGE coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
         elif 'Qobs' not in plot_data.columns:
             anchored_text = AnchoredText(' ', loc=2, frameon=False)
         else:
-            anchored_text = AnchoredText('NS coeff exceeds boundaries', loc=2, frameon=False)
+            anchored_text = AnchoredText('KGE coeff exceeds boundaries', loc=2, frameon=False)
         ax1.add_artist(anchored_text)
         if 'Qobs' in plot_annual_data.columns:
             ax2.plot(plot_annual_data.index.to_pydatetime(), plot_annual_data["Qobs"], c="#E69F00",
