@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import socket
 from bias_correction import BiasCorrection
+import copy as cp
 import os
 host = socket.gethostname()
 if 'node' in host:
@@ -46,8 +47,8 @@ era = pd.read_csv(era_path + 't2m_tp_ERA5L_kyzylsuu_42.2_78.2_1982_2020.csv',
 era = era.resample('D').agg({'t2m': 'mean', 'tp': 'sum'})
 era_temp = era['t2m']
 era_prec = era['tp']
-era_temp.to_csv(era_path + 't2m_era5l_42.516-79.0167_1982-01-01-2020-12-31.csv')
-era_prec.to_csv(era_path + 'tp_era5l_42.516-79.0167_1982-01-01-2020-12-31.csv')
+# era_temp.to_csv(era_path + 't2m_era5l_42.516-79.0167_1982-01-01-2020-12-31.csv')
+# era_prec.to_csv(era_path + 'tp_era5l_42.516-79.0167_1982-01-01-2020-12-31.csv')
 
 # Include datagap from AWS to align both datasets
 era_temp_int1 = era_temp[slice('2007-08-10', '2011-10-11')]
@@ -100,12 +101,12 @@ for s in scen2:
         (cmip_pr.index.month == 2) | (cmip_pr.index.month == 3), ['inm_cm5_0', 'inm_cm4_8', 'noresm2_mm']].interpolate(
         method='spline', order=2)
     name = 'ssp' + s[:1]
-    cmip_mod_tas[name] = cmip_tas
-    cmip_mod_pr[name] = cmip_pr
-    cmip_mod_tas[name].to_csv(cmip_path + 't2m_CMIP6_all_models_raw_42.516-79.0167_1982-01-01-2100-12-31_'
-                             + name + '.csv')
-    cmip_mod_pr[name].to_csv(cmip_path + 'tp_CMIP6_all_models_raw_42.516-79.0167_1982-01-01-2100-12-31_'
-                             + name + '.csv')
+    cmip_mod_tas[name] = cmip_tas[slice('1982-01-01', '2100-12-31')]
+    cmip_mod_pr[name] = cmip_pr[slice('1982-01-01', '2100-12-31')]
+    # cmip_mod_tas[name].to_csv(cmip_path + 't2m_CMIP6_all_models_raw_42.516-79.0167_1982-01-01-2100-12-31_'
+    #                          + name + '.csv')
+    # cmip_mod_pr[name].to_csv(cmip_path + 'tp_CMIP6_all_models_raw_42.516-79.0167_1982-01-01-2100-12-31_'
+    #                          + name + '.csv')
 
 ##########################
 #    Bias adjustment:    #
@@ -123,7 +124,7 @@ y_train = aws_temp_int[final_train_slice].squeeze()
 x_predict = era_temp[final_predict_slice].squeeze()
 bc_era = BiasCorrection(y_train, x_train, x_predict)
 era_corrT = pd.DataFrame(bc_era.correct(method='normal_mapping'))
-era_corrT.to_csv(era_path + 't2m_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
+# era_corrT.to_csv(era_path + 't2m_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
 
 
 # Precipitation:
@@ -133,7 +134,7 @@ y_train = aws_prec[final_train_slice].squeeze()
 x_predict = era_prec[final_predict_slice].squeeze()
 bc_era = BiasCorrection(y_train, x_train, x_predict)
 era_corrP = pd.DataFrame(bc_era.correct(method='gamma_mapping'))
-era_corrP.to_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
+# era_corrP.to_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
 
 
 ### CMIP:
@@ -188,8 +189,80 @@ for s in scen2:
         y_train = era_corrP[final_train_slice].squeeze()
         x_predict = cmip_mod_pr[s][m][final_predict_slice].squeeze()
         bc_cmip = BiasCorrection(y_train, x_train, x_predict)
-        cmip_corrP_mod[s][m] = pd.DataFrame(bc_cmip.correct(method='gamma_mapping'))
+        cmip_corrP_mod[s][m] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
+        cmip_corrP_mod[s][m][cmip_corrP_mod[s][m] < 0] = 0          # only needed when using normal mapping for precipitation
         cmip_corrP_mod[s]['mean'] = cmip_corrP_mod[s].mean(axis=1)
         cmip_corrP_mod[s].to_csv(cmip_path + 'tp_CMIP6_all_models_adjusted_42.516-79.0167_1982-01-01-2100-12-31_'
                                  + s + '.csv')
 
+
+
+
+
+## Debugging "inm" models
+
+import matplotlib.pyplot as plt
+# from plots_and_stats_kyzylsuu import df2long
+import seaborn as sns
+
+def df2long(df, intv_sum='M', intv_mean='Y', rm_col = True, precip=False):       # Convert dataframes to long format for use in seaborn-lineplots.
+    if precip:
+        if rm_col:
+            df = df.iloc[:, :-1].resample(intv_sum).sum().resample(intv_mean).mean()   # Exclude 'mean' column
+        else:
+            df = df.resample(intv_sum).sum().resample(intv_mean).mean()
+        df = df.reset_index()
+        df = df.melt('time', var_name='model', value_name='tp')
+    else:
+        if rm_col:
+            df = df.iloc[:, :-1].resample(intv_mean).mean()   # Exclude 'mean' column
+        else:
+            df = df.resample(intv_mean).mean()
+        df = df.reset_index()
+        df = df.melt('time', var_name='model', value_name='t2m')
+    return df
+
+final_train_slice = slice('1982-01-01', '2020-12-31')
+final_predict_slice = slice('1982-01-01', '2100-12-31')
+
+dat = pd.read_csv(cmip_path + 'tp_CMIP6_all_models_raw_42.516-79.0167_1982-01-01-2100-12-31_'
+                          + 'ssp1' + '.csv', index_col='time', parse_dates=['time'])
+dat = dat.filter(like='inm')
+dat = dat[slice('1982-01-01', '2100-12-31')]
+inm_corr = cp.deepcopy(dat)
+inm_corr = inm_corr[slice('1982-01-01', '2020-12-31')]
+
+x_train = dat['inm_cm4_8'][final_train_slice].squeeze()
+y_train = era_corrP[final_train_slice].squeeze()
+x_predict = dat['inm_cm4_8'][final_predict_slice].squeeze()
+bc_cmip = BiasCorrection(y_train, x_train, x_predict)
+inm_corr['inm_cm4_8'] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
+
+x_train = dat['inm_cm5_0'][final_train_slice].squeeze()
+y_train = era_corrP[final_train_slice].squeeze()
+x_predict = dat['inm_cm5_0'][final_predict_slice].squeeze()
+bc_cmip = BiasCorrection(y_train, x_train, x_predict)
+inm_corr['inm_cm5_0'] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
+
+inm_corr['era5l'] = era_corrP
+
+inm_corr.sum()
+dat.sum()
+
+inm_corr['inm_cm5_0'][inm_corr['inm_cm5_0'] < 0] = 0
+
+inm_corr.describe()
+dat.describe()
+overview = cmip_corrP_mod['ssp1'].describe()
+
+figure, axis = plt.subplots(2, 1, figsize=(10, 14), tight_layout=True, sharex='col')
+df = df2long(dat, rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
+sns.violinplot(ax=axis[0], x='tp', y='model', data=df, scale="count", bw=.2)
+axis[0].set(xlabel=None, xlim=(0, 1100))
+df = df2long(inm_corr, rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
+sns.violinplot(ax=axis[1], x='tp', y='model', data=df, scale="count", bw=.2)
+axis[1].set(xlabel=None, xlim=(0, 1100))
+plt.show()
+
+# - prediction bis 2029 noch wie sie soll, danach inm_4_8 total off, nach 2067 auch bei inm_5_0
+# - mit Normalverteilung funktioniert es aber muss bei 0 gekappt werden

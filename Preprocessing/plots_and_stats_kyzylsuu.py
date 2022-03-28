@@ -170,6 +170,17 @@ def dmod_score(predict_df, targets, x_predict, figsize=(10, 10), shape=(3, 3), *
 
 # Temperature:
 figure, axis = plt.subplots(2, 2, figsize=(8, 8), sharex="col", sharey="all")
+cmip_plot(axis[0, 0], cmip_T_mod, 'ssp1', era_label=True)       # cmip_T_mod
+cmip_plot(axis[0, 1], cmip_T_mod, 'ssp2')
+cmip_plot(axis[1, 0], cmip_T_mod, 'ssp3')
+cmip_plot(axis[1, 1], cmip_T_mod, 'ssp5')
+figure.legend(cmip_T_mod['ssp1'].columns, loc='lower right', ncol=4, mode="expand")
+figure.tight_layout()
+figure.subplots_adjust(bottom=0.13, top=0.9)
+figure.suptitle('10y Mean of Air Temperature', fontweight='bold')
+plt.show()
+
+figure, axis = plt.subplots(2, 2, figsize=(8, 8), sharex="col", sharey="all")
 cmip_plot(axis[0, 0], cmip_corrT_mod, 'ssp1', era_label=True)       # cmip_T_mod
 cmip_plot(axis[0, 1], cmip_corrT_mod, 'ssp2')
 cmip_plot(axis[1, 0], cmip_corrT_mod, 'ssp3')
@@ -191,6 +202,19 @@ figure.tight_layout()
 figure.subplots_adjust(bottom=0.13, top=0.9)
 figure.suptitle('10y Mean of Monthly Precipitation', fontweight='bold')
 plt.show()
+
+
+figure, axis = plt.subplots(2, 2, figsize=(8, 8), sharex="col", sharey="all")
+cmip_plot(axis[0, 0], cmip_corrP_mod, 'ssp1', precip=True, era_label=True)         # cmip_corrP_mod
+cmip_plot(axis[0, 1], cmip_corrP_mod, 'ssp2', precip=True)
+cmip_plot(axis[1, 0], cmip_corrP_mod, 'ssp3', precip=True)
+cmip_plot(axis[1, 1], cmip_corrP_mod, 'ssp5', precip=True)
+figure.legend(cmip_corrP_mod['ssp1'].columns, loc='lower right', ncol=4, mode="expand")
+figure.tight_layout()
+figure.subplots_adjust(bottom=0.13, top=0.9)
+figure.suptitle('10y Mean of Monthly Precipitation', fontweight='bold')
+plt.show()
+
 
 # (LOESS) SMOOTHING/MOVING WINDOW ANSTELLE VON RESAMPLING?
 
