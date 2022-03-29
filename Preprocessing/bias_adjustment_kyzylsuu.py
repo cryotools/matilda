@@ -129,12 +129,16 @@ era_corrT = pd.DataFrame(bc_era.correct(method='normal_mapping'))
 
 # Precipitation:
 
+final_train_slice = slice('2007-08-01', '2014-12-31')
+final_predict_slice = slice('1982-01-01', '2020-12-31')
+
 x_train = era_prec[final_train_slice].squeeze()
 y_train = aws_prec[final_train_slice].squeeze()
 x_predict = era_prec[final_predict_slice].squeeze()
 bc_era = BiasCorrection(y_train, x_train, x_predict)
-era_corrP = pd.DataFrame(bc_era.correct(method='gamma_mapping'))
-# era_corrP.to_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
+era_corrP = pd.DataFrame(bc_era.correct(method='normal_mapping'))
+era_corrP[era_corrP < 0] = 0  # only needed when using normal mapping for precipitation
+era_corrP.to_csv(era_path + 'tp_era5l_adjust_42.516-79.0167_1982-01-01-2020-12-31.csv')
 
 
 ### CMIP:
@@ -152,7 +156,7 @@ for s in scen1:
     x_predict = cmip_mean[s][final_predict_slice]['t2m'].squeeze()
     bc_cmip = BiasCorrection(y_train, x_train, x_predict)
     cmip_corrT_mean[s] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
-    cmip_corrT_mean[s].to_csv(cmip_path + 't2m_CMIP6_mean_42.516-79.0167_1982-01-01-2100-12-31_' + 'rcp' + s + '.csv')
+    # cmip_corrT_mean[s].to_csv(cmip_path + 't2m_CMIP6_mean_42.516-79.0167_1982-01-01-2100-12-31_' + 'rcp' + s + '.csv')
 
 # Precipitation:
 cmip_corrP_mean = {}
@@ -161,8 +165,9 @@ for s in scen1:
     y_train = era_corrP[final_train_slice].squeeze()
     x_predict = cmip_mean[s][final_predict_slice]['tp'].squeeze()
     bc_cmip = BiasCorrection(y_train, x_train, x_predict)
-    cmip_corrP_mean[s] = pd.DataFrame(bc_cmip.correct(method='gamma_mapping'))
-    cmip_corrP_mean[s].to_csv(cmip_path + 'tp_CMIP6_mean_42.516-79.0167_1982-01-01-2100-12-31_' + 'rcp' + s + '.csv')
+    cmip_corrP_mean[s] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
+    cmip_corrP_mean[s][cmip_corrP_mean[s] < 0] = 0  # only needed when using normal mapping for precipitation
+    # cmip_corrP_mean[s].to_csv(cmip_path + 'tp_CMIP6_mean_42.516-79.0167_1982-01-01-2100-12-31_' + 'rcp' + s + '.csv')
 
 ## Individually:
 
@@ -197,72 +202,64 @@ for s in scen2:
 
 
 
-
-
 ## Debugging "inm" models
-
-import matplotlib.pyplot as plt
-# from plots_and_stats_kyzylsuu import df2long
-import seaborn as sns
-
-def df2long(df, intv_sum='M', intv_mean='Y', rm_col = True, precip=False):       # Convert dataframes to long format for use in seaborn-lineplots.
-    if precip:
-        if rm_col:
-            df = df.iloc[:, :-1].resample(intv_sum).sum().resample(intv_mean).mean()   # Exclude 'mean' column
-        else:
-            df = df.resample(intv_sum).sum().resample(intv_mean).mean()
-        df = df.reset_index()
-        df = df.melt('time', var_name='model', value_name='tp')
-    else:
-        if rm_col:
-            df = df.iloc[:, :-1].resample(intv_mean).mean()   # Exclude 'mean' column
-        else:
-            df = df.resample(intv_mean).mean()
-        df = df.reset_index()
-        df = df.melt('time', var_name='model', value_name='t2m')
-    return df
-
-final_train_slice = slice('1982-01-01', '2020-12-31')
-final_predict_slice = slice('1982-01-01', '2100-12-31')
-
-dat = pd.read_csv(cmip_path + 'tp_CMIP6_all_models_raw_42.516-79.0167_1982-01-01-2100-12-31_'
-                          + 'ssp1' + '.csv', index_col='time', parse_dates=['time'])
-dat = dat.filter(like='inm')
-dat = dat[slice('1982-01-01', '2100-12-31')]
-inm_corr = cp.deepcopy(dat)
-inm_corr = inm_corr[slice('1982-01-01', '2020-12-31')]
-
-x_train = dat['inm_cm4_8'][final_train_slice].squeeze()
-y_train = era_corrP[final_train_slice].squeeze()
-x_predict = dat['inm_cm4_8'][final_predict_slice].squeeze()
-bc_cmip = BiasCorrection(y_train, x_train, x_predict)
-inm_corr['inm_cm4_8'] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
-
-x_train = dat['inm_cm5_0'][final_train_slice].squeeze()
-y_train = era_corrP[final_train_slice].squeeze()
-x_predict = dat['inm_cm5_0'][final_predict_slice].squeeze()
-bc_cmip = BiasCorrection(y_train, x_train, x_predict)
-inm_corr['inm_cm5_0'] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
-
-inm_corr['era5l'] = era_corrP
-
-inm_corr.sum()
-dat.sum()
-
-inm_corr['inm_cm5_0'][inm_corr['inm_cm5_0'] < 0] = 0
-
-inm_corr.describe()
-dat.describe()
-overview = cmip_corrP_mod['ssp1'].describe()
-
-figure, axis = plt.subplots(2, 1, figsize=(10, 14), tight_layout=True, sharex='col')
-df = df2long(dat, rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
-sns.violinplot(ax=axis[0], x='tp', y='model', data=df, scale="count", bw=.2)
-axis[0].set(xlabel=None, xlim=(0, 1100))
-df = df2long(inm_corr, rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
-sns.violinplot(ax=axis[1], x='tp', y='model', data=df, scale="count", bw=.2)
-axis[1].set(xlabel=None, xlim=(0, 1100))
-plt.show()
-
-# - prediction bis 2029 noch wie sie soll, danach inm_4_8 total off, nach 2067 auch bei inm_5_0
-# - mit Normalverteilung funktioniert es aber muss bei 0 gekappt werden
+#
+# import matplotlib.pyplot as plt
+# # from plots_and_stats_kyzylsuu import df2long
+# import seaborn as sns
+#
+# def df2long(df, intv_sum='M', intv_mean='Y', rm_col = True, precip=False):       # Convert dataframes to long format for use in seaborn-lineplots.
+#     if precip:
+#         if rm_col:
+#             df = df.iloc[:, :-1].resample(intv_sum).sum().resample(intv_mean).mean()   # Exclude 'mean' column
+#         else:
+#             df = df.resample(intv_sum).sum().resample(intv_mean).mean()
+#         df = df.reset_index()
+#         df = df.melt('time', var_name='model', value_name='tp')
+#     else:
+#         if rm_col:
+#             df = df.iloc[:, :-1].resample(intv_mean).mean()   # Exclude 'mean' column
+#         else:
+#             df = df.resample(intv_mean).mean()
+#         df = df.reset_index()
+#         df = df.melt('time', var_name='model', value_name='t2m')
+#     return df
+#
+# final_train_slice = slice('1982-01-01', '2020-12-31')
+# final_predict_slice = slice('1982-01-01', '2100-12-31')
+#
+# dat = pd.read_csv(cmip_path + 'tp_CMIP6_all_models_raw_42.516-79.0167_1982-01-01-2100-12-31_'
+#                           + 'ssp1' + '.csv', index_col='time', parse_dates=['time'])
+# dat = dat.filter(like='inm')
+# dat = dat[slice('1982-01-01', '2100-12-31')]
+# inm_corr = cp.deepcopy(dat)
+# inm_corr = inm_corr[slice('1982-01-01', '2020-12-31')]
+#
+# x_train = dat['inm_cm4_8'][final_train_slice].squeeze()
+# y_train = era_corrP[final_train_slice].squeeze()
+# x_predict = dat['inm_cm4_8'][final_predict_slice].squeeze()
+# bc_cmip = BiasCorrection(y_train, x_train, x_predict)
+# inm_corr['inm_cm4_8'] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
+#
+# x_train = dat['inm_cm5_0'][final_train_slice].squeeze()
+# y_train = era_corrP[final_train_slice].squeeze()
+# x_predict = dat['inm_cm5_0'][final_predict_slice].squeeze()
+# bc_cmip = BiasCorrection(y_train, x_train, x_predict)
+# inm_corr['inm_cm5_0'] = pd.DataFrame(bc_cmip.correct(method='normal_mapping'))
+#
+# inm_corr['era5l'] = era_corrP
+#
+# inm_corr.sum()
+# dat.sum()
+#
+# figure, axis = plt.subplots(2, 1, figsize=(10, 14), tight_layout=True, sharex='col')
+# df = df2long(dat, rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
+# sns.violinplot(ax=axis[0], x='tp', y='model', data=df, scale="count", bw=.2)
+# axis[0].set(xlabel=None, xlim=(0, 1100))
+# df = df2long(inm_corr, rm_col=False, precip=True, intv_mean='Y', intv_sum='Y')
+# sns.violinplot(ax=axis[1], x='tp', y='model', data=df, scale="count", bw=.2)
+# axis[1].set(xlabel=None, xlim=(0, 1100))
+# plt.show()
+#
+# # - prediction bis 2029 wie erwartet, danach inm_4_8 total off, nach 2067 auch inm_5_0
+# # - mit Normalverteilung funktioniert es aber muss bei 0 gekappt werden
