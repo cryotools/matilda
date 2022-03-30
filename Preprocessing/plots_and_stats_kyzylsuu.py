@@ -1,6 +1,6 @@
 ##
 import matplotlib.pyplot as plt
-from matplotlib.legend import Legend
+
 import pandas as pd
 import seaborn as sns
 from bias_correction import BiasCorrection
@@ -8,7 +8,6 @@ from pathlib import Path
 import sys
 import socket
 import os
-import probscale
 host = socket.gethostname()
 if 'node' in host:
     home = '/data/projects/ebaca'
@@ -19,7 +18,7 @@ else:
 wd = home + '/Ana-Lena_Phillip/data/matilda/Preprocessing'
 os.chdir(wd + '/Downscaling')
 sys.path.append(wd)
-from Downscaling.utils import prob_plots
+from Preprocessing_functions import dmod_score, df2long, cmip_plot_ensemble
 
 
 ###############################################################
@@ -59,7 +58,7 @@ for s in scen:
     cmip_corrP_mod[s] = cmip_Pcorr
 
 
-## Functions:
+## Function:
 
 def cmip_plot(ax, df, scenario, precip=False, intv_sum='M', intv_mean='10Y',  era_label=False):
     if not precip:
@@ -80,92 +79,8 @@ def cmip_plot(ax, df, scenario, precip=False, intv_sum='M', intv_mean='10Y',  er
     ax.grid(True)
 
 
-def df2long(df, intv_sum='M', intv_mean='Y', rm_col = True, precip=False):       # Convert dataframes to long format for use in seaborn-lineplots.
-    if precip:
-        if rm_col:
-            df = df.iloc[:, :-1].resample(intv_sum).sum().resample(intv_mean).mean()   # Exclude 'mean' column
-        else:
-            df = df.resample(intv_sum).sum().resample(intv_mean).mean()
-        df = df.reset_index()
-        df = df.melt('time', var_name='model', value_name='tp')
-    else:
-        if rm_col:
-            df = df.iloc[:, :-1].resample(intv_mean).mean()   # Exclude 'mean' column
-        else:
-            df = df.resample(intv_mean).mean()
-        df = df.reset_index()
-        df = df.melt('time', var_name='model', value_name='t2m')
-    return df
-
-
-def cmip_plot_ensemble(cmip, era, precip=False, intv_sum='M', intv_mean='Y', figsize=(10, 6), show=True):
-    figure, axis = plt.subplots(figsize=figsize)
-    if precip:
-        for i in cmip.keys():
-            df = df2long(cmip[i], intv_sum=intv_sum, intv_mean=intv_mean, precip=True)
-            sns.lineplot(data=df, x='time', y='tp')
-        axis.set(xlabel='Year', ylabel='Mean Precipitation [mm]')
-        if intv_sum=='M':
-            figure.suptitle('Mean Monthly Precipitation [mm]', fontweight='bold')
-        elif intv_sum=='Y':
-            figure.suptitle('Mean Annual Precipitation [mm]', fontweight='bold')
-        era_plot = axis.plot(era.resample(intv_sum).sum().resample(intv_mean).mean(), linewidth=1.5, c='black',
-                             label='adjusted ERA5', linestyle='dashed')
-    else:
-        for i in cmip.keys():
-            df = df2long(cmip[i], intv_mean=intv_mean)
-            sns.lineplot(data=df, x='time', y='t2m')
-        axis.set(xlabel='Year', ylabel='Mean Air Temperature [K]')
-        if intv_mean=='10Y':
-            figure.suptitle('Mean 10y Air Temperature [K]', fontweight='bold')
-        elif intv_mean == 'Y':
-            figure.suptitle('Mean Annual Air Temperature [K]', fontweight='bold')
-        elif intv_mean == 'M':
-            figure.suptitle('Mean Monthly Air Temperature [K]', fontweight='bold')
-        era_plot = axis.plot(era.resample(intv_mean).mean(), linewidth=1.5, c='black',
-                         label='adjusted ERA5', linestyle='dashed')
-    axis.legend(cmip.keys(), loc='upper left', frameon=False)  # First legend (SSPs)
-    leg = Legend(axis, era_plot, ['adjusted ERA5L'], bbox_to_anchor=[0, 0.75], loc='center left',
-                 frameon=False)  # Second legend (ERA5)
-    axis.add_artist(leg)
-    plt.grid()
-    if show: plt.show()
-
-
-def prob_plot(original, target, corrected, title=None, ylabel="Temperature [C]", **kwargs):
-    fig, ax = plt.subplots(sharex=True, sharey=True)
-    scatter_kws = dict(label="", marker=None, linestyle="-")
-    common_opts = dict(plottype="qq", problabel="", datalabel="", **kwargs)
-
-    scatter_kws["label"] = "original"
-    fig = probscale.probplot(original, ax=ax, scatter_kws=scatter_kws, **common_opts)
-
-    scatter_kws["label"] = "target"
-    fig = probscale.probplot(target, ax=ax, scatter_kws=scatter_kws, **common_opts)
-
-    scatter_kws["label"] = "corrected"
-    fig = probscale.probplot(corrected, ax=ax, scatter_kws=scatter_kws, **common_opts)
-    ax.set_title(title)
-    ax.legend()
-
-    ax.set_xlabel("Standard Normal Quantiles")
-    ax.set_ylabel(ylabel)
-    fig.tight_layout()
-
-
-def dmod_score(predict_df, targets, x_predict, figsize=(10, 10), shape=(3, 3), **kwargs):
-    score = (predict_df.corrwith(targets) ** 2).sort_values().to_frame('r2_score')  # calculate r2
-    if predict_df.shape[1] == 1:
-        fig = prob_plot(predict_df, targets, x_predict, figsize=figsize, **kwargs)
-    else:
-        fig = prob_plots(x_predict, targets, predict_df[score.index.values], shape=shape,
-                         figsize=figsize)  # QQ-Plots
-    return {'R2-score(s)': score, 'QQ-Matrix': fig}
-
-
 
 ## Plots and stats:
-
 
 # One plot per SSP (4) with 7 models each plus mean and ERA5 (COMPARE BEFORE AND AFTER ADJUSTMENT):
 
@@ -470,6 +385,7 @@ for i in scen:
     stats_corr[i] = dc
 
 
+## WORK IN PROGRESS
 
 ## Quality assessment:
 

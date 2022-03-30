@@ -7,10 +7,10 @@ This file may use the input files created by the COSIPY-utility "aws2cosipy" as 
 import pandas as pd
 from pathlib import Path
 import sys
+import os
 import numpy as np
 import socket
 import matplotlib.pyplot as plt
-
 host = socket.gethostname()
 if 'node' in host:
     home = '/data/projects/ebaca'
@@ -20,6 +20,8 @@ else:
     home = str(Path.home()) + '/Seafile'
 # sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/MATILDA')
 # sys.path.append(home + '/Ana-Lena_Phillip/data/scripts/Test_area')
+sys.path.append(home + '/Ana-Lena_Phillip/data/matilda/Preprocessing')
+from Preprocessing_functions import dmod_score
 from MATILDA_slim import MATILDA
 
 run_series = "kyzylsuu_base_1982-2020"
@@ -74,30 +76,27 @@ output_MATILDA_soi = MATILDA.MATILDA_simulation(df, obs=obs,  output=None, set_u
 output_MATILDA[6].show()
 output_MATILDA_soi[6].show()
 
+## Validation
+
+dmod_score(bc_check['sdm'], bc_check['y_predict'], bc_check['x_predict'], ylabel="Temperature [C]")
+
+
 
 ## Running MATILDA
 parameter = MATILDA.MATILDA_parameter(df, set_up_start='1987-01-01 00:00:00', set_up_end='1988-12-31 23:00:00',
-                                      sim_start='1989-01-01 00:00:00', sim_end='1995-07-30 23:00:00', freq="D",
+                                      sim_start='1992-01-01 00:00:00', sim_end='1995-07-30 23:00:00', freq="D",
                                       area_cat=315.694, area_glac=32.51, lat=42.33,
                                       ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.005936, lr_prec=-0.0002503,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
                                       LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
 
-df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs)  # Data preprocessing
+df_preproc, obs_preproc = MATILDA.MATILDA_preproc(df, parameter, obs=obs)
 #
-output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc)  # MATILDA model run + downscaling
+output_MATILDA = MATILDA.MATILDA_submodules(df_preproc, parameter, obs_preproc)
 #
 output_MATILDA = MATILDA.MATILDA_plots(output_MATILDA, parameter)
 output_MATILDA[6].show()
 
 
-# # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
-# # adding them to the output
-# output_MATILDA[6].show()
-#
-# output = plot_data(output_MATILDA, parameter)
-# test = plot_runoff(output, parameter)
-# test.show()
-# #
 # MATILDA.MATILDA_save_output(output_MATILDA, parameter, output_path)
