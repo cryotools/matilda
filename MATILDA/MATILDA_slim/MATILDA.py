@@ -140,6 +140,10 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
 
 
     # Check model parameters
+    if -0.01 > lr_temp or lr_temp > -0.003:
+        print("WARNING: Parameter lr_temp exceeds boundaries [-0.01, -0.003].")
+    if 0 > lr_prec or lr_prec > 0.002:
+        print("WARNING: Parameter lr_prec exceeds boundaries [0, 0.002].")
     if 1 > BETA or BETA > 6:
         print("WARNING: Parameter BETA exceeds boundaries [1, 6].")
     if 0 > CET or CET > 0.3:
@@ -155,7 +159,7 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     if 0.3 > LP or LP > 1:
         print("WARNING: Parameter LP exceeds boundaries [0.3, 1].")
     if 1 >= MAXBAS or MAXBAS > 7:
-        print("WARNING: Parameter MAXBAS exceeds boundaries [2, 7]. Please choose a suitable value.")
+        print("ERROR: Parameter MAXBAS exceeds boundaries [2, 7]. Please choose a suitable value.")
         return
     if 0 > PERC or PERC > 3:
         print("WARNING: Parameter PERC exceeds boundaries [0, 3].")
@@ -243,14 +247,14 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print('---')
     print('Initiating MATILDA simulation')
     # Downscaling of dataframe to mean catchment and glacier elevation
-    def glacier_downscaling(df_preproc, parameter):
+    def glacier_elevscaling(df_preproc, parameter):
         if parameter.ele_glac is not None:
             height_diff_glacier = parameter.ele_glac - parameter.ele_dat
             input_df_glacier = df_preproc.copy()
             input_df_glacier["T2"] = np.where(input_df_glacier["T2"] <= 100, input_df_glacier["T2"] + 273.15,
                                               input_df_glacier["T2"])
             input_df_glacier["T2"] = input_df_glacier["T2"] + height_diff_glacier * float(parameter.lr_temp)
-            input_df_glacier["RRR"] = input_df_glacier["RRR"] + (height_diff_glacier * float(parameter.lr_prec) * input_df_glacier["RRR"])
+            input_df_glacier["RRR"] = input_df_glacier["RRR"] + height_diff_glacier * float(parameter.lr_prec)
             input_df_glacier["RRR"] = np.where(input_df_glacier["RRR"] < 0, 0, input_df_glacier["RRR"])
         else:
             input_df_glacier = df_preproc.copy()
@@ -268,7 +272,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         return input_df_glacier, input_df_catchment
 
     if parameter.ele_dat is not None:
-        input_df_glacier, input_df_catchment = glacier_downscaling(df_preproc, parameter)
+        input_df_glacier, input_df_catchment = glacier_elevscaling(df_preproc, parameter)
     else:
         input_df_glacier = df_preproc.copy()
         input_df_catchment = df_preproc.copy()
@@ -276,7 +280,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     # Calculation of the positive degree days
     def calculate_PDD(ds):
         print("Calculating positive degree days")
-        # masking the dataset to only get the glacier area
+        # masking the dataset to glacier area
         if isinstance(ds, xr.Dataset):
             mask = ds.MASK.values
             temp = xr.where(mask == 1, ds["T2"], np.nan)
@@ -383,7 +387,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         degreedays_ds = calculate_PDD(input_df_glacier)
         output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
-    """ Implementing a glacier melt routine baseon the deltaH approach based on Seibert et al. (2018) and 
+    """ Implementing a glacier scaling routine based on the deltaH approach outlined in Seibert et al. (2018) and 
     Huss and al.(2010)"""
 
     def create_lookup_table(glacier_profile, parameter):
@@ -578,7 +582,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             input_df_hbv["PE"] = Evap
 
 
-        # 2. Calibration period:
+        # 2. Set-up period:
         # 2.1 meteorological forcing preprocessing
         Temp_cal = Temp[parameter.set_up_start:parameter.set_up_end]
         Prec_cal = Prec[parameter.set_up_start:parameter.set_up_end]
@@ -634,7 +638,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         ETact_cal = np.zeros(len(Prec_cal))
         ETact_cal[0] = 0.0001
 
-        # 2.3 Running model for calibration period
+        # 2.3 Running model for set-up period
         for t in range(1, len(Prec_cal)):
 
             # 2.3.1 Snow routine
@@ -821,19 +825,19 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             SM[t] = SM[t] - ETact[t]
 
             # 5.3 Groundwater routine
-            # upper groudwater box
+            # upper groundwater box
             SUZ[t] = SUZ[t - 1] + recharge + excess
             # percolation control
             perc = min(SUZ[t], parameter.PERC)
-            # update upper groudwater box
+            # update upper groundwater box
             SUZ[t] = SUZ[t] - perc
-            # runoff from the highest part of upper grondwater box (surface runoff)
+            # runoff from the highest part of upper groundwater box (surface runoff)
             Q0 = parameter.K0 * max(SUZ[t] - parameter.UZL, 0)
-            # update upper groudwater box
+            # update upper groundwater box
             SUZ[t] = SUZ[t] - Q0
             # runoff from the middle part of upper groundwater box
             Q1 = parameter.K1 * SUZ[t]
-            # update upper groudwater box
+            # update upper groundwater box
             SUZ[t] = SUZ[t] - Q1
             # calculate lower groundwater box
             SLZ[t] = SLZ[t - 1] + perc
@@ -1130,7 +1134,7 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     print("---")
 
 
-"""Function to run the whole MATILDA simulation in one function. """
+"""Function to run the whole MATILDA simulation """
 
 
 def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, set_up_start=None, set_up_end=None, \

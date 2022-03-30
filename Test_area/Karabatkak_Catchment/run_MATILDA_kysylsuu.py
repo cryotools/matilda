@@ -55,30 +55,34 @@ obs = pd.read_csv(input_path + runoff_obs)
 #
 # plt.show()
 
-## This function is a standalone function to run the whole MATILDA simulation
-# If output = output_path in function, the output will be saved to a new folder
+##
 output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs,  output=None, set_up_start='1982-01-01 00:00:00', set_up_end='1984-12-31 23:00:00',
-                                      sim_start='1985-01-01 00:00:00', sim_end='1989-12-31 23:00:00', freq="D",
+                                      sim_start='1985-01-01 00:00:00', sim_end='1987-12-31 23:00:00', freq="D",
                                       area_cat=315.694, area_glac=32.51, lat=42.33,# soi=[5, 10],
                                       ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.0059, lr_prec=-0.0002503,
-                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
+                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4, CFMAX_ice=6, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
                                       LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
-
-output_MATILDA_soi = MATILDA.MATILDA_simulation(df, obs=obs,  output=None, set_up_start='1982-01-01 00:00:00', set_up_end='1984-12-31 23:00:00',
-                                      sim_start='1985-01-01 00:00:00', sim_end='1990-12-31 23:00:00', freq="D",
-                                      area_cat=315.694, area_glac=32.51, lat=42.33, soi=[5, 10],
-                                      ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.0059, lr_prec=-0.0002503,
-                                      TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
-                                      CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
-                                      LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
-
 output_MATILDA[6].show()
-output_MATILDA_soi[6].show()
+
+
+# output_MATILDA_soi = MATILDA.MATILDA_simulation(df, obs=obs,  output=None, set_up_start='1982-01-01 00:00:00', set_up_end='1984-12-31 23:00:00',
+#                                       sim_start='1985-01-01 00:00:00', sim_end='1990-12-31 23:00:00', freq="D",
+#                                       area_cat=315.694, area_glac=32.51, lat=42.33, soi=[5, 10],
+#                                       ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.0059, lr_prec=-0.0002503,
+#                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4.824, CFMAX_ice=5.574, CFR_snow=0.08765,
+#                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
+#                                       LP=0.4917, MAXBAS=2.494, PERC=1.723, UZL=413.0, PCORR=1.19, SFCF=0.874, CWH=0.011765)
+# output_MATILDA_soi[6].show()
+
+
+# output_MATILDA[6].show()
 
 ## Validation
 
-dmod_score(bc_check['sdm'], bc_check['y_predict'], bc_check['x_predict'], ylabel="Temperature [C]")
+# Adapt when parametrization is set up:
+
+# dmod_score(bc_check['sdm'], bc_check['y_predict'], bc_check['x_predict'], ylabel="Temperature [C]")
 
 
 

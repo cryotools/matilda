@@ -243,7 +243,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print('---')
     print('Initiating MATILDA simulation')
     # Downscaling of dataframe to mean catchment and glacier elevation
-    def glacier_downscaling(df_preproc, parameter):
+    def glacier_elevscaling(df_preproc, parameter):
         if parameter.ele_glac is not None:
             height_diff_glacier = parameter.ele_glac - parameter.ele_dat
             input_df_glacier = df_preproc.copy()
@@ -268,7 +268,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         return input_df_glacier, input_df_catchment
 
     if parameter.ele_dat is not None:
-        input_df_glacier, input_df_catchment = glacier_downscaling(df_preproc, parameter)
+        input_df_glacier, input_df_catchment = glacier_elevscaling(df_preproc, parameter)
     else:
         input_df_glacier = df_preproc.copy()
         input_df_catchment = df_preproc.copy()
@@ -578,7 +578,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             input_df_hbv["PE"] = Evap
 
 
-        # 2. Calibration period:
+        # 2. Set-up period:
         # 2.1 meteorological forcing preprocessing
         Temp_cal = Temp[parameter.set_up_start:parameter.set_up_end]
         Prec_cal = Prec[parameter.set_up_start:parameter.set_up_end]
@@ -634,7 +634,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         ETact_cal = np.zeros(len(Prec_cal))
         ETact_cal[0] = 0.0001
 
-        # 2.3 Running model for calibration period
+        # 2.3 Running model for set-up period
         for t in range(1, len(Prec_cal)):
 
             # 2.3.1 Snow routine
@@ -821,19 +821,19 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             SM[t] = SM[t] - ETact[t]
 
             # 5.3 Groundwater routine
-            # upper groudwater box
+            # upper groundwater box
             SUZ[t] = SUZ[t - 1] + recharge + excess
             # percolation control
             perc = min(SUZ[t], parameter.PERC)
-            # update upper groudwater box
+            # update upper groundwater box
             SUZ[t] = SUZ[t] - perc
-            # runoff from the highest part of upper grondwater box (surface runoff)
+            # runoff from the highest part of upper groundwater box (surface runoff)
             Q0 = parameter.K0 * max(SUZ[t] - parameter.UZL, 0)
-            # update upper groudwater box
+            # update upper groundwater box
             SUZ[t] = SUZ[t] - Q0
             # runoff from the middle part of upper groundwater box
             Q1 = parameter.K1 * SUZ[t]
-            # update upper groudwater box
+            # update upper groundwater box
             SUZ[t] = SUZ[t] - Q1
             # calculate lower groundwater box
             SLZ[t] = SLZ[t - 1] + perc
