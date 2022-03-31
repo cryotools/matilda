@@ -235,6 +235,7 @@ def df2long(df, intv_sum='M', intv_mean='Y', rm_col = True, precip=False):      
 
 ##
 
+
 def cmip_plot_ensemble(cmip, era, precip=False, intv_sum='M', intv_mean='Y', figsize=(10, 6), show=True):
     warnings.filterwarnings(action='ignore')
     figure, axis = plt.subplots(figsize=figsize)
@@ -272,4 +273,20 @@ def cmip_plot_ensemble(cmip, era, precip=False, intv_sum='M', intv_mean='Y', fig
     if show: plt.show()
     warnings.filterwarnings(action='always')
 
+##
 
+
+def load_cmip(folder, filename):
+    scen = ['ssp1', 'ssp2', 'ssp3', 'ssp5']
+    cmip = {}
+    for s in scen:
+        cmip_corr = pd.read_csv(folder + filename + s + '.csv', index_col='time', parse_dates=['time'])
+        cmip[s] = cmip_corr
+    return cmip
+
+##
+
+def cmip2df(temp, prec, scen, col):
+    df = pd.DataFrame({'T2': temp[scen][col], 'RRR': prec[scen][col]}).reset_index()
+    df.columns = ['TIMESTAMP', 'T2', 'RRR']
+    return df
