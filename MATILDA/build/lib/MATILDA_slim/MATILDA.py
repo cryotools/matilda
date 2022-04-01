@@ -25,11 +25,15 @@ from matplotlib.offsetbox import AnchoredText
 # Setting the parameter for the MATILDA simulation
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
-                      soi = None, lr_temp=-0.006, lr_prec=0, \
+                      soi = None, warn = False, lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, \
                       CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, **kwargs):
-    
+
+    # Filter warnings:
+    if not warn:
+        warnings.filterwarnings(action='ignore')
+
     # takes parameters directly from a dataframe, eg. the output from SPOTPY
     if parameter_df is not None:
         parameter_df = parameter_df.set_index(parameter_df.columns[0])
@@ -243,18 +247,18 @@ def MATILDA_preproc(input_df, parameter, obs=None):
 """The main MATILDA simulation. It consists of linear downscaling of the data (if elevations for data, catchment and glacier
 are given) and runs the DDM and HBV models subsequently."""
 
-def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
+def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, glacier2soil=False):
     print('---')
     print('Initiating MATILDA simulation')
-    # Downscaling of dataframe to mean catchment and glacier elevation
+    # Scaling of dataframe to mean catchment and glacier elevation
     def glacier_elevscaling(df_preproc, parameter):
         if parameter.ele_glac is not None:
-            height_diff_glacier = parameter.ele_glac - parameter.ele_dat
+            elev_diff_glacier = parameter.ele_glac - parameter.ele_dat
             input_df_glacier = df_preproc.copy()
             input_df_glacier["T2"] = np.where(input_df_glacier["T2"] <= 100, input_df_glacier["T2"] + 273.15,
                                               input_df_glacier["T2"])
-            input_df_glacier["T2"] = input_df_glacier["T2"] + height_diff_glacier * float(parameter.lr_temp)
-            input_df_glacier["RRR"] = input_df_glacier["RRR"] + height_diff_glacier * float(parameter.lr_prec)
+            input_df_glacier["T2"] = input_df_glacier["T2"] + elev_diff_glacier * float(parameter.lr_temp)
+            input_df_glacier["RRR"] = input_df_glacier["RRR"] + elev_diff_glacier * float(parameter.lr_prec)
             input_df_glacier["RRR"] = np.where(input_df_glacier["RRR"] < 0, 0, input_df_glacier["RRR"])
         else:
             input_df_glacier = df_preproc.copy()
@@ -531,11 +535,11 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     Compute the runoff from the catchment with the HBV model
     Python Code from the LHMP and adjusted to our needs (github.com/hydrogo/LHMP -
     Ayzel Georgy. (2016). LHMP: lumped hydrological modelling playground. Zenodo. doi: 10.5281/zenodo.59501)
-    For the HBV model, evapotranspiration values are needed. These are calculated with the formula by Oudin et al. (2005)
+    For the HBV model, evapotranspiration values are needed. These are calculated as suggested by Oudin et al. (2005)
     in the unit mm / day.
     """
 
-    def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
+    def hbv_simulation(input_df_catchment, parameter, glacier_area=None, glacier2soil=glacier2soil):
         print("Running HBV routine")
         # 1. new temporary dataframe from input with daily values
         if "PE" in input_df_catchment.columns:
@@ -629,8 +633,8 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         SNOWPACK_cal = np.zeros(len(Prec_cal))
         SNOWPACK_cal[0] = 0.0001
         # meltwater box
-        MELTWATER_cal = np.zeros(len(Prec_cal))
-        MELTWATER_cal[0] = 0.0001
+        SNOWMELT_cal = np.zeros(len(Prec_cal))
+        SNOWMELT_cal[0] = 0.0001
         # soil moisture box
         SM_cal = np.zeros(len(Prec_cal))
         SM_cal[0] = 0.0001
@@ -651,24 +655,24 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             if melt < 0: melt = 0
             melt = min(melt, SNOWPACK_cal[t])
             # how meltwater box forms
-            MELTWATER_cal[t] = MELTWATER_cal[t - 1] + melt
+            SNOWMELT_cal[t] = SNOWMELT_cal[t - 1] + melt
             # snowpack after melting
             SNOWPACK_cal[t] = SNOWPACK_cal[t] - melt
             # refreezing accounting
             refreezing = parameter.CFR_snow * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
-            refreezing = min(refreezing, MELTWATER_cal[t])
+            refreezing = min(refreezing, SNOWMELT_cal[t])
             # snowpack after refreezing
             SNOWPACK_cal[t] = SNOWPACK_cal[t] + refreezing
             # meltwater after refreezing
-            MELTWATER_cal[t] = MELTWATER_cal[t] - refreezing
+            SNOWMELT_cal[t] = SNOWMELT_cal[t] - refreezing
             # recharge to soil
-            tosoil = MELTWATER_cal[t] - (parameter.CWH * SNOWPACK_cal[t]);
+            tosoil = SNOWMELT_cal[t] - (parameter.CWH * SNOWPACK_cal[t]);
             # control recharge to soil
             if tosoil < 0: tosoil = 0
             # meltwater after recharge to soil
-            MELTWATER_cal[t] = MELTWATER_cal[t] - tosoil
+            SNOWMELT_cal[t] = SNOWMELT_cal[t] - tosoil
 
             # 2.3.1 Soil and evaporation routine
             # soil wetness calculation
@@ -699,9 +703,12 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
             # last soil moisture updating
             SM_cal[t] = SM_cal[t] - ETact_cal[t]
-        print("Finished spin up for initital HBV parameters")
+        print("Finished spin up for initial HBV parameters")
 
         # 3. meteorological forcing preprocessing for simulation
+        Temp = Temp[parameter.sim_start:parameter.sim_end]
+        Prec = Prec[parameter.sim_start:parameter.sim_end]
+        Evap = Evap[parameter.sim_start:parameter.sim_end]
         # overall correction factor
         Prec = parameter.PCORR * Prec
         Prec = np.where(Prec < 0, 0, Prec)
@@ -712,8 +719,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         reduced_temp = (parameter.TT_rain - Temp) / (parameter.TT_rain - parameter.TT_snow)
         snowfrac = np.clip(reduced_temp, 0, 1)
         SNOW = snowfrac * Prec
-        # snow correction factor
-        SNOW = parameter.SFCF * SNOW
         # snow correction factor
         SNOW = parameter.SFCF * SNOW
         # get the new glacier area for each year
@@ -744,8 +749,8 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         SNOWPACK = np.zeros(len(Prec))
         SNOWPACK[0] = SNOWPACK_cal[-1]
         # meltwater box
-        MELTWATER = np.zeros(len(Prec))
-        MELTWATER[0] = 0.0001
+        SNOWMELT = np.zeros(len(Prec))
+        SNOWMELT[0] = 0.0001
         # soil moisture box
         SM = np.zeros(len(Prec))
         SM[0] = SM_cal[-1]
@@ -764,35 +769,45 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
         # 5. The main cycle of calculations
         for t in range(1, len(Qsim)):
-
             # 5.1 Snow routine
             # how snowpack forms
             SNOWPACK[t] = SNOWPACK[t - 1] + SNOW[t]
             # how snowpack melts
-            # day-degree simple melting
+            # temperature index melting (PDD)
             melt = parameter.CFMAX_snow * (Temp[t] - parameter.TT_snow)
             # control melting
             if melt < 0: melt = 0
             melt = min(melt, SNOWPACK[t])
             # how meltwater box forms
-            MELTWATER[t] = MELTWATER[t - 1] + melt
+            SNOWMELT[t] = SNOWMELT[t - 1] + melt
             # snowpack after melting
             SNOWPACK[t] = SNOWPACK[t] - melt
             # refreezing accounting
             refreezing = parameter.CFR_snow * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
-            refreezing = min(refreezing, MELTWATER[t])
+            refreezing = min(refreezing, SNOWMELT[t])
             # snowpack after refreezing
             SNOWPACK[t] = SNOWPACK[t] + refreezing
             # meltwater after refreezing
-            MELTWATER[t] = MELTWATER[t] - refreezing
+            SNOWMELT[t] = SNOWMELT[t] - refreezing
             # recharge to soil
-            tosoil = MELTWATER[t] - (parameter.CWH * SNOWPACK[t]);
+            tosoil = SNOWMELT[t] - (parameter.CWH * SNOWPACK[t])
+
             # control recharge to soil
             if tosoil < 0: tosoil = 0
+
             # meltwater after recharge to soil
-            MELTWATER[t] = MELTWATER[t] - tosoil
+            SNOWMELT[t] = SNOWMELT[t] - tosoil
+
+            if glacier2soil:
+                # add glacier melt to soil
+                if "Q_DDM_scaled" in output_DDM.columns:
+                    tosoil = tosoil + output_DDM["Q_DDM_scaled"].squeeze()[t]
+                elif "Q_DDM_updated_scaled" in output_DDM.columns:
+                    tosoil = tosoil + output_DDM["Q_DDM_updated_scaled"].squeeze()[t]
+                # control recharge to soil
+                if tosoil < 0: tosoil = 0
 
             # 5.2 Soil and evaporation routine
             # soil wetness calculation
@@ -864,14 +879,14 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         Qsim = Qsim_smoothed
         hbv_results = pd.DataFrame(
             {"T2": Temp, "RRR": Prec, "PE": Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
-             "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=input_df_hbv.index)
+             "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "Q_HBV": Qsim}, index=input_df_hbv[parameter.sim_start: parameter.sim_end].index)
         print("Finished HBV routine")
         return hbv_results
 
     if glacier_profile is not None:
-        output_HBV = hbv_simulation(input_df_catchment, parameter, glacier_area=glacier_change_area)
+        output_HBV = hbv_simulation(input_df_catchment, parameter, glacier_area=glacier_change_area, glacier2soil=glacier2soil)
     else:
-        output_HBV = hbv_simulation(input_df_catchment, parameter)
+        output_HBV = hbv_simulation(input_df_catchment, parameter, glacier2soil=glacier2soil)
     output_HBV = output_HBV[parameter.sim_start:parameter.sim_end]
 
     # Output postprocessing
@@ -883,13 +898,21 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     if obs is not None:
         output_MATILDA = pd.concat([output_MATILDA, obs], axis=1)
 
-    if parameter.area_glac > 0:
-        if glacier_profile is not None:
-            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_updated_scaled"]
-        else:
-            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_scaled"]
-    else:
+    if glacier2soil:
         output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"]
+        if parameter.area_glac > 0:
+            if glacier_profile is not None:
+                output_MATILDA["Q_HBV"] = output_MATILDA["Q_Total"] - output_MATILDA["Q_DDM_updated_scaled"]
+            else:
+                output_MATILDA["Q_HBV"] = output_MATILDA["Q_Total"] - output_MATILDA["Q_DDM_scaled"]
+    else:
+        if parameter.area_glac > 0:
+            if glacier_profile is not None:
+                output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_updated_scaled"]
+            else:
+                output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_scaled"]
+        else:
+            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"]
 
     output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
 
@@ -1143,9 +1166,10 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
 """Function to run the whole MATILDA simulation """
 
 
-def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, set_up_start=None, set_up_end=None, \
-                       sim_start=None, sim_end=None, freq="D", lat=None, soi=None, area_cat=None, area_glac=None, ele_dat=None,
-                       ele_glac=None, ele_cat=None, plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
+def MATILDA_simulation(input_df, obs=None, glacier_profile=None, glacier2soil=False, output=None,
+                       set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
+                       soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
+                       plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
                        TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
                        CWH=0.1):
@@ -1167,16 +1191,16 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, se
         df_preproc = MATILDA_preproc(input_df, parameter)
         # Downscaling of data if necessary and the MATILDA simulation
         if glacier_profile is not None:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile, glacier2soil=glacier2soil)
         else:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter)
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier2soil=glacier2soil)
     else:
         df_preproc, obs_preproc = MATILDA_preproc(input_df, parameter, obs=obs)
-        # Downscaling of data if necessary and the MATILDA simulation
+        # Scale data if necessary and run the MATILDA simulation
         if glacier_profile is not None:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile, glacier2soil=glacier2soil)
         else:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc)
+            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier2soil=glacier2soil)
 
     if plots:
         output_MATILDA = MATILDA_plots(output_MATILDA, parameter)   # Option to suppress plots.
