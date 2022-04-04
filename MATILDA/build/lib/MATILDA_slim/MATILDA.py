@@ -128,10 +128,10 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     elif freq == "M":
         freq_long = "Monthly"
     elif freq == "Y":
-        freq_long = "Yearly"
+        freq_long = "Annual"
     else:
         print(
-            "WARNING: Data frequency " + freq + " is not supported. Choose either 'D' (daily), 'W' (weekly), 'M' (monthly) or 'Y' (yearly).")
+            "WARNING: Resampling rate " + freq + " is not supported. Choose either 'D' (daily), 'W' (weekly), 'M' (monthly) or 'Y' (yearly).")
 
     # Check if season of interest is specified
     if soi is not None:
@@ -230,7 +230,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         # Omit everything outside the specified season of interest (soi)
         if parameter.soi is not None:
             obs_preproc = obs_preproc[obs_preproc.index.month.isin(range(parameter.soi[0], parameter.soi[1] + 1))]
-        # Expanding the observation period full years, filling the NAs with 0
+        # Expanding the observation period full years filling up with NAs
         idx_first = obs_preproc.index.year[1]
         idx_last = obs_preproc.index.year[-1]
         idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
@@ -902,8 +902,8 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, gl
         output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"]
         if parameter.area_glac > 0:
             if glacier_profile is not None:
-                output_MATILDA["Q_HBV"] = output_MATILDA["Q_Total"] - output_MATILDA["Q_DDM_updated_scaled"]
-            else:
+                output_MATILDA["Q_HBV"] = output_MATILDA["Q_Total"] - output_MATILDA["Q_DDM_updated_scaled"]    # leads to several negative Q_HBV values
+            else:                                                                                               # Stacked plots not suitable for this option
                 output_MATILDA["Q_HBV"] = output_MATILDA["Q_Total"] - output_MATILDA["Q_DDM_scaled"]
     else:
         if parameter.area_glac > 0:
@@ -924,16 +924,31 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, gl
     if obs is not None:
         sim = output_MATILDA["Q_Total"]
         target = output_MATILDA["Qobs"]
-        nash_sut = he.nse(sim, target, remove_zero=True)
-        kge = he.kge_2012(sim, target, remove_zero=True)
-        rmse = he.rmse(sim, target)
-        mare = hydroeval.evaluator(hydroeval.mare, sim, target)
-        print("*-------------------*")
-        print("KGE coefficient: " + str(round(float(kge), 2)))
-        print("Nash–Sutcliffe coefficient: " + str(round(nash_sut, 2)))
-        print("RMSE: " + str(round(float(rmse), 2)))
-        print("MARE coefficient: " + str(round(float(mare), 2)))
-        print("*-------------------*")
+        if parameter.freq == "D":
+            nash_sut = he.nse(sim, target, remove_zero=True)
+            kge = he.kge_2012(sim, target, remove_zero=True)
+            rmse = he.rmse(sim, target)
+            mare = hydroeval.evaluator(hydroeval.mare, sim, target)
+            print("*-------------------*")
+            print("KGE coefficient: " + str(round(float(kge), 2)))
+            print("Nash–Sutcliffe coefficient: " + str(round(nash_sut, 2)))
+            print("RMSE: " + str(round(float(rmse), 2)))
+            print("MARE coefficient: " + str(round(float(mare), 2)))
+            print("*-------------------*")
+        else:
+            sim = sim.resample(parameter.freq).sum()
+            target = target.resample(parameter.freq).sum()
+            nash_sut = he.nse(sim, target, remove_zero=True)
+            kge = he.kge_2012(sim, target, remove_zero=True)
+            rmse = he.rmse(sim, target)
+            mare = hydroeval.evaluator(hydroeval.mare, sim, target)
+            print("*-------------------*")
+            print("** Model efficiency based on " + parameter.freq_long + " aggregates **")
+            print("KGE coefficient: " + str(round(float(kge), 2)))
+            print("Nash–Sutcliffe coefficient: " + str(round(nash_sut, 2)))
+            print("RMSE: " + str(round(float(rmse), 2)))
+            print("MARE coefficient: " + str(round(float(mare), 2)))
+            print("*-------------------*")
     else:
         kge = str("No observations available to calculate model efficiency coefficients.")
 
@@ -997,6 +1012,7 @@ def MATILDA_plots(output_MATILDA, parameter):
         plot_annual_data = plot_annual_data.set_index(plot_annual_data["date"])
         plot_annual_data.index = pd.to_datetime(plot_annual_data.index)
         plot_annual_data["plot"] = 0
+        plot_annual_data = plot_annual_data.resample(parameter.freq).sum()
 
         return plot_data, plot_annual_data
 
