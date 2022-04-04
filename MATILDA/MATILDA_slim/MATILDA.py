@@ -320,6 +320,27 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, gl
     - # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)
     """
 
+    """ pypdd.py line 331
+        Compute melt rates from snow precipitation and pdd sum.
+        Snow melt is computed from the number of positive degree days (*pdd*)
+        and the `pdd_factor_snow` model attribute. If all snow is melted and
+        some energy (PDD) remains, ice melt is computed using `pdd_factor_ice`.
+        *snow*: array_like
+            Snow precipitation rate.
+        *pdd*: array_like
+            Number of positive degree days.
+    """
+
+    def melt_rates(snow, pdd):
+        # compute a potential snow melt
+        pot_snow_melt = parameter.CFMAX_snow * pdd
+        # effective snow melt can't exceed amount of snow
+        snow_melt = np.minimum(snow, pot_snow_melt)
+        # ice melt is proportional to excess snow melt
+        ice_melt = (pot_snow_melt - snow_melt) * parameter.CFMAX_ice / parameter.CFMAX_snow
+        # return melt rates
+        return (snow_melt, ice_melt)
+
     def calculate_glaciermelt(ds, parameter):
         print("Calculating glacial melt")
         temp = ds["temp_mean"]
@@ -341,26 +362,6 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, gl
         snow_melt_rate = xr.zeros_like(temp)
         ice_melt_rate = xr.zeros_like(temp)
 
-        """ pypdd.py line 331
-            Compute melt rates from snow precipitation and pdd sum.
-            Snow melt is computed from the number of positive degree days (*pdd*)
-            and the `pdd_factor_snow` model attribute. If all snow is melted and
-            some energy (PDD) remains, ice melt is computed using `pdd_factor_ice`.
-            *snow*: array_like
-                Snow precipitation rate.
-            *pdd*: array_like
-                Number of positive degree days.
-        """
-
-        def melt_rates(snow, pdd):
-            # compute a potential snow melt
-            pot_snow_melt = parameter.CFMAX_snow * pdd
-            # effective snow melt can't exceed amount of snow
-            snow_melt = np.minimum(snow, pot_snow_melt)
-            # ice melt is proportional to excess snow melt
-            ice_melt = (pot_snow_melt - snow_melt) * parameter.CFMAX_ice / parameter.CFMAX_snow
-            # return melt rates
-            return (snow_melt, ice_melt)
 
         # compute snow depth and melt rates (pypdd.py line 219)
         for i in np.arange(len(temp)):
@@ -375,11 +376,13 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, gl
         inst_smb = accu_rate - runoff_rate
 
         glacier_melt = xr.merge(
-            [xr.DataArray(inst_smb, name="DDM_smb"), xr.DataArray(pdd, name="pdd"), \
+            [xr.DataArray(inst_smb, name="DDM_smb"),
+             xr.DataArray(pdd, name="pdd"),
              xr.DataArray(accu_rate, name="DDM_accumulation_rate"),
              xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"),
-             xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"), \
-             xr.DataArray(total_melt, name="DDM_total_melt"), xr.DataArray(runoff_rate, name="Q_DDM")])
+             xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"),
+             xr.DataArray(total_melt, name="DDM_total_melt"),
+             xr.DataArray(runoff_rate, name="Q_DDM")])
 
         # making the final dataframe
         DDM_results = glacier_melt.to_dataframe()
@@ -391,7 +394,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, gl
         degreedays_ds = calculate_PDD(input_df_glacier)
         output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
-    """ Implementing a glacier scaling routine based on the deltaH approach outlined in Seibert et al. (2018) and 
+    """ Glacier scaling routine based on the deltaH approach outlined in Seibert et al. (2018) and 
     Huss and al.(2010)"""
 
     def create_lookup_table(glacier_profile, parameter):
@@ -867,7 +870,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None, gl
         # 6. Scale effect accounting
         # delay and smoothing simulated hydrograph
         # (Beck et al.,2016) used triangular transformation based on moving window
-        # here are my method with simple forward filter based on Butterworht filter design
+        # here are my method with simple forward filter based on Butterworth filter design
         # calculate Numerator (b) and denominator (a) polynomials of the IIR filter
         parMAXBAS = int(parameter.MAXBAS)
         b, a = ss.butter(parMAXBAS, 1 / parMAXBAS)
