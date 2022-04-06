@@ -15,7 +15,7 @@ import copy
 import hydroeval
 import HydroErr as he
 import warnings
-warnings.filterwarnings(action='ignore',module='HydroErr')
+warnings.filterwarnings(action='ignore' ,module='HydroErr')
 from datetime import date, datetime
 import os
 import matplotlib.pyplot as plt
@@ -29,12 +29,13 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
                       hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, \
                       CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, **kwargs):
+    """Creates a series from the provided and/or default parameters to be provided to all subsequent MATILDA modules."""
 
     # Filter warnings:
     if not warn:
         warnings.filterwarnings(action='ignore')
 
-    # takes parameters directly from a dataframe, eg. the output from SPOTPY
+    # takes parameters directly from a dataframe, e.g. the output from SPOTPY
     if parameter_df is not None:
         parameter_df = parameter_df.set_index(parameter_df.columns[0])
         if "lr_temp" in parameter_df.index:
@@ -193,7 +194,7 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end, \
          "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac, "ele_dat": ele_dat, \
-         "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "soi": soi, \
+         "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "soi": soi, "warn": warn, \
          "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "CFMAX_snow": CFMAX_snow, \
          "CFMAX_ice": CFMAX_ice, "CFR_snow": CFR_snow, "CFR_ice": CFR_ice, "BETA": BETA, "CET": CET, \
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, \
@@ -865,6 +866,10 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     """The main MATILDA simulation. It consists of linear scaling of the data (if elevations for data, catchment and glacier
     are provided) and executes the DDM and HBV modules subsequently."""
 
+    # Filter warnings:
+    if not parameter.warn:
+        warnings.filterwarnings(action='ignore')
+
     print('---')
     print('Initiating MATILDA simulation')
 
@@ -1175,7 +1180,7 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     print("---")
 
 
-def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None,
+def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, warn=False,
                        set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
                        soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
                        plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
@@ -1189,7 +1194,7 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None,
     parameter = MATILDA_parameter(input_df, set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start,
                                   sim_end=sim_end, freq=freq, lat=lat, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
                                   ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, parameter_df = parameter_df, lr_temp=lr_temp,
-                                  lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, \
+                                  lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, \
                                   TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, CFR_snow=CFR_snow, \
                                   CFR_ice=CFR_ice, BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
                                   MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH)
