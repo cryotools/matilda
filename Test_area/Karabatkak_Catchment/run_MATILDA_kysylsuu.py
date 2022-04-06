@@ -61,7 +61,7 @@ glacier_profile = pd.read_csv(wd + "/kyzulsuu_glacier_profile.csv")
 ##
 output_MATILDA = MATILDA.MATILDA_simulation(df, obs=obs,  output=output_path, set_up_start='1982-01-01 00:00:00', set_up_end='1984-12-31 23:00:00',
                                       sim_start='1985-01-01 00:00:00', sim_end='1989-12-31 23:00:00', freq="D",
-                                      area_cat=315.694, area_glac=32.51, lat=42.33, glacier2soil=False, # soi=[5, 10],
+                                      area_cat=315.694, area_glac=32.51, lat=42.33, # soi=[5, 10],
                                       ele_dat=2550, ele_glac=4074, ele_cat=3225, lr_temp=-0.0059, lr_prec=0,
                                       TT_snow=0.354, TT_rain=0.5815, CFMAX_snow=4, CFMAX_ice=6, CFR_snow=0.08765,
                                       CFR_ice=0.01132, BETA=2.03, CET=0.0471, FC=462.5, K0=0.03467, K1=0.0544, K2=0.1277,
