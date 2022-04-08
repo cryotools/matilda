@@ -27,8 +27,8 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
                       soi = None, warn = False, lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, \
-                      CFR_ice=0.05, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
-                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, **kwargs):
+                      CFR_ice=0.01, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
+                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=1000, **kwargs):
     """Creates a series from the provided and/or default parameters to be provided to all subsequent MATILDA modules."""
 
     # Filter warnings:
@@ -80,6 +80,8 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
             CFR_ice = parameter_df.loc["CFR_ice"].values.item()
         if "CWH" in parameter_df.index:
             CWH = parameter_df.loc["CWH"].values.item()
+        if "AG" in parameter_df.index:
+            AG = parameter_df.loc["CWH"].values.item()
 
     print("Reading parameters for MATILDA simulation")
     # Checking the parameters to set the catchment properties and simulation
@@ -190,6 +192,8 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print("WARNING: Parameter CFR_snow exceeds boundaries [0, 0.1].")
     if 0 > CWH or CWH > 0.2:
         print("WARNING: Parameter CWH exceeds boundaries [0, 0.2].")
+    if 0.1 > AG or AG > 10000:
+        print("WARNING: Parameter AG exceeds boundaries [0.1, 10000].")
 
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end, \
@@ -198,7 +202,7 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
          "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "CFMAX_snow": CFMAX_snow, \
          "CFMAX_ice": CFMAX_ice, "CFR_snow": CFR_snow, "CFR_ice": CFR_ice, "BETA": BETA, "CET": CET, \
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, \
-         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH})
+         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG})
     print("Parameters set")
     return parameter
 
@@ -339,42 +343,63 @@ def calculate_glaciermelt(ds, parameter):
         `temp_snow` and `temp_rain` attributes. """
 
     print("Calculating glacial melt")
+
+    # initialize arrays
     temp = ds["temp_mean"]
     prec = ds["RRR"]
     pdd = ds["pdd"]
+    snow_depth = xr.zeros_like(temp)
+    snow_melt = xr.zeros_like(temp)
+    ice_melt = xr.zeros_like(temp)
+    actual_runoff = xr.zeros_like(temp)
+    glacier_reservoir = xr.zeros_like(temp)
 
+    # calculate accumulation (SWE)
     reduced_temp = (parameter.TT_rain - temp) / (parameter.TT_rain - parameter.TT_snow)
     snowfrac = np.clip(reduced_temp, 0, 1)
     accu_rate = snowfrac * prec
 
-    # initialize snow depth and melt rates (pypdd.py line 214)
-    snow_depth = xr.zeros_like(temp)
-    snow_melt_rate = xr.zeros_like(temp)
-    ice_melt_rate = xr.zeros_like(temp)
-
-
-    # compute snow depth and melt rates (pypdd.py line 219)
+    # compute snow depth and melt rates
     for i in np.arange(len(temp)):
         if i > 0:
             snow_depth[i] = snow_depth[i - 1]
         snow_depth[i] += accu_rate[i]
-        snow_melt_rate[i], ice_melt_rate[i] = melt_rates(snow_depth[i], pdd[i], parameter)
-        snow_depth[i] -= snow_melt_rate[i]
-    total_melt = snow_melt_rate + ice_melt_rate
-    runoff_rate = total_melt - parameter.CFR_snow * snow_melt_rate \
-                  - parameter.CFR_ice * ice_melt_rate
+        snow_melt[i], ice_melt[i] = melt_rates(snow_depth[i], pdd[i], parameter)
+        snow_depth[i] -= snow_melt[i]
+
+    # calculate refreezing, runoff and surface mass balance
+    total_melt = snow_melt + ice_melt
+    refr_ice = parameter.CFR_ice * ice_melt
+    refr_snow = parameter.CFR_snow * snow_melt
+    runoff_rate = total_melt - refr_snow - refr_ice
     inst_smb = accu_rate - runoff_rate
 
+    # Storage-release scheme for glacier outflow (Stahl et.al. 2008, Toum et. al. 2021)
+    KG_min = 0.1  # minimum outflow coefficient (conditions with deep snow and poorly developed glacial drainage systems) [time^−1]
+    d_KG = 0.9  # KG_min + d_KG = maximum outflow coefficient (representing late-summer conditions with bare ice and a well developed glacial drainage system) [time^−1]
+    KG = np.minimum(KG_min + d_KG * np.exp(snow_depth / -parameter.AG), 1)
+    for i in np.arange(len(temp)):
+        if i == 0:
+            SG = runoff_rate[i]  # liquid water stored in the reservoir
+        else:
+            SG = np.maximum((runoff_rate[i] - actual_runoff[i - 1]) + SG, 0)
+        actual_runoff[i] = KG[i] * SG
+        glacier_reservoir[i] = SG
+
+    # final glacier module output
     glacier_melt = xr.merge(
         [xr.DataArray(inst_smb, name="DDM_smb"),
          xr.DataArray(pdd, name="pdd"),
          xr.DataArray(accu_rate, name="DDM_accumulation_rate"),
-         xr.DataArray(ice_melt_rate, name="DDM_ice_melt_rate"),
-         xr.DataArray(snow_melt_rate, name="DDM_snow_melt_rate"),
+         xr.DataArray(ice_melt, name="DDM_ice_melt"),
+         xr.DataArray(snow_melt, name="DDM_snow_melt"),
          xr.DataArray(total_melt, name="DDM_total_melt"),
-         xr.DataArray(runoff_rate, name="Q_DDM")])
+         xr.DataArray(refr_ice, name="DDM_refreezing_ice"),
+         xr.DataArray(refr_snow, name="DDM_refreezing_snow"),
+         xr.DataArray(glacier_reservoir, name="DDM_glacier_reservoir"),
+         xr.DataArray(actual_runoff, name='Q_DDM')
+         ])
 
-    # making the final dataframe
     DDM_results = glacier_melt.to_dataframe()
     print("Finished Degree-Day Melt Routine")
     return DDM_results
@@ -1186,7 +1211,7 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                        plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
                        TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
-                       CWH=0.1):
+                       CWH=0.1, AG=1000):
     """Function to run the whole MATILDA simulation at once."""
 
     print('---')
@@ -1197,7 +1222,7 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                                   lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, \
                                   TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, CFR_snow=CFR_snow, \
                                   CFR_ice=CFR_ice, BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
-                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH)
+                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG)
 
     if parameter is None:
         return

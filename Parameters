@@ -39,4 +39,6 @@ CFR_ice    - Refreezing coefficient in ice		---> Verhältnis CFR_snow?!
 CFR_snow   - Refreezing coefficient in snow
            [0, 0.1] (usually 0.05)
 CWH        - Fraction (portion) of meltwater and rainfall which retain in snowpack (water holding capacity)
-           [0, 0.2] (usually 0.1)            
+           [0, 0.2] (usually 0.1)
+AG	   - Calibration parameter for glacier storage-release scheme. High values result in a small reservoir and instant release. Low values extend storage and delay release. (mm^−1)  
+	   [0.1, 100000]
