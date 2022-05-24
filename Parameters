@@ -1,26 +1,26 @@
-lr_temp    - lapse rate of air temperature (ascending) (K(m)
+lr_temp    - Lapse rate of air temperature (ascending) (K(m)
            [-0.01, -0.003] (usually -0.006)
-lr_prec    - lapse rate of precipitation (ascending) (mm/m)
+lr_prec    - Lapse rate of precipitation (ascending) (mm/m)
            [0, 0.002]
-BETA       - parameter that determines the relative contribution to runoff from rain or snowmelt
+BETA       - Parameter that determines the relative contribution to runoff from rain or snowmelt
            [1, 6]
 CET        - Evaporation correction factor (should be 0 if you don't want to change Oudin formula values)
            [0, 0.3]
-FC         - maximum soil moisture storage
+FC         - Maximum soil moisture storage
            [50, 500]
-K0         - recession coefficient for surface soil box (upper part of SUZ)
+K0         - Recession coefficient for surface soil box (upper part of SUZ)
            [0.01, 0.4]
-K1         - recession coefficient for upper groudwater box (main part of SUZ)
+K1         - Recession coefficient for upper groundwater box (main part of SUZ)
            [0.01, 0.4]
-K2         - recession coefficient for lower groudwater box (whole SLZ)
+K2         - Recession coefficient for lower groundwater box (whole SLZ)
            [0.001, 0.15]
 LP         - Threshold for reduction of evaporation (SM/FC)
            [0.3, 1]
-MAXBAS     - routing parameter, order of Butterworth filter
+MAXBAS     - Routing parameter, order of Butterworth filter
            [1, 7]
-PERC       - percolation from soil to upper groundwater box
+PERC       - Percolation from soil to upper groundwater box
            [0, 3]
-UZL        - threshold parameter for grondwater boxes runoff (mm)
+UZL        - Threshold parameter for groundwater boxes runoff (mm)
            [0, 500]
 PCORR      - Precipitation (input sum) correction factor
            [0.5, 2]
