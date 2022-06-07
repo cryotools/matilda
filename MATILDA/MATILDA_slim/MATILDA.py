@@ -26,9 +26,13 @@ from matplotlib.offsetbox import AnchoredText
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
                       soi = None, warn = False, lr_temp=-0.006, lr_prec=0, \
-                      hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, \
-                      CFR_ice=0.01, BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
-                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=1000, **kwargs):
+                      hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, \
+                      BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
+                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RHO_snow=400,
+                      # Constants
+                      RHO_ice = 917,               # density of solid ice (kg/m^3)
+                      CFR_ice = 0.01,               # fraction of ice melt refreezing in moulins,
+                        **kwargs):
     """Creates a series from the provided and/or default parameters to be provided to all subsequent MATILDA modules."""
 
     # Filter warnings:
@@ -74,14 +78,14 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
             CFMAX_ice = parameter_df.loc["CFMAX_ice"].values.item()
         if "SFCF" in parameter_df.index:
             SFCF = parameter_df.loc["SFCF"].values.item()
-        if "CFR_snow" in parameter_df.index:
-            CFR_snow = parameter_df.loc["CFR_snow"].values.item()
         if "CFR_ice" in parameter_df.index:
             CFR_ice = parameter_df.loc["CFR_ice"].values.item()
         if "CWH" in parameter_df.index:
             CWH = parameter_df.loc["CWH"].values.item()
         if "AG" in parameter_df.index:
-            AG = parameter_df.loc["CWH"].values.item()
+            AG = parameter_df.loc["AG"].values.item()
+        if "RHO_snow" in parameter_df.index:
+            RHO_snow = parameter_df.loc["RHO_snow"].values.item()
 
     print("Reading parameters for MATILDA simulation")
     # Checking the parameters to set the catchment properties and simulation
@@ -186,23 +190,35 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print("WARNING: Parameter CFMAX_snow exceeds boundaries [1, 10].")
     if 0.4 > SFCF or SFCF > 1:
         print("WARNING: Parameter SFCF exceeds boundaries [0.4, 1].")
-    if 0 > CFR_ice or CFR_ice > 0.1:
-        print("WARNING: Parameter CFR_ice exceeds boundaries [0, 0.1].")
-    if 0 > CFR_snow or CFR_snow > 0.1:
-        print("WARNING: Parameter CFR_snow exceeds boundaries [0, 0.1].")
     if 0 > CWH or CWH > 0.2:
         print("WARNING: Parameter CWH exceeds boundaries [0, 0.2].")
-    if 0.1 > AG or AG > 10000:
-        print("WARNING: Parameter AG exceeds boundaries [0.1, 10000].")
+    if 0 > AG or AG > 1:
+        print("WARNING: Parameter AG exceeds boundaries [0, 1].")
+    if 300 > RHO_snow or RHO_snow > 500:
+        print("WARNING: Parameter RHO_snow exceeds boundaries [300, 500].")
+    if RHO_ice != 917:
+        print("ERROR: RHO_ice is a physical constant and shall not be changed.")
+
+    # calculate ice fraction in snowpack
+    theta_i = RHO_snow / RHO_ice
+
+    # calculate irreducible water content:
+    if theta_i <= 0.23:
+        theta_e = 0.0264 + 0.0099 * ((1 - theta_i) / theta_i)
+    elif 0.23 < theta_i <= 0.812:
+        theta_e = 0.08 - 0.1023 * (theta_i - 0.03)
+    else:
+        theta_e = 0
 
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end, \
          "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac, "ele_dat": ele_dat, \
          "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "soi": soi, "warn": warn, \
          "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "CFMAX_snow": CFMAX_snow, \
-         "CFMAX_ice": CFMAX_ice, "CFR_snow": CFR_snow, "CFR_ice": CFR_ice, "BETA": BETA, "CET": CET, \
+         "CFMAX_ice": CFMAX_ice, "BETA": BETA, "CET": CET, \
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, \
-         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG})
+         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG, "RHO_snow": RHO_snow, "RHO_ice": RHO_ice, "CFR_ice": CFR_ice,
+         "theta_e": theta_e})
     print("Parameters set")
     return parameter
 
@@ -370,14 +386,14 @@ def calculate_glaciermelt(ds, parameter):
     # calculate refreezing, runoff and surface mass balance
     total_melt = snow_melt + ice_melt
     refr_ice = parameter.CFR_ice * ice_melt
-    refr_snow = parameter.CFR_snow * snow_melt
+    refr_snow = parameter.theta_e * snow_melt
     runoff_rate = total_melt - refr_snow - refr_ice
     inst_smb = accu_rate - runoff_rate
 
     # Storage-release scheme for glacier outflow (Stahl et.al. 2008, Toum et. al. 2021)
     KG_min = 0.1  # minimum outflow coefficient (conditions with deep snow and poorly developed glacial drainage systems) [time^−1]
     d_KG = 0.9  # KG_min + d_KG = maximum outflow coefficient (representing late-summer conditions with bare ice and a well developed glacial drainage system) [time^−1]
-    KG = np.minimum(KG_min + d_KG * np.exp(snow_depth / -parameter.AG), 1)
+    KG = np.minimum(KG_min + d_KG * np.exp(snow_depth / -(0.1 * 1000000**parameter.AG)), 1)
     for i in np.arange(len(temp)):
         if i == 0:
             SG = runoff_rate[i]  # liquid water stored in the reservoir
@@ -662,7 +678,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             # snowpack after melting
             SNOWPACK_cal[t] = SNOWPACK_cal[t] - melt
             # refreezing accounting
-            refreezing = parameter.CFR_snow * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
+            refreezing = parameter.theta_e * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
             refreezing = min(refreezing, SNOWMELT_cal[t])
@@ -786,7 +802,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             # snowpack after melting
             SNOWPACK[t] = SNOWPACK[t] - melt
             # refreezing accounting
-            refreezing = parameter.CFR_snow * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
+            refreezing = parameter.theta_e * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
             refreezing = min(refreezing, SNOWMELT[t])
@@ -1209,9 +1225,9 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                        set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
                        soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
                        plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
-                       TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, CFR_snow=0.05, CFR_ice=0.05, BETA=1.0, CET=0.15,
+                       TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
-                       CWH=0.1, AG=1000):
+                       CWH=0.1, AG=0.7, RHO_snow=400):
     """Function to run the whole MATILDA simulation at once."""
 
     print('---')
@@ -1220,9 +1236,9 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                                   sim_end=sim_end, freq=freq, lat=lat, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
                                   ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, parameter_df = parameter_df, lr_temp=lr_temp,
                                   lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, \
-                                  TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, CFR_snow=CFR_snow, \
-                                  CFR_ice=CFR_ice, BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
-                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG)
+                                  TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, \
+                                  BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
+                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG, RHO_snow=RHO_snow)
 
     if parameter is None:
         return
