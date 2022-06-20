@@ -26,7 +26,7 @@ from matplotlib.offsetbox import AnchoredText
 def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
                       soi = None, warn = False, lr_temp=-0.006, lr_prec=0, \
-                      hydro_year=10, TT_snow=0, TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, \
+                      hydro_year=10, TT_snow=0, TT_diff=2, CFMAX_snow=2.8, CFMAX_rel=2, \
                       BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RHO_snow=400,
                       # Constants
@@ -70,12 +70,12 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
             PCORR = parameter_df.loc["PCORR"].values.item()
         if "TT_snow" in parameter_df.index:
             TT_snow = parameter_df.loc["TT_snow"].values.item()
-        if "TT_rain" in parameter_df.index:
-            TT_rain = parameter_df.loc["TT_rain"].values.item()
+        if "TT_diff" in parameter_df.index:
+            TT_diff = parameter_df.loc["TT_diff"].values.item()
         if "CFMAX_snow" in parameter_df.index:
             CFMAX_snow = parameter_df.loc["CFMAX_snow"].values.item()
-        if "CFMAX_ice" in parameter_df.index:
-            CFMAX_ice = parameter_df.loc["CFMAX_ice"].values.item()
+        if "CFMAX_rel" in parameter_df.index:
+            CFMAX_rel = parameter_df.loc["CFMAX_rel"].values.item()
         if "SFCF" in parameter_df.index:
             SFCF = parameter_df.loc["SFCF"].values.item()
         if "CFR_ice" in parameter_df.index:
@@ -178,14 +178,12 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print("WARNING: Parameter UZL exceeds boundaries [0, 500].")
     if 0.5 > PCORR or PCORR > 2:
         print("WARNING: Parameter PCORR exceeds boundaries [0.5, 2].")
-    if TT_snow > TT_rain:
-        print("WARNING: TT_snow is higher than TT_rain.")
     if -1.5 > TT_snow or TT_snow > 2.5:
         print("WARNING: Parameter TT_snow exceeds boundaries [-1.5, 2.5].")
-    if -1.5 > TT_rain or TT_rain > 2.5:
-        print("WARNING: Parameter TT_rain exceeds boundaries [-1.5, 2.5].")
-    if 1 > CFMAX_ice or CFMAX_ice > 10:
-        print("WARNING: Parameter CFMAX_ice exceeds boundaries [1, 10].")
+    if 0.2 > TT_diff or TT_diff > 4:
+        print("WARNING: Parameter TT_diff exceeds boundaries [0.2, 4].")
+    if 1.2 > CFMAX_rel or CFMAX_rel > 2.5:
+        print("WARNING: Parameter CFMAX_rel exceeds boundaries [1.2, 2.5].")
     if 1 > CFMAX_snow or CFMAX_snow > 10:
         print("WARNING: Parameter CFMAX_snow exceeds boundaries [1, 10].")
     if 0.4 > SFCF or SFCF > 1:
@@ -199,6 +197,12 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     if RHO_ice != 917:
         print("ERROR: RHO_ice is a physical constant and shall not be changed.")
 
+    # calculate threshold temperature for rain
+    TT_rain = TT_diff + TT_snow
+
+    # calculate ice melt factor:
+    CFMAX_ice = CFMAX_rel * CFMAX_snow
+
     # calculate ice fraction in snowpack
     theta_i = RHO_snow / RHO_ice
 
@@ -211,14 +215,14 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         theta_e = 0
 
     parameter = pd.Series(
-        {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end, \
-         "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac, "ele_dat": ele_dat, \
-         "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "soi": soi, "warn": warn, \
-         "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "CFMAX_snow": CFMAX_snow, \
-         "CFMAX_ice": CFMAX_ice, "BETA": BETA, "CET": CET, \
-         "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, \
-         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG, "RHO_snow": RHO_snow, "RHO_ice": RHO_ice, "CFR_ice": CFR_ice,
-         "theta_e": theta_e})
+        {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end,
+         "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac,
+         "ele_dat": ele_dat, "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "soi": soi,
+         "warn": warn, "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "TT_diff": TT_diff,
+         "CFMAX_snow": CFMAX_snow, "CFMAX_ice": CFMAX_ice, "CFMAX_rel": CFMAX_rel, "BETA": BETA, "CET": CET,
+         "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL,
+         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG, "RHO_snow": RHO_snow, "RHO_ice": RHO_ice,
+         "CFR_ice": CFR_ice, "theta_e": theta_e})
     print("Parameters set")
     return parameter
 
@@ -1225,7 +1229,7 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                        set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
                        soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
                        plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
-                       TT_rain=2, CFMAX_snow=2.8, CFMAX_ice=5.6, BETA=1.0, CET=0.15,
+                       TT_diff=2, CFMAX_snow=2.8, CFMAX_rel=2, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
                        CWH=0.1, AG=0.7, RHO_snow=400):
     """Function to run the whole MATILDA simulation at once."""
@@ -1236,7 +1240,7 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                                   sim_end=sim_end, freq=freq, lat=lat, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
                                   ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, parameter_df = parameter_df, lr_temp=lr_temp,
                                   lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, \
-                                  TT_rain=TT_rain, CFMAX_snow=CFMAX_snow, CFMAX_ice=CFMAX_ice, \
+                                  TT_diff=TT_diff, CFMAX_snow=CFMAX_snow, CFMAX_rel=CFMAX_rel, \
                                   BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
                                   MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG, RHO_snow=RHO_snow)
 

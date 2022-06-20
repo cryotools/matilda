@@ -1,4 +1,4 @@
-lr_temp    - Lapse rate of air temperature (ascending) (K(m)
+lr_temp    - Lapse rate of air temperature (ascending) (K/m)
            [-0.01, -0.003] (usually -0.006)
 lr_prec    - Lapse rate of precipitation (ascending) (mm/m)
            [0, 0.002]
@@ -24,21 +24,19 @@ UZL        - Threshold parameter for groundwater boxes runoff (mm)
            [0, 500]
 PCORR      - Precipitation (input sum) correction factor
            [0.5, 2]
-TT_snow    - Temperature below which all precipitation is solid. Between TT_snow and TT_rain fractions of liquid and solid precipitation change linearly.
+TT_snow    - Temperature below which all precipitation is solid. Between TT_snow and TT_rain fractions of liquid and solid precipitation change linearly (°C).
            [-1.5, 2.5]
-TT_rain    - Temperature above which all precipitation is liquid. Needs to be higher than TT_snow.
+TT_diff    - Difference of TT_snow and temperature above which all precipitation is liquid (TT_rain). (°K)
            [-1.5, 2.5]
-CFMAX_ice  - Ice melt rate (mm/day per K above freezing point). Usually > 1.5*CFMAX_snow.
-           [1, 10]
 CFMAX_snow - Snow melt rate (mm/day per K above freezing point).
            [1, 10]
-SFCF       - SnowFall Correction Factor
+CFMAX_rel  - Factor to calculate ice melt rate from CFMAX_snow. CFMAX_ice = CFMAX_rel * CFMAX_snow.
+           [1.2, 2.5]
+SFCF       - Snowfall correction Factor
            [0.4, 1]
-CFR_ice    - Refreezing coefficient in ice		---> Verhältnis CFR_snow?!
-           [0, 0.1] (usually 0.05)
-CFR_snow   - Refreezing coefficient in snow
-           [0, 0.1] (usually 0.05)
-CWH        - Fraction (portion) of meltwater and rainfall which retain in snowpack (water holding capacity)
+CWH        - Fraction (portion) of meltwater and rainfall which retain in snowpack (water holding capacity).
            [0, 0.2] (usually 0.1)
 AG	   - Calibration parameter for glacier storage-release scheme. High values result in a small reservoir and instant release. Low values extend storage and delay release.
 	   [0, 1]
+RHO_snow   - Average density of snow in the catchment. Determines the amount of refreezing in snow. (kg/m^3)
+           [300, 500]
