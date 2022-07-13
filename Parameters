@@ -27,7 +27,7 @@ PCORR      - Precipitation (input sum) correction factor
 TT_snow    - Temperature below which all precipitation is solid. Between TT_snow and TT_rain fractions of liquid and solid precipitation change linearly (°C).
            [-1.5, 2.5]
 TT_diff    - Difference of TT_snow and temperature above which all precipitation is liquid (TT_rain). (°K)
-           [-1.5, 2.5]
+           [0.2, 4]
 CFMAX_snow - Snow melt rate (mm/day per K above freezing point).
            [1, 10]
 CFMAX_rel  - Factor to calculate ice melt rate from CFMAX_snow. CFMAX_ice = CFMAX_rel * CFMAX_snow.

@@ -255,7 +255,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         # Omit everything outside the specified season of interest (soi)
         if parameter.soi is not None:
             obs_preproc = obs_preproc[obs_preproc.index.month.isin(range(parameter.soi[0], parameter.soi[1] + 1))]
-        # Expanding the observation period full years filling up with NAs
+        # Expanding the observation period to full years filling up with NAs
         idx_first = obs_preproc.index.year[1]
         idx_last = obs_preproc.index.year[-1]
         idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
