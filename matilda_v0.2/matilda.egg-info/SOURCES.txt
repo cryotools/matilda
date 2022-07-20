@@ -1,0 +1,10 @@
+LICENSE
+README.md
+setup.py
+matilda/__init__.py
+matilda/core.py
+matilda.egg-info/PKG-INFO
+matilda.egg-info/SOURCES.txt
+matilda.egg-info/dependency_links.txt
+matilda.egg-info/requires.txt
+matilda.egg-info/top_level.txt

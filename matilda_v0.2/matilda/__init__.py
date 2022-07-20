@@ -29,6 +29,6 @@ glacier changes.
 
 MATILDA is still in an experimental state and a work in progress.
 '''
-from . import matilda_core            # Writes the results of the sampler in a user defined output file
+from . import core            # Contains all core functions
 
 __version__ = '0.2'
