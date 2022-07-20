@@ -5,36 +5,35 @@ MATILDA is an ongoing project and therefore a ***work in progress***.
 
 ## Overview
 
-In the basic setup, MATILDA uses a modified version of the [pypdd](https://github.com/juseg/pypdd.git) tool to calculate glacial melt based on a positive degree-day approach and a modified version of HBV from the Lumped Hydrological Models Playground ([LHMP](https://github.com/hydrogo/LHMP.git)). The output contains the modeled time series for various components of the water balance, basic statistics for these variables, a choice of two model effieciency coefficients (NSE, KGE), and several plots of in- and output data.
+In the basic setup, MATILDA uses a modified version of the [pypdd](https://github.com/juseg/pypdd.git) tool to calculate glacial melt based on a positive degree-day approach and a modified version of HBV from the Lumped Hydrological Models Playground ([LHMP](https://github.com/hydrogo/LHMP.git)). The output contains the modeled time series for various components of the water balance, basic statistics for these variables, a choice of model effieciency coefficients (e.g. NSE, KGE...), and several plots of in- and output data.
 
 ![](workflow_detailed-CORRECTED.png)
 
 ### Requirements
 
-The tool should run with every Python3 version on all computer operating systems. It was developed on Python 3.6.9 on Ubuntu 20.04.
+The tool should run with every Python3 version on most computer operating systems. It was developed on Python 3.6.9 on Ubuntu 20.04.
 It requires the following Python3 libraries:
 - xarray
 - numpy
 - pandas
 - matplotlib
 - scipy
-- os
 - datetime
 - hydroeval
+- HydroErr
 
-The MATILDA package and the necessary packages can be installed to your local machine by using pip or a comparable package manager. You can either install the package by using the link to this repository:
+The MATILDA package and dependencies can be installed to your local machine by using pip or a comparable package manager. You can either install the package by using the link to this repository:
 ```
-pip install git+https://git@github.com/cryotools/matilda.git
-
+pip install -e 'git+https://github.com/cryotools/matilda.git/#egg=matilda&subdirectory=matilda_v0.2'
 ```
-Or clone this repository to you local machine, navigate to the top directory, and use:
+...or clone this repository to you local machine, navigate to the matilda_v0.2 directory and use:
 ```
 pip install .
 ```
 
 ### Data
 
-The minimum input is a CSV-file containing timeseries of air temperature (°C), total precipitation (mm) and (if available) evapotranspiration (mm) data in the format shown below. If evapotranspiration is not provided it is estimated from air temperature following [Oudin et.al. 2010](https://doi.org/10.1080/02626660903546118). A series of runoff observations (mm) is used to calibrate/validate the model. All data sets need at least daily resolution.
+The minimum input is a CSV-file containing timeseries of air temperature (°C), total precipitation (mm) and (if available) evapotranspiration data (mm) in the format shown below. If evapotranspiration is not provided it is estimated from air temperature following [Oudin et.al. 2010](https://doi.org/10.1080/02626660903546118). A series of runoff observations (mm) is used to calibrate/validate the model. All data sets need at least daily resolution.
 
 | TIMESTAMP           | T2    | RRR  | PE   |
 |---------------------|-------|------|------|
