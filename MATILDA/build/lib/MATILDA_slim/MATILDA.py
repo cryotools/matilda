@@ -23,7 +23,7 @@ import matplotlib.dates as mdates
 from matplotlib.offsetbox import AnchoredText
 
 # Setting the parameter for the MATILDA simulation
-def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
+def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
                       lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
                       soi = None, warn = False, lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_diff=2, CFMAX_snow=2.8, CFMAX_rel=2, \
@@ -227,9 +227,8 @@ def MATILDA_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     return parameter
 
 
-def MATILDA_preproc(input_df, parameter, obs=None):
-    """MATILDA preprocessing: here the dataframes are transformed into the needed format and the unit of the observation
-    data is converted from m3/s to mm per day."""
+def matilda_preproc(input_df, parameter, obs=None):
+    """MATILDA preprocessing: transforms dataframes into the required format and converts the runoff observations unit from m3/s to mm/d."""
 
     print("---")
     print("Reading data")
@@ -255,7 +254,7 @@ def MATILDA_preproc(input_df, parameter, obs=None):
         # Omit everything outside the specified season of interest (soi)
         if parameter.soi is not None:
             obs_preproc = obs_preproc[obs_preproc.index.month.isin(range(parameter.soi[0], parameter.soi[1] + 1))]
-        # Expanding the observation period full years filling up with NAs
+        # Expanding the observation period to full years filling up with NAs
         idx_first = obs_preproc.index.year[1]
         idx_last = obs_preproc.index.year[-1]
         idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D', name=obs_preproc.index.name)
@@ -907,7 +906,7 @@ def create_statistics(output_MATILDA):
     return stats
 
 
-def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
+def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     """The main MATILDA simulation. It consists of linear scaling of the data (if elevations for data, catchment and glacier
     are provided) and executes the DDM and HBV modules subsequently."""
 
@@ -1021,7 +1020,7 @@ def MATILDA_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     return output_all
 
 
-def MATILDA_plots(output_MATILDA, parameter):
+def matilda_plots(output_MATILDA, parameter):
     """ MATILDA plotting function to plot input data, runoff output and HBV parameters."""
 
     # resampling the output to the specified frequency
@@ -1178,7 +1177,7 @@ def MATILDA_plots(output_MATILDA, parameter):
     return output_MATILDA
 
 
-def MATILDA_save_output(output_MATILDA, parameter, output_path):
+def matilda_save_output(output_MATILDA, parameter, output_path):
     """Function to save the MATILDA output to local disk."""
 
     output_path = output_path + parameter.sim_start[:4] + "_" + parameter.sim_end[:4] + "_" + datetime.now().strftime(
@@ -1225,7 +1224,7 @@ def MATILDA_save_output(output_MATILDA, parameter, output_path):
     print("---")
 
 
-def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, warn=False,
+def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, warn=False,
                        set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
                        soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
                        plots=True, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
@@ -1236,7 +1235,7 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
 
     print('---')
     print('MATILDA framework')
-    parameter = MATILDA_parameter(input_df, set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start,
+    parameter = matilda_parameter(input_df, set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start,
                                   sim_end=sim_end, freq=freq, lat=lat, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
                                   ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, parameter_df = parameter_df, lr_temp=lr_temp,
                                   lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, \
@@ -1249,22 +1248,22 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
 
     # Data preprocessing with the MATILDA preparation script
     if obs is None:
-        df_preproc = MATILDA_preproc(input_df, parameter)
+        df_preproc = matilda_preproc(input_df, parameter)
         # Downscaling of data if necessary and the MATILDA simulation
         if glacier_profile is not None:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
+            output_MATILDA = matilda_submodules(df_preproc, parameter, glacier_profile=glacier_profile)
         else:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter)
+            output_MATILDA = matilda_submodules(df_preproc, parameter)
     else:
-        df_preproc, obs_preproc = MATILDA_preproc(input_df, parameter, obs=obs)
+        df_preproc, obs_preproc = matilda_preproc(input_df, parameter, obs=obs)
         # Scale data if necessary and run the MATILDA simulation
         if glacier_profile is not None:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
+            output_MATILDA = matilda_submodules(df_preproc, parameter, obs=obs_preproc, glacier_profile=glacier_profile)
         else:
-            output_MATILDA = MATILDA_submodules(df_preproc, parameter, obs=obs_preproc)
+            output_MATILDA = matilda_submodules(df_preproc, parameter, obs=obs_preproc)
 
     if plots:
-        output_MATILDA = MATILDA_plots(output_MATILDA, parameter)   # Option to suppress plots.
+        output_MATILDA = matilda_plots(output_MATILDA, parameter)   # Option to suppress plots.
         # return output_MATILDA
     else:
         return output_MATILDA
@@ -1272,6 +1271,6 @@ def MATILDA_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
     # adding them to the output
     # saving the data on disc of output path is given
     if output is not None:
-        MATILDA_save_output(output_MATILDA, parameter, output)
+        matilda_save_output(output_MATILDA, parameter, output)
 
     return output_MATILDA

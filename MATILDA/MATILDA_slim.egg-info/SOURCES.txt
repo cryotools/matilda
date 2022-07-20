@@ -5,6 +5,7 @@ MATILDA_slim/MATILDA_BASE_32370.py
 MATILDA_slim/MATILDA_LOCAL_32370.py
 MATILDA_slim/MATILDA_REMOTE_32370.py
 MATILDA_slim/MATILDA_functions.py
+MATILDA_slim/__init__.py
 MATILDA_slim.egg-info/PKG-INFO
 MATILDA_slim.egg-info/SOURCES.txt
 MATILDA_slim.egg-info/dependency_links.txt
