@@ -9,17 +9,7 @@ This package combines a positive degree-day model for glacier and snow melt with
 the lumped conceptual catchment model HBV. It further features a glacier area-volume scaling routine to account for
 glacier changes.
 
-:dependencies: - Numpy >1.8 (http://www.numpy.org/)
-               - Scipy >1.5 (https://pypi.org/project/scipy/)
-               - Pandas >0.13 (optional) (http://pandas.pydata.org/)
-               - Matplotlib >1.4 (optional) (http://matplotlib.org/)
-               - CMF (optional) (http://fb09-pasig.umwelt.uni-giessen.de:8000/)
-               - mpi4py (optional) (http://mpi4py.scipy.org/)
-               - pathos (optional) (https://pypi.python.org/pypi/pathos/)
-               - sqlite3 (optional) (https://pypi.python.org/pypi/sqlite3/)
-               - numba (optional) (https://pypi.python.org/pypi/numba/)
-
-               - Pandas
+:dependencies: - Pandas
                - Xarray
                - Matplotlib
                - Numpy
