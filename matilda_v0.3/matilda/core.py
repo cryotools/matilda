@@ -248,7 +248,7 @@ def matilda_preproc(input_df, parameter, obs=None):
         obs_preproc.set_index('Date', inplace=True)
         obs_preproc.index = pd.to_datetime(obs_preproc.index)
         obs_preproc = obs_preproc[parameter.sim_start: parameter.sim_end]
-        # Changing the input unit from m/3 to mm.
+        # Changing the input unit from m^3/s to mm/d.
         obs_preproc["Qobs"] = obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
         obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
         # Omit everything outside the specified season of interest (soi)
@@ -1181,7 +1181,7 @@ def matilda_save_output(output_MATILDA, parameter, output_path):
     """Function to save the MATILDA output to local disk."""
 
     output_path = output_path + parameter.sim_start[:4] + "_" + parameter.sim_end[:4] + "_" + datetime.now().strftime(
-        "%Y-%m-%d_%H:%M:%S") + "/"
+        "%Y-%m-%d_%H-%M-%S") + "/"
     os.mkdir(output_path)  # creating the folder to save the plots
 
     print("Saving the MATILDA output to disc")
