@@ -364,14 +364,14 @@ def calculate_glaciermelt(ds, parameter):
     print("Calculating glacial melt")
 
     # initialize arrays
-    temp = ds["temp_mean"]
-    prec = ds["RRR"]
-    pdd = ds["pdd"]
-    snow_depth = xr.zeros_like(temp)
-    snow_melt = xr.zeros_like(temp)
-    ice_melt = xr.zeros_like(temp)
-    actual_runoff = xr.zeros_like(temp)
-    glacier_reservoir = xr.zeros_like(temp)
+    temp = ds["temp_mean"].values
+    prec = ds["RRR"].values
+    pdd = ds["pdd"].values
+    snow_depth = []
+    snow_melt = []
+    ice_melt = []
+    actual_runoff = []
+    glacier_reservoir = []
 
     # calculate accumulation (SWE)
     reduced_temp = (parameter.TT_rain - temp) / (parameter.TT_rain - parameter.TT_snow)
@@ -379,12 +379,21 @@ def calculate_glaciermelt(ds, parameter):
     accu_rate = snowfrac * prec
 
     # compute snow depth and melt rates
-    for i in np.arange(len(temp)):
+    for i in range(len(temp)):
         if i > 0:
-            snow_depth[i] = snow_depth[i - 1]
-        snow_depth[i] += accu_rate[i]
-        snow_melt[i], ice_melt[i] = melt_rates(snow_depth[i], pdd[i], parameter)
-        snow_depth[i] -= snow_melt[i]
+            snow_depth.append(snow_depth[i - 1])
+            snow_depth[i] += accu_rate[i]
+        else:
+            snow_depth.append(accu_rate[i])
+        snow_melt_tmp, ice_melt_tmp = melt_rates(snow_depth[i], pdd[i], parameter)
+        snow_melt.append(snow_melt_tmp)
+        ice_melt.append(ice_melt_tmp)
+        snow_depth[i] -= snow_melt_tmp
+
+    # convert
+    snow_depth = np.array(snow_depth)
+    ice_melt = np.array(ice_melt)
+    snow_melt = np.array(snow_melt)
 
     # calculate refreezing, runoff and surface mass balance
     total_melt = snow_melt + ice_melt
@@ -402,8 +411,11 @@ def calculate_glaciermelt(ds, parameter):
             SG = runoff_rate[i]  # liquid water stored in the reservoir
         else:
             SG = np.maximum((runoff_rate[i] - actual_runoff[i - 1]) + SG, 0)
-        actual_runoff[i] = KG[i] * SG
-        glacier_reservoir[i] = SG
+        actual_runoff.append(KG[i] * SG)
+        glacier_reservoir.append(SG)
+
+    actual_runoff = np.array(actual_runoff)
+    glacier_reservoir = np.array(glacier_reservoir)
 
     # final glacier module output
     glacier_melt = xr.merge(
