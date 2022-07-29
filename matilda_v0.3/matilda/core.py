@@ -414,8 +414,8 @@ def calculate_glaciermelt(ds, parameter):
         actual_runoff.append(KG[i] * SG)
         glacier_reservoir.append(SG)
 
-    actual_runoff = np.array(actual_runoff)
-    glacier_reservoir = np.array(glacier_reservoir)
+    # actual_runoff = np.array(actual_runoff)
+    # glacier_reservoir = np.array(glacier_reservoir)
 
     # final glacier module output
     glacier_melt = xr.merge(
@@ -432,6 +432,10 @@ def calculate_glaciermelt(ds, parameter):
          ])
 
     DDM_results = glacier_melt.to_dataframe()
+
+    idx = ds.to_dataframe().index
+    DDM_results = DDM_results.set_index(pd.DatetimeIndex(idx))
+
     print("Finished Degree-Day Melt Routine")
     return DDM_results
 
