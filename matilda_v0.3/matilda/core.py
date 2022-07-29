@@ -378,13 +378,13 @@ def calculate_glaciermelt(ds, parameter):
     snowfrac = np.clip(reduced_temp, 0, 1)
     accu_rate = snowfrac * prec
 
-    # compute snow depth and melt rates
-    for i in np.arange(len(temp)):
-        if i > 0:
-            snow_depth[i] = snow_depth[i - 1]
-        snow_depth[i] += accu_rate[i]
-        snow_melt[i], ice_melt[i] = melt_rates(snow_depth[i], pdd[i], parameter)
-        snow_depth[i] -= snow_melt[i]
+    # # compute snow depth and melt rates
+    # for i in np.arange(len(temp)):
+    #     if i > 0:
+    #         snow_depth[i] = snow_depth[i - 1]
+    #     snow_depth[i] += accu_rate[i]
+    #     snow_melt[i], ice_melt[i] = melt_rates(snow_depth[i], pdd[i], parameter)
+    #     snow_depth[i] -= snow_melt[i]
 
     # calculate refreezing, runoff and surface mass balance
     total_melt = snow_melt + ice_melt
