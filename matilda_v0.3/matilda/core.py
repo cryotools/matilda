@@ -390,7 +390,7 @@ def calculate_glaciermelt(ds, parameter):
         ice_melt.append(ice_melt_tmp)
         snow_depth[i] -= snow_melt_tmp
 
-    # convert
+    # convert from list to array for arithmetic calculations
     snow_depth = np.array(snow_depth)
     ice_melt = np.array(ice_melt)
     snow_melt = np.array(snow_melt)
@@ -414,9 +414,6 @@ def calculate_glaciermelt(ds, parameter):
         actual_runoff.append(KG[i] * SG)
         glacier_reservoir.append(SG)
 
-    # actual_runoff = np.array(actual_runoff)
-    # glacier_reservoir = np.array(glacier_reservoir)
-
     # final glacier module output
     glacier_melt = xr.merge(
         [xr.DataArray(inst_smb, name="DDM_smb"),
@@ -433,7 +430,8 @@ def calculate_glaciermelt(ds, parameter):
 
     DDM_results = glacier_melt.to_dataframe()
 
-    idx = ds.to_dataframe().index
+    # merged data array comes without index -> set DateTime index from input
+    idx = ds.coords.to_index()
     DDM_results = DDM_results.set_index(pd.DatetimeIndex(idx))
 
     print("Finished Degree-Day Melt Routine")
