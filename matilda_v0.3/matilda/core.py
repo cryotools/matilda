@@ -1048,7 +1048,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type):
             if "Q_DDM_scaled" in output_MATILDA[0].columns:
                 plot_data = output_MATILDA[0].resample(parameter.freq).agg(
                     {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
-                    "Q_DDM": "sum", "Q_DDM_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+                    "Q_DDM": "sum", "Q_DDM_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", "DDM_refreezing_ice":"sum","DDM_refreezing_snow":"sum",\
                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
             else:
                 plot_data = output_MATILDA[0].resample(parameter.freq).agg(
@@ -1186,7 +1186,89 @@ def matilda_plots(output_MATILDA, parameter, plot_type):
         fig.set_size_inches(10, 6)
         return fig
 
-    def plot_plotly(plot_data, parameter):
+    # Plotting the meteorological parameters with Plotly
+    def plot_plotly_meteo(plot_data, fig, row):
+        x_vals = plot_data.index.to_pydatetime()
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["T2"], name="Mean temperature", line_color="#d7191c", legendgroup="meteo",
+                       legendgrouptitle_text="Meteo"),
+            row=row, col=1, secondary_y=False)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["RRR"], name="Precipitation sum", line_color="#2c7bb6",
+                       legendgroup="meteo"),
+            row=row, col=1, secondary_y=True)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["PE"], name="Evapotranspiration sum", line_color="#008837",
+                       legendgroup="meteo"),
+            row=row, col=1, secondary_y=True)
+
+    # Plotting the runoff/refreezing output parameters with Plotly
+    def plot_plotly_runoff(plot_data, fig, row):
+        x_vals = plot_data.index.to_pydatetime()
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["Q_HBV"], name="MATILDA catchment runoff", fillcolor="#5893D4",
+                       legendgroup="runoff", stackgroup='one', mode='none'),
+            row=row, col=1)
+
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=(plot_data["Q_Total"] - plot_data["Q_HBV"]), name="MATILDA glacial runoff (stacked)",
+                       fillcolor="#CC79A7",
+                       legendgroup="runoff", stackgroup='one', mode='none'),
+            row=row, col=1)
+
+        if 'Qobs' in plot_data.columns:
+            fig.add_trace(
+                go.Scatter(x=x_vals, y=plot_data["Qobs"], name="Observations", line_color="#E69F00",
+                           legendgroup="runoff", legendgrouptitle_text="Runoff"),
+                row=row, col=1)
+        if 'Q_DDM' in plot_data.columns:
+            fig.add_trace(
+                go.Scatter(x=x_vals, y=plot_data["Q_Total"], name="MATILDA total runoff", line_color="black",
+                           legendgroup="runoff"),
+                row=row, col=1)
+
+            # two new series for refreezing
+            fig.add_trace(
+                go.Scatter(x=x_vals, y=plot_data["DDM_refreezing_snow"], name="MATILDA snow refreeze",
+                           fillcolor="#adb5bd", legendgroup="refreeze", legendgrouptitle_text="Refreeze",
+                           mode='none', fill='tozeroy'),
+                row=row, col=1)
+
+            fig.add_trace(
+                go.Scatter(x=x_vals, y=plot_data["DDM_refreezing_ice"], name="MATILDA ice refreeze",
+                           fillcolor="#6c757d", legendgroup="refreeze",
+                           mode='none', fill='tozeroy'),
+                row=row, col=1)
+
+        fig.add_annotation(xref='x domain', yref='y domain', x=0.99, y=0.95, xanchor="right", showarrow=False,
+                           text='<b>KGE coeff ' + str(round(output_MATILDA[1], 2)) + '</b>',
+                           row=row, col=1)
+
+    # Plotting the HBV output parameters with Plotly
+    def plot_plotly_hbv(plot_data, fig, row):
+        x_vals = plot_data.index.to_pydatetime()
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["HBV_AET"], name="Actual evapotranspiration", line_color='#16425b',
+                       legendgroup="hbv", legendgrouptitle_text="HBV"),
+            row=row, col=1)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["HBV_soil_moisture"], name="Soil moisture", line_color='#d9dcd6',
+                       legendgroup="hbv"),
+            row=row, col=1)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["HBV_snowpack"], name="Water in snowpack", line_color='#81c3d7',
+                       legendgroup="hbv"),
+            row=row, col=1)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["HBV_upper_gw"], name="Upper groundwater box", line_color='#3a7ca5',
+                       legendgroup="hbv"),
+            row=row, col=1)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["HBV_lower_gw"], name="Lower groundwater box", line_color='#2f6690',
+                       legendgroup="hbv"),
+            row=row, col=1)
+
+    def plot_plotly(plot_data, plot_annual_data, parameter):
         # construct date range for chart titles
         range_from = str(plot_data.index.values[1])[:4]
         range_to = str(plot_data.index.values[-1])[:4]
@@ -1197,94 +1279,36 @@ def matilda_plots(output_MATILDA, parameter, plot_type):
         title = [" meteorological input parameters in ",
                  " MATILDA simulation for the period ",
                  " output from the HBV model in the period "]
+        title_f = []
         for i in range(len(title)):
-            title[i] = '<b>' + parameter.freq_long + title[i] + date_range + '</b>'
+            title_f.append('<b>' + parameter.freq_long + title[i] + date_range + '</b>')
 
+        # -- Plot 1 (combined charts) -- #
         # init plot
-        fig = make_subplots(
-            rows=3, cols=1, subplot_titles=title, shared_xaxes=True,
+        fig1 = make_subplots(
+            rows=3, cols=1, subplot_titles=title_f, shared_xaxes=True,
             vertical_spacing=0.15,
             specs=[[{"secondary_y": True}],
                    [{"secondary_y": False}],
                    [{"secondary_y": False}]]
         )
-        x_vals = plot_data.index.to_pydatetime()
 
         # Add subplot: METEO
-        row = 1
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["T2"], name="Mean temperature", line_color="#d7191c", legendgroup="meteo", legendgrouptitle_text="Meteo"),
-            row=row, col=1, secondary_y=False)
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["RRR"], name="Precipitation sum", line_color="#2c7bb6", legendgroup="meteo"),
-            row=row, col=1, secondary_y=True)
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["PE"], name="Evapotranspiration sum", line_color="#008837", legendgroup="meteo"),
-            row=row, col=1, secondary_y=True)
+        plot_plotly_meteo(plot_data, fig1, 1)
 
         # Add subplot: RUNOFF
-        row = 2
-
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["Q_HBV"], name="MATILDA catchment runoff", fillcolor="#56B4E9",
-                       legendgroup="runoff", stackgroup='one', mode='none'),
-            row=row, col=1)
-
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=(plot_data["Q_Total"]-plot_data["Q_HBV"]), name="MATILDA glacial runoff", fillcolor="#CC79A7",
-                       legendgroup="runoff", stackgroup='one', mode='none'),
-            row=row, col=1)
-
-        if 'Qobs' in plot_data.columns:
-            fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["Qobs"], name="Observations", line_color="#E69F00",legendgroup="runoff", legendgrouptitle_text="Runoff"),
-                row=row, col=1)
-        if 'Q_DDM' in plot_data.columns:
-            fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["Q_Total"], name="MATILDA total runoff", line_color="black",legendgroup="runoff"),
-                row=row, col=1)
-
-        fig.add_annotation(xref='x domain', yref='y domain', x=0.99, y=0.95, xanchor="right", showarrow=False,
-                           text='<b>KGE coeff ' + str(round(output_MATILDA[1], 2)) + '</b>',
-                           row=row, col=1)
+        plot_plotly_runoff(plot_data, fig1, 2)
 
         # Add subplot: HBV
-        row = 3
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["HBV_AET"], name="Actual evapotranspiration", legendgroup="hbv", legendgrouptitle_text="HBV"),
-            row=row, col=1)
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["HBV_soil_moisture"], name="Soil moisture", legendgroup="hbv"),
-            row=row, col=1)
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["HBV_snowpack"], name="Water in snowpack", legendgroup="hbv"),
-            row=row, col=1)
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["HBV_upper_gw"], name="Upper groundwater box", legendgroup="hbv"),
-            row=row, col=1)
-        fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["HBV_lower_gw"], name="Lower groundwater box", legendgroup="hbv"),
-            row=row, col=1)
+        plot_plotly_hbv(plot_data, fig1, 3)
 
         # update general layout settings
-        fig.update_layout(
-            # height=900,
-            # legend_tracegroupgap=180,
-
+        fig1.update_layout(
             plot_bgcolor='white',
             legend=dict(groupclick="toggleitem"),
+            legend_tracegroupgap=20,
             xaxis_showticklabels=True, xaxis2_showticklabels=True,
             hovermode="x",
-            # xaxis3_rangeslider_visible=True,
-            # xaxis1_rangeselector=dict(
-            #     buttons=list([
-            #         dict(count=1, label="1m", step="month", stepmode="backward"),
-            #         dict(count=6, label="6m", step="month", stepmode="backward"),
-            #         dict(count=1, label="YTD", step="year", stepmode="todate"),
-            #         dict(count=1, label="1y", step="year", stepmode="backward"),
-            #         dict(step="all")
-            #     ])
-            # ),
             title={
                 "text":"MATILDA Results",
                 "font_size":30,
@@ -1307,27 +1331,61 @@ def matilda_plots(output_MATILDA, parameter, plot_type):
             }
         )
 
-        fig.update_xaxes(
+        # update x axes settings
+        fig1.update_xaxes(
             dtick="M1",
             tickformat="%b\n%Y",
             hoverformat="%d\n%b\n%Y",
             ticklabelmode="period"
         )
-        return fig
 
-    plot_data, plot_data_annual = plot_data(output_MATILDA, parameter)
+        # -- Plot 2 (annual mean) -- #
+        title_annual = '<b>Annual mean' + title[1] + date_range + '</b>'
+        fig2 = make_subplots(subplot_titles=[title_annual])
+
+        # Add subplot: RUNOFF (annual data)
+        plot_plotly_runoff(plot_annual_data, fig2, 1)
+
+        # update general layout settings
+        fig2.update_layout(
+            plot_bgcolor='white',
+            legend=dict(groupclick="toggleitem"),
+            legend_tracegroupgap=20,
+            hovermode="x",
+            title={
+                "text": "MATILDA Results (annual)",
+                "font_size": 30,
+                "x": 0.5,
+                "xanchor": "center"
+            },
+            yaxis={
+                "ticksuffix": " mm"
+            }
+        )
+
+        # update x axes settings
+        fig2.update_xaxes(
+            dtick="M1",
+            tickformat="%b",
+            hoverformat="%d\n%b",
+            ticklabelmode="period"
+        )
+
+        return [fig1, fig2]
+
+    plot_data, plot_annual_data = plot_data(output_MATILDA, parameter)
 
     if plot_type == 1:
         # matplotlib
         fig1 = plot_meteo(plot_data, parameter)
-        fig2 = plot_runoff(plot_data, plot_data_annual, parameter)
+        fig2 = plot_runoff(plot_data, plot_annual_data, parameter)
         fig3 = plot_hbv(plot_data, parameter)
         output_MATILDA.extend([fig1, fig2, fig3])
 
     elif plot_type == 2:
         # plotly
-        fig = plot_plotly(plot_data, parameter)
-        output_MATILDA.extend([fig])
+        figs = plot_plotly(plot_data, plot_annual_data, parameter)
+        output_MATILDA.extend(figs)
 
     else:
         print("unsupported plot type")
@@ -1367,6 +1425,7 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type):
     elif plot_type == 2:
         # save plots from plotly as .html file
         output_MATILDA[5].write_html(output_path + 'matilda_plots_' + date_range + '.html')
+        output_MATILDA[6].write_html(output_path + 'matilda_plots_annual_' + date_range + '.html')
 
     print("---")
 
