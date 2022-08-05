@@ -18,6 +18,7 @@ setuptools.setup(
 	install_requires=['pandas',
 					  'xarray',
 					  'matplotlib',
+					  'plotly',
 					  'numpy',
 					  'scipy',
 					  'datetime',
