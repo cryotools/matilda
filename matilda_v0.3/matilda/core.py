@@ -34,8 +34,9 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RHO_snow=400,
                       # Constants
                       RHO_ice = 917,               # density of solid ice (kg/m^3)
-                      CFR_ice = 0.01,               # fraction of ice melt refreezing in moulins,
+                      CFR_ice = 0.01,              # fraction of ice melt refreezing in moulins
                         **kwargs):
+
     """Creates a series from the provided and/or default parameters to be provided to all subsequent MATILDA modules."""
 
     # Filter warnings:
@@ -1037,7 +1038,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     return output_all
 
 
-def matilda_plots(output_MATILDA, parameter, plot_type):
+def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     """ MATILDA plotting function to plot input data, runoff output and HBV parameters."""
 
     # resampling the output to the specified frequency
@@ -1375,15 +1376,25 @@ def matilda_plots(output_MATILDA, parameter, plot_type):
 
     plot_data, plot_annual_data = plot_data(output_MATILDA, parameter)
 
-    if plot_type == 1:
+    if plot_type == "print":
         # matplotlib
         fig1 = plot_meteo(plot_data, parameter)
         fig2 = plot_runoff(plot_data, plot_annual_data, parameter)
         fig3 = plot_hbv(plot_data, parameter)
         output_MATILDA.extend([fig1, fig2, fig3])
 
-    elif plot_type == 2:
+    elif plot_type == "interactive":
         # plotly
+        figs = plot_plotly(plot_data, plot_annual_data, parameter)
+        output_MATILDA.extend(figs)
+
+    elif plot_type == "all":
+        # matplot  and plotly
+        fig1 = plot_meteo(plot_data, parameter)
+        fig2 = plot_runoff(plot_data, plot_annual_data, parameter)
+        fig3 = plot_hbv(plot_data, parameter)
+        output_MATILDA.extend([fig1, fig2, fig3])
+
         figs = plot_plotly(plot_data, plot_annual_data, parameter)
         output_MATILDA.extend(figs)
 
@@ -1393,7 +1404,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type):
     return output_MATILDA
 
 
-def matilda_save_output(output_MATILDA, parameter, output_path, plot_type):
+def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print"):
     """Function to save the MATILDA output to local disk."""
 
     output_path = output_path + parameter.sim_start[:4] + "_" + parameter.sim_end[:4] + "_" + datetime.now().strftime(
@@ -1416,16 +1427,27 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type):
     if isinstance(output_MATILDA[4], pd.DataFrame):
         output_MATILDA[4].to_csv(output_path + "glacier_area_" + date_range + ".csv")
 
-    if plot_type == 1:
+    if plot_type == "print":
         # save plots from matplotlib as .png files
         output_MATILDA[5].savefig(output_path + "meteorological_data_" + date_range + ".png", bbox_inches='tight', dpi=output_MATILDA[5].dpi)
         output_MATILDA[6].savefig(output_path + "model_runoff_" + date_range + ".png", dpi=output_MATILDA[6].dpi)
         output_MATILDA[7].savefig(output_path + "HBV_output_" + date_range + ".png", dpi=output_MATILDA[7].dpi)
 
-    elif plot_type == 2:
+    elif plot_type == "interactive":
         # save plots from plotly as .html file
         output_MATILDA[5].write_html(output_path + 'matilda_plots_' + date_range + '.html')
         output_MATILDA[6].write_html(output_path + 'matilda_plots_annual_' + date_range + '.html')
+
+    elif plot_type == "all":
+        # save plots from matplotlib and plotly as .png files
+        output_MATILDA[5].savefig(output_path + "meteorological_data_" + date_range + ".png", bbox_inches='tight', dpi=output_MATILDA[5].dpi)
+        output_MATILDA[6].savefig(output_path + "model_runoff_" + date_range + ".png", dpi=output_MATILDA[6].dpi)
+        output_MATILDA[7].savefig(output_path + "HBV_output_" + date_range + ".png", dpi=output_MATILDA[7].dpi)
+
+        # save plots from plotly as .html file
+        output_MATILDA[8].write_html(output_path + 'matilda_plots_' + date_range + '.html')
+        output_MATILDA[9].write_html(output_path + 'matilda_plots_annual_' + date_range + '.html')
+
 
     print("---")
 
@@ -1433,7 +1455,7 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type):
 def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, warn=False,
                        set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
                        soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
-                       plots=True, plot_type=1, hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
+                       plots=True, plot_type="print", hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
                        TT_diff=2, CFMAX_snow=2.8, CFMAX_rel=2, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
                        CWH=0.1, AG=0.7, RHO_snow=400):
