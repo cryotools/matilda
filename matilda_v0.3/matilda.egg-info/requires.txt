@@ -1,8 +1,9 @@
-HydroErr
+pandas
+xarray
+matplotlib
+plotly
+numpy
+scipy
 datetime
 hydroeval
-matplotlib
-numpy
-pandas
-scipy
-xarray
+HydroErr
