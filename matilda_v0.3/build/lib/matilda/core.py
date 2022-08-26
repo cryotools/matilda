@@ -232,13 +232,15 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
 
 
 def matilda_preproc(input_df, parameter, obs=None):
-    """MATILDA preprocessing: transforms dataframes into the required format and converts the runoff observations unit from m3/s to mm/d."""
+    """MATILDA preprocessing: transforms dataframes into the required format, converts observation units, and applies
+    precipitation correction factor."""
 
     print("---")
     print("Reading data")
     print("Set up period from " + str(parameter.set_up_start) + " to " + str(parameter.set_up_end) + " to set initial values")
     print("Simulation period from " + str(parameter.sim_start) + " to " + str(parameter.sim_end))
     df_preproc = input_df.copy()
+
     if parameter.set_up_start > parameter.sim_start:
         print("WARNING: Spin up period starts after simulation period")
     elif isinstance(df_preproc, xr.Dataset):
@@ -247,6 +249,14 @@ def matilda_preproc(input_df, parameter, obs=None):
         df_preproc.set_index('TIMESTAMP', inplace=True)
         df_preproc.index = pd.to_datetime(df_preproc.index)
         df_preproc = df_preproc[parameter.set_up_start: parameter.sim_end]
+
+    # make sure temperatures are in Celsius
+    df_preproc["T2"] = np.where(df_preproc["T2"] >= 100, df_preproc["T2"] - 273.15, df_preproc["T2"])
+
+    # overall precipitation correction factor
+    df_preproc['RRR'] = df_preproc['RRR'] * parameter.PCORR
+    df_preproc['RRR'] = np.where(df_preproc['RRR'] < 0, 0, df_preproc['RRR'])
+
     if obs is not None:
         obs_preproc = obs.copy()
         obs_preproc.set_index('Date', inplace=True)
@@ -272,30 +282,49 @@ def matilda_preproc(input_df, parameter, obs=None):
         return df_preproc
 
 
-def glacier_elevscaling(df_preproc, parameter):
-    """Scales the input data to mean catchment and mean glacier elevations respectively."""
+def phase_separation(df_preproc, parameter):
+    """Separates precipitation in liquid and solid fractions with linear transition between threshold temperatures."""
+
+    reduced_temp = (parameter.TT_rain - df_preproc['T2']) / (parameter.TT_rain - parameter.TT_snow)
+    snowfrac = np.clip(reduced_temp, 0, 1)
+    snow = snowfrac * df_preproc['RRR']
+    rain = df_preproc['RRR'] - snow
+    
+    return rain, snow
+
+
+def input_scaling(df_preproc, parameter):
+    """Scales the input data to respective mean elevations. Separates precipitation in phases and
+    applies the snow fall correction factor."""
 
     if parameter.ele_glac is not None:
         elev_diff_glacier = parameter.ele_glac - parameter.ele_dat
         input_df_glacier = df_preproc.copy()
-        input_df_glacier["T2"] = np.where(input_df_glacier["T2"] <= 100, input_df_glacier["T2"] + 273.15,
-                                          input_df_glacier["T2"])
         input_df_glacier["T2"] = input_df_glacier["T2"] + elev_diff_glacier * float(parameter.lr_temp)
         input_df_glacier["RRR"] = input_df_glacier["RRR"] + elev_diff_glacier * float(parameter.lr_prec)
         input_df_glacier["RRR"] = np.where(input_df_glacier["RRR"] < 0, 0, input_df_glacier["RRR"])
     else:
         input_df_glacier = df_preproc.copy()
     if parameter.ele_cat is not None:
-        height_diff_catchment = parameter.ele_cat - parameter.ele_dat
+        elev_diff_catchment = parameter.ele_cat - parameter.ele_dat
         input_df_catchment = df_preproc.copy()
-        input_df_catchment["T2"] = np.where(input_df_catchment["T2"] <= 100, input_df_catchment["T2"] + 273.15,
-                                            input_df_catchment["T2"])
-        input_df_catchment["T2"] = input_df_catchment["T2"] + height_diff_catchment * float(parameter.lr_temp)
-        input_df_catchment["RRR"] = input_df_catchment["RRR"] + height_diff_catchment * float(parameter.lr_prec)
+        input_df_catchment["T2"] = input_df_catchment["T2"] + elev_diff_catchment * float(parameter.lr_temp)
+        input_df_catchment["RRR"] = input_df_catchment["RRR"] + elev_diff_catchment * float(parameter.lr_prec)
         input_df_catchment["RRR"] = np.where(input_df_catchment["RRR"] < 0, 0, input_df_catchment["RRR"])
 
     else:
         input_df_catchment = df_preproc.copy()
+
+    # precipitation phase separation:
+    input_df_glacier['rain'], input_df_glacier['snow'] = phase_separation(input_df_glacier, parameter)
+    input_df_catchment['rain'], input_df_catchment['snow'] = phase_separation(input_df_catchment, parameter)
+
+    # snow correction factor
+    input_df_glacier['snow'], input_df_catchment['snow'] = [parameter.SFCF * i for i in [input_df_glacier['snow'], input_df_catchment['snow']]]
+
+    # add corrected snow fall to total precipitation
+    input_df_glacier['RRR'], input_df_catchment['RRR'] = [i['snow'] + i['rain'] for i in [input_df_glacier, input_df_catchment]]
+
     return input_df_glacier, input_df_catchment
 
 
@@ -308,25 +337,28 @@ def calculate_PDD(ds):
         mask = ds.MASK.values
         temp = xr.where(mask == 1, ds["T2"], np.nan)
         temp = temp.mean(dim=["lat", "lon"])
-        temp = xr.where(temp >= 100, temp - 273.15, temp)  # making sure the temperature is in Celsius
-        temp_min = temp.resample(time="D").min(dim="time")
-        temp_max = temp.resample(time="D").max(dim="time")
         temp_mean = temp.resample(time="D").mean(dim="time")
         prec = xr.where(mask == 1, ds["RRR"], np.nan)
         prec = prec.mean(dim=["lat", "lon"])
         prec = prec.resample(time="D").sum(dim="time")
-        time = temp_mean["time"]
+        rain = xr.where(mask == 1, ds["rain"], np.nan)
+        rain = rain.mean(dim=["lat", "lon"])
+        rain = rain.resample(time="D").sum(dim="time")
+        snow = xr.where(mask == 1, ds["snow"], np.nan)
+        snow = snow.mean(dim=["lat", "lon"])
+        snow = snow.resample(time="D").sum(dim="time")
     else:
         temp = ds["T2"]
-        if temp[1] >= 100:  # making sure the temperature is in Celsius
-            temp = temp - 273.15
-        temp_min = temp.resample("D").min()
         temp_mean = temp.resample("D").mean()
-        temp_max = temp.resample("D").max()
         prec = ds["RRR"].resample("D").sum()
+        rain = ds["rain"].resample("D").sum()
+        snow = ds["snow"].resample("D").sum()
 
-    pdd_ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"), xr.DataArray(temp_min, name="temp_min"), \
-                       xr.DataArray(temp_max, name="temp_max"), xr.DataArray(prec)])
+
+    pdd_ds = xr.merge([xr.DataArray(temp_mean, name="temp_mean"),
+                       xr.DataArray(prec),
+                       xr.DataArray(rain),
+                       xr.DataArray(snow)])
 
     # calculate the positive degree days
     pdd_ds["pdd"] = xr.where(pdd_ds["temp_mean"] > 0, pdd_ds["temp_mean"], 0)
@@ -370,6 +402,8 @@ def calculate_glaciermelt(ds, parameter):
     # initialize arrays
     temp = ds["temp_mean"].values
     prec = ds["RRR"].values
+    snow = ds["snow"].values
+    rain = ds["rain"].values
     pdd = ds["pdd"].values
     snow_depth = []
     snow_melt = []
@@ -377,10 +411,7 @@ def calculate_glaciermelt(ds, parameter):
     actual_runoff = []
     glacier_reservoir = []
 
-    # calculate accumulation (SWE)
-    reduced_temp = (parameter.TT_rain - temp) / (parameter.TT_rain - parameter.TT_snow)
-    snowfrac = np.clip(reduced_temp, 0, 1)
-    accu_rate = snowfrac * prec
+    accu_rate = snow
 
     # compute snow depth and melt rates
     for i in range(len(temp)):
@@ -405,6 +436,7 @@ def calculate_glaciermelt(ds, parameter):
     refr_snow = parameter.theta_e * snow_melt
     runoff_rate = total_melt - refr_snow - refr_ice
     inst_smb = accu_rate - runoff_rate
+    runoff_rate_rain = runoff_rate + rain
 
     # Storage-release scheme for glacier outflow (Stahl et.al. 2008, Toum et. al. 2021)
     KG_min = 0.1  # minimum outflow coefficient (conditions with deep snow and poorly developed glacial drainage systems) [time^−1]
@@ -412,9 +444,9 @@ def calculate_glaciermelt(ds, parameter):
     KG = np.minimum(KG_min + d_KG * np.exp(snow_depth / -(0.1 * 1000000**parameter.AG)), 1)
     for i in np.arange(len(temp)):
         if i == 0:
-            SG = runoff_rate[i]  # liquid water stored in the reservoir
+            SG = runoff_rate_rain[i]  # liquid water stored in the reservoir
         else:
-            SG = np.maximum((runoff_rate[i] - actual_runoff[i - 1]) + SG, 0)
+            SG = np.maximum((runoff_rate_rain[i] - actual_runoff[i - 1]) + SG, 0)
         actual_runoff.append(KG[i] * SG)
         glacier_reservoir.append(SG)
 
@@ -422,6 +454,10 @@ def calculate_glaciermelt(ds, parameter):
     glacier_melt = xr.merge(
         [xr.DataArray(inst_smb, name="DDM_smb"),
          xr.DataArray(pdd, name="pdd"),
+         xr.DataArray(temp, name="DDM_temp"),
+         xr.DataArray(prec, name="DDM_prec"),
+         xr.DataArray(rain, name="DDM_rain"),
+         xr.DataArray(snow, name="DDM_snow"),
          xr.DataArray(accu_rate, name="DDM_accumulation_rate"),
          xr.DataArray(ice_melt, name="DDM_ice_melt"),
          xr.DataArray(snow_melt, name="DDM_snow_melt"),
@@ -531,21 +567,25 @@ def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
     """ Part 2 of the glacier scaling routine based on the deltaH approach outlined in Seibert et al. (2018) and
     Huss and al.(2010). Calculates the new glacier area for each hydrological year."""
 
-    # creating the column for the updated runoff
-    output_DDM["Q_DDM_updated_scaled"] = copy.deepcopy(output_DDM["Q_DDM"])
+    # select output columns to update
+    up_cols = output_DDM.columns.drop(['DDM_smb', 'DDM_temp', 'pdd'])
 
-    # determining from when to when the hydrological year is
+    # creating columns for updated DDM output
+    for col in up_cols:
+        output_DDM[col + '_updated_scaled'] = copy.deepcopy(output_DDM[col])
+
+    # determining the hydrological year
     output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1,
                                         output_DDM.index.year)
-    # initial smb from the glacier routine script in m w.e.
+    # initial smb from the glacier routine in m w.e.
     m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
-    m = m / 1000 # in m
+    m = m / 1000  # in m
     # initial area
     initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
     # dataframe with the smb change per hydrological year in m w.e.
     glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9}).reset_index()  # do we have to scale this?
 
-    glacier_change_area = pd.DataFrame({"time":"initial", "glacier_area":[parameter.area_glac]})
+    glacier_change_area = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac]})
 
     # setting initial values for the loop
     new_area = parameter.area_glac
@@ -554,22 +594,23 @@ def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
     for i in range(len(glacier_change)):
         year = glacier_change["water_year"][i]
         smb = glacier_change["smb"][i]
-        # scaling the smb to the catchment
+        # scale the smb to the catchment
         smb = smb * (new_area / parameter.area_cat)
-        # adding the smb from the previous year(s) to the new year
+        # add the smb from the previous year(s) to the new year
         smb_sum = smb_sum + smb
-        # calculating the percentage of melt in comparison to the initial mass
+        # calculate the percentage of melt in comparison to the initial mass
         smb_percentage = round((-smb_sum / m) * 100)
         if (smb_percentage <= 99) & (smb_percentage >= 0):
-            # getting the correct row from the lookup table depending on the smb
+            # select the correct row from the lookup table depending on the smb
             area_melt = lookup_table.iloc[smb_percentage]
-            # getting the new glacier area by multiplying the initial area with the area changes
+            # derive the new glacier area by multiplying the initial area with the area changes
             new_area = np.nansum((area_melt.values * initial_area.values))*parameter.area_cat
         else:
             new_area = 0
-        # scaling the output with the new glacierized area
+        # scale the output with the new glacierized area
         glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_sum":smb_sum}, ignore_index=True)
-        output_DDM["Q_DDM_updated_scaled"] = np.where(output_DDM["water_year"] == year, output_DDM["Q_DDM"] * (new_area / parameter.area_cat), output_DDM["Q_DDM_updated_scaled"])
+        for col in up_cols:
+            output_DDM[col + "_updated_scaled"] = np.where(output_DDM["water_year"] == year, output_DDM[col] * (new_area / parameter.area_cat), output_DDM[col + "_updated_scaled"])
 
     return output_DDM, glacier_change_area
 
@@ -584,17 +625,18 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         print("Running HBV routine")
         # 1. new temporary dataframe from input with daily values
         if "PE" in input_df_catchment.columns:
-            input_df_hbv = input_df_catchment.resample("D").agg({"T2": 'mean', "RRR": 'sum', "PE": "sum"})
+            input_df_hbv = input_df_catchment.resample("D").agg({"T2": 'mean', "RRR": 'sum', "rain": "sum",
+                                                                 "snow": "sum", "PE": "sum"})
         else:
-            input_df_hbv = input_df_catchment.resample("D").agg({"T2": 'mean', "RRR": 'sum'})
+            input_df_hbv = input_df_catchment.resample("D").agg({"T2": 'mean', "RRR": 'sum', "rain": "sum",
+                                                                 "snow": "sum"})
 
         Temp = input_df_hbv['T2']
-        if Temp[1] >= 100:  # making sure the temperature is in Celsius
-            Temp = Temp - 273.15
         Prec = input_df_hbv['RRR']
+        rain = input_df_hbv['rain']
+        snow = input_df_hbv['snow']
 
         # Calculation of PE with Oudin et al. 2005
-        # solar_constant = (1376 * 1000000) / 86400  # from 1376 J/m2s to MJm2d
         latent_heat_flux = 2.45
         water_density = 1000
         if "PE" in input_df_catchment.columns:
@@ -602,7 +644,8 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         else:
             doy = np.array(input_df_hbv.index.strftime('%j')).astype(int)
             lat = np.deg2rad(parameter.lat)
-            # Part 2. Extraterrrestrial radiation calculation
+
+            # Part 2. Extraterrestrial radiation calculation
             # set solar constant (in W m-2)
             Rsc = 1367  # solar constant (in W m-2)
             # calculate solar declination dt (in radians)
@@ -616,7 +659,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             # Calculate relative distance to sun
             dr = 1.0 + 0.03344 * np.cos(j - 0.048869)
             # Calculate extraterrestrial radiation (J m-2 day-1)
-            Re = Rsc * 86400 / np.pi * dr * (ws * np.sin(lat) * np.sin(dt) \
+            Re = Rsc * 86400 / np.pi * dr * (ws * np.sin(lat) * np.sin(dt)
                                              + np.sin(ws) * np.cos(lat) * np.cos(dt))
             # convert from J m-2 day-1 to MJ m-2 day-1
             Re = Re / 10 ** 6
@@ -630,19 +673,10 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         # 2.1 meteorological forcing preprocessing
         Temp_cal = Temp[parameter.set_up_start:parameter.set_up_end]
         Prec_cal = Prec[parameter.set_up_start:parameter.set_up_end]
+        SNOW_cal = snow[parameter.set_up_start:parameter.set_up_end]
+        RAIN_cal = rain[parameter.set_up_start:parameter.set_up_end]
         Evap_cal = Evap[parameter.set_up_start:parameter.set_up_end]
-        # overall correction factor
-        Prec_cal = parameter.PCORR * Prec_cal
-        Prec_cal = np.where(Prec_cal < 0, 0, Prec_cal)
-        # precipitation separation
-        # if T < parTT: SNOW, else RAIN
-        RAIN_cal = np.where(Temp_cal > parameter.TT_rain, Prec_cal, 0)
-        # SNOW_cal2 = np.where(Temp_cal <= parTT, Prec_cal, 0)
-        reduced_temp_cal = (parameter.TT_rain - Temp_cal) / (parameter.TT_rain - parameter.TT_snow)
-        snowfrac_cal = np.clip(reduced_temp_cal, 0, 1)
-        SNOW_cal = snowfrac_cal * Prec_cal
-        # snow correction factor
-        SNOW_cal = parameter.SFCF * SNOW_cal
+
         # get the new glacier area for each year
         if glacier_area is not None:
             glacier_area = glacier_area.iloc[1:, :]
@@ -654,10 +688,15 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
                                          glacier_area["glacier_area"].iloc[year],
                                          SNOW2["area"])
 
-            SNOW2["T2"] = SNOW2["T2"] * (1 - (SNOW2["area"] / parameter.area_cat))
-            SNOW_cal = SNOW2['T2'].squeeze()
+            SNOW2["snow"] = SNOW2["snow"] * (1 - (SNOW2["area"] / parameter.area_cat))
+            SNOW_cal = SNOW2['snow'].squeeze()
+            RAIN_cal = RAIN_cal * (1 - (SNOW2["area"] / parameter.area_cat))
+            Prec_cal = Prec_cal * (1 - (SNOW2["area"] / parameter.area_cat))
         else:
             SNOW_cal = SNOW_cal * (1 - (parameter.area_glac / parameter.area_cat))
+            RAIN_cal = RAIN_cal * (1 - (parameter.area_glac / parameter.area_cat))
+            Prec_cal = Prec_cal * (1 - (parameter.area_glac / parameter.area_cat))
+
         # evaporation correction
         # a. calculate long-term averages of daily temperature
         Temp_mean_cal = np.array([Temp_cal.loc[Temp_cal.index.dayofyear == x].mean() \
@@ -748,19 +787,10 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         # 3. meteorological forcing preprocessing for simulation
         Temp = Temp[parameter.sim_start:parameter.sim_end]
         Prec = Prec[parameter.sim_start:parameter.sim_end]
+        SNOW = snow[parameter.sim_start:parameter.sim_end]
+        RAIN = rain[parameter.sim_start:parameter.sim_end]
         Evap = Evap[parameter.sim_start:parameter.sim_end]
-        # overall correction factor
-        Prec = parameter.PCORR * Prec
-        Prec = np.where(Prec < 0, 0, Prec)
-        # precipitation separation
-        # if T < parTT: SNOW, else RAIN
-        RAIN = np.where(Temp > parameter.TT_snow, Prec, 0)
-        # SNOW = np.where(Temp <= parTT, Prec, 0)
-        reduced_temp = (parameter.TT_rain - Temp) / (parameter.TT_rain - parameter.TT_snow)
-        snowfrac = np.clip(reduced_temp, 0, 1)
-        SNOW = snowfrac * Prec
-        # snow correction factor
-        SNOW = parameter.SFCF * SNOW
+
         # get the new glacier area for each year
         if glacier_area is not None:
             glacier_area = glacier_area.iloc[1:, :]
@@ -771,14 +801,18 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
                 SNOW2["area"] = np.where(SNOW2.index.year == glacier_area["time"].iloc[year],
                                          glacier_area["glacier_area"].iloc[year],
                                          SNOW2["area"])
+            RAIN = RAIN * (1 - (SNOW2["area"] / parameter.area_cat))            # Rain off glacier
+            SNOW2["snow"] = SNOW2["snow"] * (1 - (SNOW2["area"] / parameter.area_cat))  # Snow off-glacier
+            SNOW = SNOW2['snow'].squeeze()
+            Prec = Prec * (1 - (SNOW2["area"] / parameter.area_cat))
 
-            SNOW2["T2"] = SNOW2["T2"] * (1 - (SNOW2["area"] / parameter.area_cat))
-            SNOW = SNOW2['T2'].squeeze()
         else:
-            SNOW = SNOW * (1 - (parameter.area_glac / parameter.area_cat))  # evaporation correction
+            RAIN = RAIN * (1 - (parameter.area_glac / parameter.area_cat))    # Rain off glacier
+            SNOW = SNOW * (1 - (parameter.area_glac / parameter.area_cat))  # Snow off-glacier
+            Prec = Prec * (1 - (parameter.area_glac / parameter.area_cat))
+
         # a. calculate long-term averages of daily temperature
-        Temp_mean = np.array([Temp.loc[Temp.index.dayofyear == x].mean() \
-                              for x in range(1, 367)])
+        Temp_mean = np.array([Temp.loc[Temp.index.dayofyear == x].mean() for x in range(1, 367)])
         # b. correction of Evaporation daily values
         Evap = Evap.index.map(lambda x: (1 + parameter.CET * (Temp[x] - Temp_mean[x.dayofyear - 1])) * Evap[x])
         # c. control Evaporation
@@ -791,6 +825,9 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         # meltwater box
         SNOWMELT = np.zeros(len(Prec))
         SNOWMELT[0] = 0.0001
+        # total melt off-glacier
+        off_glac = np.zeros(len(Prec))
+        off_glac[0] = 0.0001
         # soil moisture box
         SM = np.zeros(len(Prec))
         SM[0] = SM_cal[-1]
@@ -831,6 +868,8 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             SNOWPACK[t] = SNOWPACK[t] + refreezing
             # meltwater after refreezing
             SNOWMELT[t] = SNOWMELT[t] - refreezing
+            # Total melt off-glacier
+            off_glac[t] = SNOWMELT[t]
             # recharge to soil
             tosoil = SNOWMELT[t] - (parameter.CWH * SNOWPACK[t])
             # control recharge to soil
@@ -907,8 +946,9 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
         Qsim = Qsim_smoothed
         hbv_results = pd.DataFrame(
-            {"T2": Temp, "RRR": Prec, "PE": Evap, "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, \
-             "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "Q_HBV": Qsim},
+            {"HBV_temp": Temp, "HBV_prec": Prec, "HBV_rain": RAIN, "HBV_snow": SNOW, "HBV_pe": Evap,
+             "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact,
+             "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "HBV_melt_off_glacier": off_glac, "Q_HBV": Qsim},
             index=input_df_hbv[parameter.sim_start: parameter.sim_end].index)
         print("Finished HBV routine")
         return hbv_results
@@ -937,7 +977,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     # Scale input data to fit catchments elevations
     if parameter.ele_dat is not None:
-        input_df_glacier, input_df_catchment = glacier_elevscaling(df_preproc, parameter)
+        input_df_glacier, input_df_catchment = input_scaling(df_preproc, parameter)
     else:
         input_df_glacier = df_preproc.copy()
         input_df_catchment = df_preproc.copy()
@@ -955,8 +995,10 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             lookup_table = create_lookup_table(glacier_profile, parameter)
             output_DDM, glacier_change_area = glacier_change(output_DDM, lookup_table, glacier_profile, parameter)
         else:
-            # scaling glacier melt to glacier area
-            output_DDM["Q_DDM_scaled"] = output_DDM["Q_DDM"] * (parameter.area_glac / parameter.area_cat)
+            # scaling DDM output to fraction of catchment area
+            for col in output_DDM.columns.drop(['DDM_smb','pdd']):
+                 output_DDM[col + "_scaled"] = output_DDM[col] * (parameter.area_glac / parameter.area_cat)
+
             lookup_table = str("No lookup table generated")
             glacier_change_area = str("No glacier changes calculated")
     else:
@@ -982,8 +1024,20 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     if parameter.area_glac > 0:
         if glacier_profile is not None:
             output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_updated_scaled"]
+            output_MATILDA["Prec_total"] = output_MATILDA["DDM_rain_updated_scaled"] +\
+                                           output_MATILDA["DDM_snow_updated_scaled"] +\
+                                           output_MATILDA["HBV_rain"] +\
+                                           output_MATILDA["HBV_snow"]
+            output_MATILDA["Melt_total"] = output_MATILDA["DDM_total_melt_updated_scaled"] +\
+                                           output_MATILDA["HBV_melt_off_glacier"]
         else:
             output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_scaled"]
+            output_MATILDA["Prec_total"] = output_MATILDA["DDM_rain_scaled"] + \
+                                           output_MATILDA["DDM_snow_scaled"] + \
+                                           output_MATILDA["HBV_rain"] + \
+                                           output_MATILDA["HBV_snow"]
+            output_MATILDA["Melt_total"] = output_MATILDA["DDM_total_melt_scaled"] +\
+                                           output_MATILDA["HBV_melt_off_glacier"]
     else:
         output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"]
 
@@ -1455,7 +1509,7 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print
 def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, warn=False,
                        set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
                        soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
-                       plots=True, plot_type="print", hydro_year=10, parameter_df = None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
+                       plots=True, plot_type="print", hydro_year=10, parameter_df=None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
                        TT_diff=2, CFMAX_snow=2.8, CFMAX_rel=2, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
                        CWH=0.1, AG=0.7, RHO_snow=400):
