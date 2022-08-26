@@ -947,7 +947,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         Qsim = Qsim_smoothed
         hbv_results = pd.DataFrame(
             {"HBV_temp": Temp, "HBV_prec": Prec, "HBV_rain": RAIN, "HBV_snow": SNOW, "HBV_pe": Evap,
-             "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact,
+             "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, "HBV_refreezing": refreezing,
              "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "HBV_melt_off_glacier": off_glac, "Q_HBV": Qsim},
             index=input_df_hbv[parameter.sim_start: parameter.sim_end].index)
         print("Finished HBV routine")
@@ -1043,6 +1043,80 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
 
+    # Add compact output
+    if parameter.area_glac > 0:
+        if glacier_profile is not None:
+            output_MATILDA_compact = pd.DataFrame(
+                {'avg_temp_catchment': output_MATILDA['HBV_temp'],
+                'avg_temp_glaciers': output_MATILDA['DDM_temp'],
+                'prec_off_glaciers': output_MATILDA['HBV_prec'],
+                'prec_on_glaciers': output_MATILDA['DDM_prec_updated_scaled'],
+                'rain_off_glaciers': output_MATILDA['HBV_rain'],
+                'snow_off_glaciers': output_MATILDA['HBV_snow'],
+                'rain_on_glaciers': output_MATILDA['DDM_rain_updated_scaled'],
+                'snow_on_glaciers': output_MATILDA['DDM_snow_updated_scaled'],
+                'snowpack_off_glaciers': output_MATILDA['HBV_snowpack'],
+                'soil_moisture': output_MATILDA['HBV_soil_moisture'],
+                'upper_groundwater': output_MATILDA['HBV_upper_gw'],
+                'lower_groundwater': output_MATILDA['HBV_lower_gw'],
+                'melt_off_glaciers': output_MATILDA['HBV_melt_off_glacier'],
+                'melt_on_glaciers': output_MATILDA['DDM_total_melt_updated_scaled'],
+                'ice_melt_on_glaciers': output_MATILDA['DDM_ice_melt_updated_scaled'],
+                'snow_melt_on_glaciers': output_MATILDA['DDM_snow_melt_updated_scaled'],
+                'total_refreezing': output_MATILDA['DDM_refreezing_ice_updated_scaled'] + output_MATILDA['DDM_refreezing_snow_updated_scaled'] + output_MATILDA['HBV_refreezing'],
+                'SMB': output_MATILDA['DDM_smb'],
+                'actual_evaporation': output_MATILDA['HBV_AET'],
+                'total_precipitation': output_MATILDA['Prec_total'],
+                'total_melt': output_MATILDA['Melt_total'],
+                'runoff_without_glaciers': output_MATILDA['Q_HBV'],
+                'runoff_from_glaciers': output_MATILDA['Q_DDM_updated_scaled'],
+                'total_runoff': output_MATILDA['Q_Total'],
+                'observed_runoff': output_MATILDA['Qobs']}, index=output_MATILDA.index)
+        else:
+            output_MATILDA_compact = pd.DataFrame(
+                {'avg_temp_catchment': output_MATILDA['HBV_temp'],
+                'avg_temp_glaciers': output_MATILDA['DDM_temp'],
+                'prec_off_glaciers': output_MATILDA['HBV_prec'],
+                'prec_on_glaciers': output_MATILDA['DDM_prec_scaled'],
+                'rain_off_glaciers': output_MATILDA['HBV_rain'],
+                'snow_off_glaciers': output_MATILDA['HBV_snow'],
+                'rain_on_glaciers': output_MATILDA['DDM_rain_scaled'],
+                'snow_on_glaciers': output_MATILDA['DDM_snow_scaled'],
+                'snowpack_off_glaciers': output_MATILDA['HBV_snowpack'],
+                'soil_moisture': output_MATILDA['HBV_soil_moisture'],
+                'upper_groundwater': output_MATILDA['HBV_upper_gw'],
+                'lower_groundwater': output_MATILDA['HBV_lower_gw'],
+                'melt_off_glaciers': output_MATILDA['HBV_melt_off_glacier'],
+                'melt_on_glaciers': output_MATILDA['DDM_total_melt_scaled'],
+                'ice_melt_on_glaciers': output_MATILDA['DDM_ice_melt_scaled'],
+                'snow_melt_on_glaciers': output_MATILDA['DDM_snow_melt_scaled'],
+                'total_refreezing': output_MATILDA['DDM_refreezing_ice_scaled'] + output_MATILDA['DDM_refreezing_snow_scaled'] + output_MATILDA['HBV_refreezing'],
+                'SMB': output_MATILDA['DDM_smb'],
+                'actual_evaporation': output_MATILDA['HBV_AET'],
+                'total_precipitation': output_MATILDA['Prec_total'],
+                'total_melt': output_MATILDA['Melt_total'],
+                'runoff_without_glaciers': output_MATILDA['Q_HBV'],
+                'runoff_from_glaciers': output_MATILDA['Q_DDM_scaled'],
+                'total_runoff': output_MATILDA['Q_Total'],
+                'observed_runoff': output_MATILDA['Qobs']}, index=output_MATILDA.index)
+
+    else:
+        output_MATILDA_compact = pd.DataFrame(
+            {'hydro_year': output_MATILDA['water_year'],
+             'avg_temp_catchment': output_MATILDA['HBV_temp'],
+             'prec': output_MATILDA['HBV_prec'],
+             'rain': output_MATILDA['HBV_rain'],
+             'snow': output_MATILDA['HBV_snow'],
+             'snowpack': output_MATILDA['HBV_snowpack'],
+             'soil_moisture': output_MATILDA['HBV_soil_moisture'],
+             'upper_groundwater': output_MATILDA['HBV_upper_gw'],
+             'lower_groundwater': output_MATILDA['HBV_lower_gw'],
+             'snow_melt': output_MATILDA['HBV_melt_off_glacier'],
+             'total_refreezing': output_MATILDA['HBV_refreezing'],
+             'actual_evaporation': output_MATILDA['HBV_AET'],
+             'runoff': output_MATILDA['Q_HBV'],
+             'observed_runoff': output_MATILDA['Qobs']}, index=output_MATILDA.index)
+
     # if obs is not None:
     #     output_MATILDA.loc[output_MATILDA.isnull().any(axis=1), :] = np.nan
 
@@ -1079,7 +1153,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
         kge = str("No observations available to calculate model efficiency coefficients.")
 
     # if obs is not None:
-    dat_stats = copy.deepcopy(output_MATILDA)
+    dat_stats = output_MATILDA_compact.copy()
     dat_stats.loc[dat_stats.isnull().any(axis=1), :] = np.nan
     stats = create_statistics(dat_stats)
 
@@ -1087,7 +1161,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     print("End of the MATILDA simulation")
     print("---")
     output_MATILDA = output_MATILDA.round(3)
-    output_all = [output_MATILDA, kge, stats, lookup_table, glacier_change_area]
+    output_all = [output_MATILDA_compact, output_MATILDA, kge, stats, lookup_table, glacier_change_area]
 
     return output_all
 
