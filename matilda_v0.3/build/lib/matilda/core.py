@@ -1136,8 +1136,16 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             print("MARE coefficient: " + str(round(float(mare), 2)))
             print("*-------------------*")
         else:
-            sim = sim.resample(parameter.freq).sum()
-            target = target.resample(parameter.freq).sum()
+            # Crop both timeseries to same periods without NAs
+            sim_new = pd.DataFrame()
+            sim_new['mod'] = pd.DataFrame(sim)
+            sim_new['obs'] = target
+            clean = sim_new.dropna()
+            sim = clean['obs']
+            target = clean['mod']
+
+            sim = sim.resample(parameter.freq).agg(pd.Series.sum, min_count=1)
+            target = target.resample(parameter.freq).agg(pd.Series.sum, min_count=1)
             nash_sut = he.nse(sim, target, remove_zero=True)
             kge = he.kge_2012(sim, target, remove_zero=True)
             rmse = he.rmse(sim, target)
@@ -1172,7 +1180,8 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     # resampling the output to the specified frequency
     def plot_data(output_MATILDA, parameter):
         if "Qobs" in output_MATILDA[1].columns:
-            obs = output_MATILDA[1]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
+            # obs = output_MATILDA[1]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
+            obs = output_MATILDA[1]["Qobs"].resample(parameter.freq).agg(pd.Series.sum, min_count=1)
         if "Q_DDM" in output_MATILDA[1].columns:
             if "Q_DDM_scaled" in output_MATILDA[1].columns:
                 plot_data = output_MATILDA[1].resample(parameter.freq).agg(
@@ -1180,14 +1189,14 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                     "Q_DDM": "sum", "Q_DDM_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean",
                      "DDM_refreezing_ice_scaled":"sum", "DDM_refreezing_snow_scaled":"sum",\
                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
-                plot_data.rename(columns= {'DDM_refreezing_ice_scaled':'DDM_refreezing_ice', 'DDM_refreezing_snow_scaled':'DDM_refreezing_snow'}, inplace=True)
+                plot_data.rename(columns={'DDM_refreezing_ice_scaled':'DDM_refreezing_ice', 'DDM_refreezing_snow_scaled':'DDM_refreezing_snow'}, inplace=True)
             else:
                 plot_data = output_MATILDA[1].resample(parameter.freq).agg(
                     {"HBV_temp": "mean", "HBV_prec": "sum", "HBV_pe": "sum", "Q_HBV": "sum", \
                     "Q_DDM": "sum", "Q_DDM_updated_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean",
                      "DDM_refreezing_ice_updated_scaled": "sum", "DDM_refreezing_snow_updated_scaled": "sum",
                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
-                plot_data.rename(columns= {'DDM_refreezing_ice_updated_scaled':'DDM_refreezing_ice', 'DDM_refreezing_snow_updated_scaled':'DDM_refreezing_snow'}, inplace=True)
+                plot_data.rename(columns={'DDM_refreezing_ice_updated_scaled':'DDM_refreezing_ice', 'DDM_refreezing_snow_updated_scaled':'DDM_refreezing_snow'}, inplace=True)
 
         else:
             plot_data = output_MATILDA[1].resample(parameter.freq).agg(
@@ -1207,7 +1216,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         plot_annual_data = plot_annual_data.set_index(plot_annual_data["date"])
         plot_annual_data.index = pd.to_datetime(plot_annual_data.index)
         plot_annual_data["plot"] = 0
-        plot_annual_data = plot_annual_data.resample(parameter.freq).sum()
+        if parameter.freq == "Y":
+            plot_annual_data = plot_annual_data.resample("M").agg(pd.Series.sum, min_count=1)
+        else:
+            plot_annual_data = plot_annual_data.resample(parameter.freq).agg(pd.Series.sum, min_count=1)
 
         return plot_data, plot_annual_data
 
