@@ -1171,30 +1171,35 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
     # resampling the output to the specified frequency
     def plot_data(output_MATILDA, parameter):
-        if "Qobs" in output_MATILDA[0].columns:
-            obs = output_MATILDA[0]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
-        if "Q_DDM" in output_MATILDA[0].columns:
-            if "Q_DDM_scaled" in output_MATILDA[0].columns:
-                plot_data = output_MATILDA[0].resample(parameter.freq).agg(
-                    {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
-                    "Q_DDM": "sum", "Q_DDM_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", "DDM_refreezing_ice":"sum","DDM_refreezing_snow":"sum",\
+        if "Qobs" in output_MATILDA[1].columns:
+            obs = output_MATILDA[1]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
+        if "Q_DDM" in output_MATILDA[1].columns:
+            if "Q_DDM_scaled" in output_MATILDA[1].columns:
+                plot_data = output_MATILDA[1].resample(parameter.freq).agg(
+                    {"HBV_temp": "mean", "HBV_prec": "sum", "HBV_pe": "sum", "Q_HBV": "sum", \
+                    "Q_DDM": "sum", "Q_DDM_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean",
+                     "DDM_refreezing_ice_scaled":"sum", "DDM_refreezing_snow_scaled":"sum",\
                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
+                plot_data.rename(columns= {'DDM_refreezing_ice_scaled':'DDM_refreezing_ice', 'DDM_refreezing_snow_scaled':'DDM_refreezing_snow'}, inplace=True)
             else:
-                plot_data = output_MATILDA[0].resample(parameter.freq).agg(
-                    {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
-                    "Q_DDM": "sum", "Q_DDM_updated_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
+                plot_data = output_MATILDA[1].resample(parameter.freq).agg(
+                    {"HBV_temp": "mean", "HBV_prec": "sum", "HBV_pe": "sum", "Q_HBV": "sum", \
+                    "Q_DDM": "sum", "Q_DDM_updated_scaled": "sum", "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean",
+                     "DDM_refreezing_ice_updated_scaled": "sum", "DDM_refreezing_snow_updated_scaled": "sum",
                      "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
+                plot_data.rename(columns= {'DDM_refreezing_ice_updated_scaled':'DDM_refreezing_ice', 'DDM_refreezing_snow_updated_scaled':'DDM_refreezing_snow'}, inplace=True)
+
         else:
-            plot_data = output_MATILDA[0].resample(parameter.freq).agg(
-                {"T2": "mean", "RRR": "sum", "PE": "sum", "Q_HBV": "sum", \
+            plot_data = output_MATILDA[1].resample(parameter.freq).agg(
+                {"HBV_temp": "mean", "HBV_prec": "sum", "HBV_pe": "sum", "Q_HBV": "sum", \
                   "Q_Total": "sum", "HBV_AET": "sum", "HBV_snowpack": "mean", \
                  "HBV_soil_moisture": "mean", "HBV_upper_gw": "mean", "HBV_lower_gw": "mean"}, skipna=False)
-        if "Qobs" in output_MATILDA[0].columns:
+        if "Qobs" in output_MATILDA[1].columns:
             plot_data["Qobs"] = obs
         # plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
 
 
-        plot_annual_data = output_MATILDA[0].copy()
+        plot_annual_data = output_MATILDA[1].copy()
         plot_annual_data["month"] = plot_annual_data.index.month
         plot_annual_data["day"] = plot_annual_data.index.day
         plot_annual_data = plot_annual_data.groupby(["month", "day"]).mean()
@@ -1209,12 +1214,12 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     # Plotting the meteorological parameters
     def plot_meteo(plot_data, parameter):
         fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10, 6))
-        ax1.plot(plot_data.index.to_pydatetime(), (plot_data["T2"]), c="#d7191c")
+        ax1.plot(plot_data.index.to_pydatetime(), (plot_data["HBV_temp"]), c="#d7191c")
         if parameter.freq == "Y":
-            ax2.plot(plot_data.index.to_pydatetime(), plot_data["RRR"], color="#2c7bb6")
+            ax2.plot(plot_data.index.to_pydatetime(), plot_data["HBV_prec"], color="#2c7bb6")
         else:
-            ax2.bar(plot_data.index.to_pydatetime(), plot_data["RRR"], width=10, color="#2c7bb6")
-        ax3.plot(plot_data.index.to_pydatetime(), plot_data["PE"], c="#008837")
+            ax2.bar(plot_data.index.to_pydatetime(), plot_data["HBV_prec"], width=10, color="#2c7bb6")
+        ax3.plot(plot_data.index.to_pydatetime(), plot_data["HBV_pe"], c="#008837")
         plt.xlabel("Date", fontsize=9)
         ax1.grid(linewidth=0.25), ax2.grid(linewidth=0.25), ax3.grid(linewidth=0.25)
         ax3.sharey(ax2)
@@ -1251,8 +1256,8 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             ax1.fill_between(plot_data.index.to_pydatetime(), plot_data["Q_HBV"], plot_data["Q_Total"], color='#CC79A7',
                              alpha=.75, label="")
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
-        if isinstance(output_MATILDA[1], float):
-            anchored_text = AnchoredText('KGE coeff ' + str(round(output_MATILDA[1], 2)), loc=1, frameon=False)
+        if isinstance(output_MATILDA[2], float):
+            anchored_text = AnchoredText('KGE coeff ' + str(round(output_MATILDA[2], 2)), loc=1, frameon=False)
         elif 'Qobs' not in plot_data.columns:
             anchored_text = AnchoredText(' ', loc=2, frameon=False)
         else:
@@ -1319,15 +1324,15 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     def plot_plotly_meteo(plot_data, fig, row):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["T2"], name="Mean temperature", line_color="#d7191c", legendgroup="meteo",
+            go.Scatter(x=x_vals, y=plot_data["HBV_temp"], name="Mean temperature", line_color="#d7191c", legendgroup="meteo",
                        legendgrouptitle_text="Meteo"),
             row=row, col=1, secondary_y=False)
         fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["RRR"], name="Precipitation sum", line_color="#2c7bb6",
+            go.Scatter(x=x_vals, y=plot_data["HBV_prec"], name="Precipitation sum", line_color="#2c7bb6",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
         fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["PE"], name="Evapotranspiration sum", line_color="#008837",
+            go.Scatter(x=x_vals, y=plot_data["HBV_pe"], name="Evapotranspiration sum", line_color="#008837",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
 
@@ -1370,7 +1375,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 row=row, col=1)
 
         fig.add_annotation(xref='x domain', yref='y domain', x=0.99, y=0.95, xanchor="right", showarrow=False,
-                           text='<b>KGE coeff ' + str(round(output_MATILDA[1], 2)) + '</b>',
+                           text='<b>KGE coeff ' + str(round(output_MATILDA[2], 2)) + '</b>',
                            row=row, col=1)
 
     # Plotting the HBV output parameters with Plotly
@@ -1540,41 +1545,41 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print
     os.mkdir(output_path)  # creating the folder to save the plots
 
     # construct date range for chart titles
-    range_from = str(output_MATILDA[0].index.values[1])[:4]
-    range_to = str(output_MATILDA[0].index.values[-1])[:4]
+    range_from = str(output_MATILDA[1].index.values[1])[:4]
+    range_to = str(output_MATILDA[1].index.values[-1])[:4]
     if range_from == range_to:
         date_range = range_from
     else:
         date_range = range_from + "-" + range_to
 
     print("Saving the MATILDA output to disc")
-    output_MATILDA[0].to_csv(output_path + "model_output_" + date_range + ".csv")
-    output_MATILDA[2].to_csv(output_path + "model_stats_" + date_range + ".csv")
+    output_MATILDA[1].to_csv(output_path + "model_output_" + date_range + ".csv")
+    output_MATILDA[3].to_csv(output_path + "model_stats_" + date_range + ".csv")
     parameter.to_csv(output_path + "model_parameter.csv")
 
-    if isinstance(output_MATILDA[4], pd.DataFrame):
-        output_MATILDA[4].to_csv(output_path + "glacier_area_" + date_range + ".csv")
+    if isinstance(output_MATILDA[5], pd.DataFrame):
+        output_MATILDA[5].to_csv(output_path + "glacier_area_" + date_range + ".csv")
 
     if plot_type == "print":
         # save plots from matplotlib as .png files
-        output_MATILDA[5].savefig(output_path + "meteorological_data_" + date_range + ".png", bbox_inches='tight', dpi=output_MATILDA[5].dpi)
-        output_MATILDA[6].savefig(output_path + "model_runoff_" + date_range + ".png", dpi=output_MATILDA[6].dpi)
-        output_MATILDA[7].savefig(output_path + "HBV_output_" + date_range + ".png", dpi=output_MATILDA[7].dpi)
+        output_MATILDA[6].savefig(output_path + "meteorological_data_" + date_range + ".png", bbox_inches='tight', dpi=output_MATILDA[6].dpi)
+        output_MATILDA[7].savefig(output_path + "model_runoff_" + date_range + ".png", dpi=output_MATILDA[7].dpi)
+        output_MATILDA[8].savefig(output_path + "HBV_output_" + date_range + ".png", dpi=output_MATILDA[8].dpi)
 
     elif plot_type == "interactive":
         # save plots from plotly as .html file
-        output_MATILDA[5].write_html(output_path + 'matilda_plots_' + date_range + '.html')
-        output_MATILDA[6].write_html(output_path + 'matilda_plots_annual_' + date_range + '.html')
+        output_MATILDA[6].write_html(output_path + 'matilda_plots_' + date_range + '.html')
+        output_MATILDA[7].write_html(output_path + 'matilda_plots_annual_' + date_range + '.html')
 
     elif plot_type == "all":
         # save plots from matplotlib and plotly as .png files
-        output_MATILDA[5].savefig(output_path + "meteorological_data_" + date_range + ".png", bbox_inches='tight', dpi=output_MATILDA[5].dpi)
-        output_MATILDA[6].savefig(output_path + "model_runoff_" + date_range + ".png", dpi=output_MATILDA[6].dpi)
-        output_MATILDA[7].savefig(output_path + "HBV_output_" + date_range + ".png", dpi=output_MATILDA[7].dpi)
+        output_MATILDA[6].savefig(output_path + "meteorological_data_" + date_range + ".png", bbox_inches='tight', dpi=output_MATILDA[6].dpi)
+        output_MATILDA[7].savefig(output_path + "model_runoff_" + date_range + ".png", dpi=output_MATILDA[7].dpi)
+        output_MATILDA[8].savefig(output_path + "HBV_output_" + date_range + ".png", dpi=output_MATILDA[8].dpi)
 
         # save plots from plotly as .html file
-        output_MATILDA[8].write_html(output_path + 'matilda_plots_' + date_range + '.html')
-        output_MATILDA[9].write_html(output_path + 'matilda_plots_annual_' + date_range + '.html')
+        output_MATILDA[9].write_html(output_path + 'matilda_plots_' + date_range + '.html')
+        output_MATILDA[10].write_html(output_path + 'matilda_plots_annual_' + date_range + '.html')
 
 
     print("---")
