@@ -27,13 +27,12 @@ import plotly.graph_objects as go
 
 # Setting the parameter for the MATILDA simulation
 def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D",
-                      lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_df = None,
+                      lat= None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, parameter_set = None,
                       soi = None, warn = False, lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_diff=2, CFMAX_snow=2.8, CFMAX_rel=2, \
                       BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
-                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RHO_snow=400,
+                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RFS=0.15,
                       # Constants
-                      RHO_ice = 917,               # density of solid ice (kg/m^3)
                       CFR_ice = 0.01,              # fraction of ice melt refreezing in moulins
                         **kwargs):
 
@@ -44,52 +43,59 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         warnings.filterwarnings(action='ignore')
 
     # takes parameters directly from a dataframe, e.g. the output from SPOTPY
-    if parameter_df is not None:
-        parameter_df = parameter_df.set_index(parameter_df.columns[0])
-        if "lr_temp" in parameter_df.index:
-            lr_temp = parameter_df.loc["lr_temp"].values.item()
-        if "lr_prec" in parameter_df.index:
-            lr_prec = parameter_df.loc["lr_prec"].values.item()
-        if "BETA" in parameter_df.index:
-            BETA = parameter_df.loc["BETA"].values.item()
-        if "CET" in parameter_df.index:
-            CET = parameter_df.loc["CET"].values.item()
-        if "FC" in parameter_df.index:
-            FC = parameter_df.loc["FC"].values.item()
-        if "K0" in parameter_df.index:
-            K0 = parameter_df.loc["K0"].values.item()
-        if "K1" in parameter_df.index:
-            K1 = parameter_df.loc["K1"].values.item()
-        if "K2" in parameter_df.index:
-            K2 = parameter_df.loc["K2"].values.item()
-        if "LP" in parameter_df.index:
-            LP = parameter_df.loc["LP"].values.item()
-        if "MAXBAS" in parameter_df.index:
-            MAXBAS = parameter_df.loc["MAXBAS"].values.item()
-        if "PERC" in parameter_df.index:
-            PERC = parameter_df.loc["PERC"].values.item()
-        if "UZL" in parameter_df.index:
-            UZL = parameter_df.loc["UZL"].values.item()
-        if "PCORR" in parameter_df.index:
-            PCORR = parameter_df.loc["PCORR"].values.item()
-        if "TT_snow" in parameter_df.index:
-            TT_snow = parameter_df.loc["TT_snow"].values.item()
-        if "TT_diff" in parameter_df.index:
-            TT_diff = parameter_df.loc["TT_diff"].values.item()
-        if "CFMAX_snow" in parameter_df.index:
-            CFMAX_snow = parameter_df.loc["CFMAX_snow"].values.item()
-        if "CFMAX_rel" in parameter_df.index:
-            CFMAX_rel = parameter_df.loc["CFMAX_rel"].values.item()
-        if "SFCF" in parameter_df.index:
-            SFCF = parameter_df.loc["SFCF"].values.item()
-        if "CFR_ice" in parameter_df.index:
-            CFR_ice = parameter_df.loc["CFR_ice"].values.item()
-        if "CWH" in parameter_df.index:
-            CWH = parameter_df.loc["CWH"].values.item()
-        if "AG" in parameter_df.index:
-            AG = parameter_df.loc["AG"].values.item()
-        if "RHO_snow" in parameter_df.index:
-            RHO_snow = parameter_df.loc["RHO_snow"].values.item()
+    if parameter_set is not None:
+        if isinstance(parameter_set, dict):
+            parameter_set = pd.DataFrame(parameter_set, index=[0]).transpose()
+        elif isinstance(parameter_set, pd.DataFrame):
+            parameter_set = parameter_set.set_index(parameter_set.columns[0])
+        else:
+            print("ERROR: parameter_set requires either dict as created by mspot or pd.DataFrame!")
+            return
+
+        if "lr_temp" in parameter_set.index:
+            lr_temp = parameter_set.loc["lr_temp"].values.item()
+        if "lr_prec" in parameter_set.index:
+            lr_prec = parameter_set.loc["lr_prec"].values.item()
+        if "BETA" in parameter_set.index:
+            BETA = parameter_set.loc["BETA"].values.item()
+        if "CET" in parameter_set.index:
+            CET = parameter_set.loc["CET"].values.item()
+        if "FC" in parameter_set.index:
+            FC = parameter_set.loc["FC"].values.item()
+        if "K0" in parameter_set.index:
+            K0 = parameter_set.loc["K0"].values.item()
+        if "K1" in parameter_set.index:
+            K1 = parameter_set.loc["K1"].values.item()
+        if "K2" in parameter_set.index:
+            K2 = parameter_set.loc["K2"].values.item()
+        if "LP" in parameter_set.index:
+            LP = parameter_set.loc["LP"].values.item()
+        if "MAXBAS" in parameter_set.index:
+            MAXBAS = parameter_set.loc["MAXBAS"].values.item()
+        if "PERC" in parameter_set.index:
+            PERC = parameter_set.loc["PERC"].values.item()
+        if "UZL" in parameter_set.index:
+            UZL = parameter_set.loc["UZL"].values.item()
+        if "PCORR" in parameter_set.index:
+            PCORR = parameter_set.loc["PCORR"].values.item()
+        if "TT_snow" in parameter_set.index:
+            TT_snow = parameter_set.loc["TT_snow"].values.item()
+        if "TT_diff" in parameter_set.index:
+            TT_diff = parameter_set.loc["TT_diff"].values.item()
+        if "CFMAX_snow" in parameter_set.index:
+            CFMAX_snow = parameter_set.loc["CFMAX_snow"].values.item()
+        if "CFMAX_rel" in parameter_set.index:
+            CFMAX_rel = parameter_set.loc["CFMAX_rel"].values.item()
+        if "SFCF" in parameter_set.index:
+            SFCF = parameter_set.loc["SFCF"].values.item()
+        if "CFR_ice" in parameter_set.index:
+            CFR_ice = parameter_set.loc["CFR_ice"].values.item()
+        if "CWH" in parameter_set.index:
+            CWH = parameter_set.loc["CWH"].values.item()
+        if "AG" in parameter_set.index:
+            AG = parameter_set.loc["AG"].values.item()
+        if "RFS" in parameter_set.index:
+            RFS = parameter_set.loc["RFS"].values.item()
 
     print("Reading parameters for MATILDA simulation")
     # Checking the parameters to set the catchment properties and simulation
@@ -196,27 +202,14 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print("WARNING: Parameter CWH exceeds boundaries [0, 0.2].")
     if 0 > AG or AG > 1:
         print("WARNING: Parameter AG exceeds boundaries [0, 1].")
-    if 300 > RHO_snow or RHO_snow > 500:
-        print("WARNING: Parameter RHO_snow exceeds boundaries [300, 500].")
-    if RHO_ice != 917:
-        print("ERROR: RHO_ice is a physical constant and shall not be changed.")
+    if 0.05 > RFS or RFS > 0.25:
+        print("WARNING: Parameter RFS exceeds boundaries [0.05, 0.25].")
 
     # calculate threshold temperature for rain
     TT_rain = TT_diff + TT_snow
 
     # calculate ice melt factor:
     CFMAX_ice = CFMAX_rel * CFMAX_snow
-
-    # calculate ice fraction in snowpack
-    theta_i = RHO_snow / RHO_ice
-
-    # calculate irreducible water content:
-    if theta_i <= 0.23:
-        theta_e = 0.0264 + 0.0099 * ((1 - theta_i) / theta_i)
-    elif 0.23 < theta_i <= 0.812:
-        theta_e = 0.08 - 0.1023 * (theta_i - 0.03)
-    else:
-        theta_e = 0
 
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end,
@@ -225,9 +218,9 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
          "warn": warn, "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow, "TT_rain": TT_rain, "TT_diff": TT_diff,
          "CFMAX_snow": CFMAX_snow, "CFMAX_ice": CFMAX_ice, "CFMAX_rel": CFMAX_rel, "BETA": BETA, "CET": CET,
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL,
-         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG, "RHO_snow": RHO_snow, "RHO_ice": RHO_ice,
-         "CFR_ice": CFR_ice, "theta_e": theta_e})
+         "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG,"CFR_ice": CFR_ice, "RFS": RFS})
     print("Parameters set")
+    print("DEBUG: " + str(parameter))
     return parameter
 
 
@@ -433,7 +426,7 @@ def calculate_glaciermelt(ds, parameter):
     # calculate refreezing, runoff and surface mass balance
     total_melt = snow_melt + ice_melt
     refr_ice = parameter.CFR_ice * ice_melt
-    refr_snow = parameter.theta_e * snow_melt
+    refr_snow = parameter.RFS * snow_melt
     runoff_rate = total_melt - refr_snow - refr_ice
     inst_smb = accu_rate - runoff_rate
     runoff_rate_rain = runoff_rate + rain
@@ -738,7 +731,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             # snowpack after melting
             SNOWPACK_cal[t] = SNOWPACK_cal[t] - melt
             # refreezing accounting
-            refreezing = parameter.theta_e * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
+            refreezing = parameter.RFS * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
             refreezing = min(refreezing, SNOWMELT_cal[t])
@@ -860,7 +853,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             # snowpack after melting
             SNOWPACK[t] = SNOWPACK[t] - melt
             # refreezing accounting
-            refreezing = parameter.theta_e * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
+            refreezing = parameter.RFS * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
             # control refreezing
             if refreezing < 0: refreezing = 0
             refreezing = min(refreezing, SNOWMELT[t])
@@ -1600,21 +1593,21 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print
 def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, warn=False,
                        set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None,
                        soi=None, area_cat=None, area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None,
-                       plots=True, plot_type="print", hydro_year=10, parameter_df=None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
+                       plots=True, plot_type="print", hydro_year=10, parameter_set=None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
                        TT_diff=2, CFMAX_snow=2.8, CFMAX_rel=2, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7,
-                       CWH=0.1, AG=0.7, RHO_snow=400):
+                       CWH=0.1, AG=0.7, RFS=0.15):
     """Function to run the whole MATILDA simulation at once."""
 
     print('---')
     print('MATILDA framework')
     parameter = matilda_parameter(input_df, set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start,
                                   sim_end=sim_end, freq=freq, lat=lat, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, \
-                                  ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, parameter_df = parameter_df, lr_temp=lr_temp,
+                                  ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year, parameter_set = parameter_set, lr_temp=lr_temp,
                                   lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, \
                                   TT_diff=TT_diff, CFMAX_snow=CFMAX_snow, CFMAX_rel=CFMAX_rel, \
                                   BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
-                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG, RHO_snow=RHO_snow)
+                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG, RFS=RFS)
 
     if parameter is None:
         return
