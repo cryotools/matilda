@@ -1117,6 +1117,14 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
     if obs is not None:
         sim = output_MATILDA["Q_Total"]
         target = output_MATILDA["Qobs"]
+        # Crop both timeseries to same periods without NAs
+        sim_new = pd.DataFrame()
+        sim_new['mod'] = pd.DataFrame(sim)
+        sim_new['obs'] = target
+        clean = sim_new.dropna()
+        sim = clean['obs']
+        target = clean['mod']
+
         if parameter.freq == "D":
             nash_sut = he.nse(sim, target, remove_zero=True)
             kge = he.kge_2012(sim, target, remove_zero=True)
@@ -1124,19 +1132,11 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             mare = hydroeval.evaluator(hydroeval.mare, sim, target)
             print("*-------------------*")
             print("KGE coefficient: " + str(round(float(kge), 2)))
-            print("Nash–Sutcliffe coefficient: " + str(round(nash_sut, 2)))
+            print("NSE coefficient: " + str(round(nash_sut, 2)))
             print("RMSE: " + str(round(float(rmse), 2)))
             print("MARE coefficient: " + str(round(float(mare), 2)))
             print("*-------------------*")
         else:
-            # Crop both timeseries to same periods without NAs
-            sim_new = pd.DataFrame()
-            sim_new['mod'] = pd.DataFrame(sim)
-            sim_new['obs'] = target
-            clean = sim_new.dropna()
-            sim = clean['obs']
-            target = clean['mod']
-
             sim = sim.resample(parameter.freq).agg(pd.Series.sum, min_count=1)
             target = target.resample(parameter.freq).agg(pd.Series.sum, min_count=1)
             nash_sut = he.nse(sim, target, remove_zero=True)
@@ -1146,7 +1146,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
             print("*-------------------*")
             print("** Model efficiency based on " + parameter.freq_long + " aggregates **")
             print("KGE coefficient: " + str(round(float(kge), 2)))
-            print("Nash–Sutcliffe coefficient: " + str(round(nash_sut, 2)))
+            print("NSE coefficient: " + str(round(nash_sut, 2)))
             print("RMSE: " + str(round(float(rmse), 2)))
             print("MARE coefficient: " + str(round(float(mare), 2)))
             print("*-------------------*")

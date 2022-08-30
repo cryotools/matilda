@@ -17,7 +17,7 @@ K2         - Recession coefficient for lower groundwater box (whole SLZ)
 LP         - Threshold for reduction of evaporation (SM/FC)
            [0.3, 1]
 MAXBAS     - Routing parameter, order of Butterworth filter
-           [1, 7]
+           [2, 7]
 PERC       - Percolation from soil to upper groundwater box
            [0, 3]
 UZL        - Threshold parameter for groundwater boxes runoff (mm)
@@ -34,7 +34,7 @@ CFMAX_rel  - Factor to calculate ice melt rate from CFMAX_snow. CFMAX_ice = CFMA
            [1.2, 2.5]
 SFCF       - Snowfall correction Factor
            [0.4, 1]
-CWH        - Fraction (portion) of meltwater and rainfall which retain in snowpack (water holding capacity).
+CWH        - Fraction (portion) of meltwater and rainfall which retains in snowpack (water holding capacity).
            [0, 0.2] (usually 0.1)
 AG	   - Calibration parameter for glacier storage-release scheme. High values result in a small reservoir and instant release. Low values extend storage and delay release.
 	   [0, 1]
