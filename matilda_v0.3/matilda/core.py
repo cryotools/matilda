@@ -105,6 +105,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     if area_cat is None:
         print("WARNING: No catchment area specified. Please provide catchment area in km2")
         return
+    if area_glac is None:
+        area_glac = 0
     if area_glac > area_cat:
         print("WARNING: Glacier area exceeds overall catchment area")
     if ele_dat is not None and ele_cat is None:
@@ -219,8 +221,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
          "CFMAX_snow": CFMAX_snow, "CFMAX_ice": CFMAX_ice, "CFMAX_rel": CFMAX_rel, "BETA": BETA, "CET": CET,
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL,
          "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG,"CFR_ice": CFR_ice, "RFS": RFS})
-    print("Parameters set")
-    print("DEBUG: " + str(parameter))
+    print("Parameters set:")
+    print(str(parameter))
     return parameter
 
 
@@ -277,7 +279,6 @@ def matilda_preproc(input_df, parameter, obs=None):
 
 def phase_separation(df_preproc, parameter):
     """Separates precipitation in liquid and solid fractions with linear transition between threshold temperatures."""
-
     reduced_temp = (parameter.TT_rain - df_preproc['T2']) / (parameter.TT_rain - parameter.TT_snow)
     snowfrac = np.clip(reduced_temp, 0, 1)
     snow = snowfrac * df_preproc['RRR']
@@ -294,7 +295,8 @@ def input_scaling(df_preproc, parameter):
         elev_diff_glacier = parameter.ele_glac - parameter.ele_dat
         input_df_glacier = df_preproc.copy()
         input_df_glacier["T2"] = input_df_glacier["T2"] + elev_diff_glacier * float(parameter.lr_temp)
-        input_df_glacier["RRR"] = input_df_glacier["RRR"] + elev_diff_glacier * float(parameter.lr_prec)
+        input_df_glacier["RRR"] = np.where(input_df_glacier["RRR"] > 0,         # Apply precipitation lapse rate only, when there is precipitation!
+                                           input_df_glacier["RRR"] + elev_diff_glacier * float(parameter.lr_prec), 0)
         input_df_glacier["RRR"] = np.where(input_df_glacier["RRR"] < 0, 0, input_df_glacier["RRR"])
     else:
         input_df_glacier = df_preproc.copy()
@@ -302,7 +304,8 @@ def input_scaling(df_preproc, parameter):
         elev_diff_catchment = parameter.ele_cat - parameter.ele_dat
         input_df_catchment = df_preproc.copy()
         input_df_catchment["T2"] = input_df_catchment["T2"] + elev_diff_catchment * float(parameter.lr_temp)
-        input_df_catchment["RRR"] = input_df_catchment["RRR"] + elev_diff_catchment * float(parameter.lr_prec)
+        input_df_catchment["RRR"] = np.where(input_df_catchment["RRR"] > 0,     # Apply precipitation lapse rate only, when there is precipitation!
+                                             input_df_catchment["RRR"] + elev_diff_catchment * float(parameter.lr_prec), 0)
         input_df_catchment["RRR"] = np.where(input_df_catchment["RRR"] < 0, 0, input_df_catchment["RRR"])
 
     else:
@@ -1095,8 +1098,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
     else:
         output_MATILDA_compact = pd.DataFrame(
-            {'hydro_year': output_MATILDA['water_year'],
-             'avg_temp_catchment': output_MATILDA['HBV_temp'],
+            {'avg_temp_catchment': output_MATILDA['HBV_temp'],
              'prec': output_MATILDA['HBV_prec'],
              'rain': output_MATILDA['HBV_rain'],
              'snow': output_MATILDA['HBV_snow'],
