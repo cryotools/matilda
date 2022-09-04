@@ -1333,11 +1333,11 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                        legendgrouptitle_text="Meteo"),
             row=row, col=1, secondary_y=False)
         fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["HBV_prec"], name="Precipitation sum", line_color="#2c7bb6",
+            go.Bar(x=x_vals, y=plot_data["HBV_prec"], name="Precipitation sum", marker_color="#2c7bb6",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
         fig.add_trace(
-            go.Scatter(x=x_vals, y=plot_data["HBV_pe"], name="Evapotranspiration sum", line_color="#008837",
+            go.Bar(x=x_vals, y=plot_data["HBV_pe"] * -1, name="Evapotranspiration sum", marker_color="#008837",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
 
@@ -1472,10 +1472,15 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
         # update x axes settings
         fig1.update_xaxes(
-            dtick="M1",
-            tickformat="%b\n%Y",
-            hoverformat="%d\n%b\n%Y",
-            ticklabelmode="period"
+            ticks="outside",
+            ticklabelmode="period",
+            dtick="M12",
+            tickcolor="black",
+            tickwidth=2,
+            ticklen=15,
+            minor=dict(
+                dtick="M1",
+                ticklen=5)
         )
 
         # -- Plot 2 (annual mean) -- #
