@@ -1182,7 +1182,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             plot_data = output_MATILDA[0].resample(parameter.freq).agg(
                 {"avg_temp_catchment": "mean",
                  "prec_off_glaciers": "sum",
+                 "prec_on_glaciers": "sum",
                  "evap_off_glaciers": "sum",
+                 "melt_off_glaciers": "sum",
+                 "melt_on_glaciers": "sum",
                  "runoff_without_glaciers": "sum",
                  "runoff_from_glaciers": "sum",
                  "total_runoff": "sum",
@@ -1424,6 +1427,25 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                        legendgroup="hbv"),
             row=row, col=1)
 
+    def plot_plotly_runoff2(plot_data, fig, row):
+        x_vals = plot_data.index.to_pydatetime()
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["melt_off_glaciers"], name="Melt off glacier", fillcolor='#33193f',
+                       legendgroup="runoff2", legendgrouptitle_text="Runoff 2", stackgroup='one', mode='none'),
+            row=row, col=1)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["melt_on_glaciers"], name="Melt on glacier", fillcolor='#6c1e58',
+                       legendgroup="runoff2", stackgroup='one', mode='none'),
+            row=row, col=1)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["prec_off_glaciers"], name="Precipitation off glacier", fillcolor='#a6135a',
+                       legendgroup="runoff2", stackgroup='one', mode='none'),
+            row=row, col=1)
+        fig.add_trace(
+            go.Scatter(x=x_vals, y=plot_data["prec_on_glaciers"], name="Precipitation on glacier", fillcolor='#d72f41',
+                       legendgroup="runoff2", stackgroup='one', mode='none'),
+            row=row, col=1)
+
     def plot_plotly(plot_data, plot_annual_data, parameter):
         # construct date range for chart titles
         range_from = str(plot_data.index.values[1])[:4]
@@ -1434,7 +1456,9 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             date_range = range_from + "-" + range_to
         title = [" meteorological input parameters in ",
                  " MATILDA simulation for the period ",
-                 " output from the HBV model in the period "]
+                 " runoff for the period ",
+                 " output from the HBV model in the period "
+                 ]
         title_f = []
         for i in range(len(title)):
             title_f.append('<b>' + parameter.freq_long + title[i] + date_range + '</b>')
@@ -1442,9 +1466,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         # -- Plot 1 (combined charts) -- #
         # init plot
         fig1 = make_subplots(
-            rows=3, cols=1, subplot_titles=title_f, shared_xaxes=True,
+            rows=4, cols=1, subplot_titles=title_f, shared_xaxes=True,
             vertical_spacing=0.15,
             specs=[[{"secondary_y": True}],
+                   [{"secondary_y": False}],
                    [{"secondary_y": False}],
                    [{"secondary_y": False}]]
         )
@@ -1455,15 +1480,20 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         # Add subplot: RUNOFF
         plot_plotly_runoff(plot_data, fig1, 2)
 
+        # Add subplot: RUNOFF #2
+        plot_plotly_runoff2(plot_data, fig1, 3)
+
         # Add subplot: HBV
-        plot_plotly_hbv(plot_data, fig1, 3)
+        plot_plotly_hbv(plot_data, fig1, 4)
 
         # update general layout settings
         fig1.update_layout(
             plot_bgcolor='white',
             legend=dict(groupclick="toggleitem"),
             legend_tracegroupgap=20,
-            xaxis_showticklabels=True, xaxis2_showticklabels=True,
+            xaxis_showticklabels=True,
+            xaxis2_showticklabels=True,
+            xaxis3_showticklabels=True,
             hovermode="x",
             title={
                 "text":"MATILDA Results",
@@ -1484,6 +1514,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             yaxis4={
                 "ticksuffix": " mm",
                 "side": "right"
+            },
+            yaxis5={
+                "ticksuffix": " mm",
+                "side": "right"
             }
         )
 
@@ -1501,17 +1535,29 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         )
 
         # -- Plot 2 (annual mean) -- #
-        title_annual = '<b>Annual mean' + title[1] + date_range + '</b>'
-        fig2 = make_subplots(subplot_titles=[title_annual])
+        title_annual = title[1:3]
+        title_f = []
+        for i in range(len(title_annual)):
+            title_f.append('<b>Annual mean' + title_annual[i] + date_range + '</b>')
+
+        # init plot
+        fig2 = make_subplots(
+            rows=2, cols=1, subplot_titles=title_f, shared_xaxes=True,
+            vertical_spacing=0.15
+        )
 
         # Add subplot: RUNOFF (annual data)
         plot_plotly_runoff(plot_annual_data, fig2, 1)
+
+        # Add subplot: RUNOFF2 (annual data)
+        plot_plotly_runoff2(plot_annual_data, fig2, 2)
 
         # update general layout settings
         fig2.update_layout(
             plot_bgcolor='white',
             legend=dict(groupclick="toggleitem"),
             legend_tracegroupgap=20,
+            xaxis_showticklabels=True,
             hovermode="x",
             title={
                 "text": "MATILDA Results (annual)",
@@ -1521,16 +1567,21 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             },
             yaxis={
                 "ticksuffix": " mm"
+            },
+            yaxis2={
+                "ticksuffix": " mm"
             }
         )
 
         # update x axes settings
         fig2.update_xaxes(
+            ticks="outside",
+            ticklabelmode="period",
             dtick="M1",
             tickformat="%b",
-            hoverformat="%d\n%b",
-            ticklabelmode="period"
+            hoverformat="%d\n%b"
         )
+        fig2.update_traces(marker={'opacity': 0 })
 
         return [fig1, fig2]
 
