@@ -12,7 +12,7 @@ setuptools.setup(
 	description="A package to model water resources in glacierized catchments",
 	long_description="Tool for modeling water resources in glacierized catchments. Combines a temperature-index melt model with the conceptual catchment model HBV and a parameterized glacier area/volume re-scaling routine.",
 	long_description_content_type="text/markdown",
-	url="https://github.com/cryotools/matilda/matilda_v0.2/matilda",
+	url="https://github.com/cryotools/matilda/matilda_v0.3/matilda",
 	license='MIT',
 	python_requires='>=3.6',
 	install_requires=['pandas',

@@ -21,6 +21,7 @@ It requires the following Python3 libraries:
 - datetime
 - hydroeval
 - HydroErr
+- Plotly
 
 The MATILDA package and dependencies can be installed to your local machine by using pip or a comparable package manager. You can either install the package by using the link to this repository:
 ```
@@ -82,7 +83,8 @@ To use the full workflow the following steps are recommended:
 - Plot runoff, meteorological parameters, and HBV output variables using *MATILDA_plots* function. 
 - All the output including the plots and parameters can be saved to your local disk with the *MATILDA_save_output* function.
 
-An example script for the workflow can be found [here](MATILDA/example_workflow.py).
+## Application example
+An example script and 3y of sample data can be found [here](Example/example_workflow.py).
 
 ## Built using
 * [pypdd](https://github.com/juseg/pypdd.git) - Python positive degree day model for glacier surface mass balance
@@ -98,7 +100,7 @@ See also the list of [contributors](https://www.geographie.hu-berlin.de/en/profe
 
 ## License
 
-This project is licensed under the HU Berlin License.
+This project is licensed under the MIT License.
 
 ### References
 

@@ -221,8 +221,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
          "CFMAX_snow": CFMAX_snow, "CFMAX_ice": CFMAX_ice, "CFMAX_rel": CFMAX_rel, "BETA": BETA, "CET": CET,
          "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP, "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL,
          "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG,"CFR_ice": CFR_ice, "RFS": RFS})
-    print("Parameters set")
-    print("DEBUG: " + str(parameter))
+    print("Parameters set:")
+    print(str(parameter))
     return parameter
 
 
@@ -1170,7 +1170,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
 
 
 def matilda_plots(output_MATILDA, parameter, plot_type="print"):
-    """ MATILDA plotting function to plot input data, runoff output and HBV parameters."""
+    """ MATILDA plotting function to plot input data, runoff output, and HBV parameters."""
 
     # resampling the output to the specified frequency
     def plot_data(output_MATILDA, parameter):
@@ -1546,8 +1546,11 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
 def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print"):
     """Function to save the MATILDA output to local disk."""
-
-    output_path = output_path + parameter.sim_start[:4] + "_" + parameter.sim_end[:4] + "_" + datetime.now().strftime(
+    if output_path[-1] == '/':
+        output_path = output_path + parameter.sim_start[:4] + "_" + parameter.sim_end[:4] + "_" + datetime.now().strftime(
+        "%Y-%m-%d_%H-%M-%S") + "/"
+    else:
+        output_path = output_path + "/" + parameter.sim_start[:4] + "_" + parameter.sim_end[:4] + "_" + datetime.now().strftime(
         "%Y-%m-%d_%H-%M-%S") + "/"
     os.mkdir(output_path)  # creating the folder to save the plots
 

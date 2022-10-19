@@ -1,6 +1,6 @@
 # MATILDA - Modeling Water Resources in Glacierized Catchments
 
-The MATILDA framework combines a simple positive degree-day routine (DDM) to compute glacial melt with the hydrological bucket model HBV (Bergström, 1986). The aim is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable users to estimate future water resources for different climate change scenarios.
+The MATILDA framework combines a simple positive degree-day routine (DDM) to compute glacial melt with the hydrological bucket model HBV (Bergström, 1986). The goal is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable users to estimate future water resources for different climate change scenarios.
 MATILDA is an ongoing project and therefore a ***work in progress***.
 
 ## Overview
@@ -26,7 +26,7 @@ The MATILDA package and dependencies can be installed to your local machine by u
 ```
 pip install -e 'git+https://github.com/cryotools/matilda.git/#egg=matilda&subdirectory=matilda_v0.3'
 ```
-...or clone this repository to you local machine, navigate to the matilda_v0.2 directory and use:
+...or clone this repository to you local machine, navigate to the matilda_v0.3 directory and use:
 ```
 pip install .
 ```
