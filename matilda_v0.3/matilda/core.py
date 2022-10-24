@@ -1408,7 +1408,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["actual_evaporation"], name="Actual evapotranspiration", line_color='#16425b',
-                       legendgroup="hbv", legendgrouptitle_text="HBV subdomains"),
+                       legendgroup="hbv", legendgrouptitle_text="HBV sub-domains"),
             row=row, col=1)
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["soil_moisture"], name="Soil moisture", line_color='#d9dcd6',
@@ -1431,7 +1431,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["melt_off_glaciers"], name="Melt off glacier", fillcolor='#33193f',
-                       legendgroup="runoff2", legendgrouptitle_text="Runoff contribution", stackgroup='one', mode='none'),
+                       legendgroup="runoff2", legendgrouptitle_text="Runoff contributions", stackgroup='one', mode='none'),
             row=row, col=1)
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["melt_on_glaciers"], name="Melt on glacier", fillcolor='#6c1e58',
@@ -1454,14 +1454,14 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             date_range = range_from
         else:
             date_range = range_from + "-" + range_to
-        title = [" meteorological input parameters in ",
-                 " MATILDA simulation for the period ",
-                 " runoff contribution for the period ",
-                 " output from the HBV model in the period "
+        title = [" Meteorological input parameters ",
+                 " Simulated vs observed runoff ",
+                 " Runoff contributions ",
+                 " Output from the HBV model "
                  ]
         title_f = []
         for i in range(len(title)):
-            title_f.append('<b>' + parameter.freq_long + title[i] + date_range + '</b>')
+            title_f.append('<b>' + title[i] + '</b>')
 
         # -- Plot 1 (combined charts) -- #
         # init plot
@@ -1496,7 +1496,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             xaxis3_showticklabels=True,
             hovermode="x",
             title={
-                "text":"MATILDA Results",
+                "text": parameter.freq_long + " MATILDA Results (" + date_range + ")",
                 "font_size":30,
                 "x":0.5,
                 "xanchor": "center"
@@ -1538,7 +1538,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         title_annual = title[1:3]
         title_f = []
         for i in range(len(title_annual)):
-            title_f.append('<b>Annual mean' + title_annual[i] + date_range + '</b>')
+            title_f.append('<b>' + title_annual[i] + '</b>')
 
         # init plot
         fig2 = make_subplots(
@@ -1560,7 +1560,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             xaxis_showticklabels=True,
             hovermode="x",
             title={
-                "text": "MATILDA Results (annual)",
+                "text": "Annual mean MATILDA Results (" + date_range + ")",
                 "font_size": 30,
                 "x": 0.5,
                 "xanchor": "center"
