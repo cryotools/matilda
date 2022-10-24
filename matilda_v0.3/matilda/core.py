@@ -1244,7 +1244,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         ax3.sharey(ax2)
         ax1.set_title("Mean temperature", fontsize=9)
         ax2.set_title("Precipitation sum", fontsize=9)
-        ax3.set_title("Evapotranspiration sum", fontsize=9)
+        ax3.set_title("Pot. Evapotranspiration", fontsize=9)
         ax1.set_ylabel("[°C]", fontsize=9)
         ax2.set_ylabel("[mm]", fontsize=9)
         ax3.set_ylabel("[mm]", fontsize=9)
@@ -1351,7 +1351,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
         fig.add_trace(
-            go.Bar(x=x_vals, y=plot_data["evap_off_glaciers"] * -1, name="Evapotranspiration sum", marker_color="#008837",
+            go.Bar(x=x_vals, y=plot_data["evap_off_glaciers"] * -1, name="Pot. Evapotranspiration", marker_color="#008837",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
 
@@ -1360,7 +1360,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["runoff_without_glaciers"], name="MATILDA catchment runoff", fillcolor="#5893D4",
-                       legendgroup="runoff", stackgroup='one', mode='none'),
+                       legendgroup="runoff", legendgrouptitle_text="Runoff comparison", stackgroup='one', mode='none'),
             row=row, col=1)
 
         fig.add_trace(
@@ -1372,7 +1372,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         if 'observed_runoff' in plot_data.columns:
             fig.add_trace(
                 go.Scatter(x=x_vals, y=plot_data["observed_runoff"], name="Observations", line_color="#E69F00",
-                           legendgroup="runoff", legendgrouptitle_text="Runoff"),
+                           legendgroup="runoff"),
                 row=row, col=1)
         if 'total_runoff' in plot_data.columns:
             fig.add_trace(
@@ -1384,7 +1384,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             # # two new series for refreezing
             fig.add_trace(
                 go.Scatter(x=x_vals, y=plot_data["total_refreezing"], name="MATILDA total refreeze",
-                           fillcolor="#adb5bd", legendgroup="refreeze", legendgrouptitle_text="Refreeze",
+                           fillcolor="#adb5bd", legendgroup="runoff",#, legendgroup="refreeze", legendgrouptitle_text="Refreeze",
                            mode='none', fill='tozeroy'),
                 row=row, col=1)
             # fig.add_trace(
@@ -1408,7 +1408,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["actual_evaporation"], name="Actual evapotranspiration", line_color='#16425b',
-                       legendgroup="hbv", legendgrouptitle_text="HBV"),
+                       legendgroup="hbv", legendgrouptitle_text="HBV subdomains"),
             row=row, col=1)
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["soil_moisture"], name="Soil moisture", line_color='#d9dcd6',
@@ -1427,11 +1427,11 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                        legendgroup="hbv"),
             row=row, col=1)
 
-    def plot_plotly_runoff2(plot_data, fig, row):
+    def plot_plotly_runoff_contrib(plot_data, fig, row):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["melt_off_glaciers"], name="Melt off glacier", fillcolor='#33193f',
-                       legendgroup="runoff2", legendgrouptitle_text="Runoff 2", stackgroup='one', mode='none'),
+                       legendgroup="runoff2", legendgrouptitle_text="Runoff contribution", stackgroup='one', mode='none'),
             row=row, col=1)
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["melt_on_glaciers"], name="Melt on glacier", fillcolor='#6c1e58',
@@ -1456,7 +1456,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             date_range = range_from + "-" + range_to
         title = [" meteorological input parameters in ",
                  " MATILDA simulation for the period ",
-                 " runoff for the period ",
+                 " runoff contribution for the period ",
                  " output from the HBV model in the period "
                  ]
         title_f = []
@@ -1477,11 +1477,11 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         # Add subplot: METEO
         plot_plotly_meteo(plot_data, fig1, 1)
 
-        # Add subplot: RUNOFF
+        # Add subplot: MATILDA RUNOFF
         plot_plotly_runoff(plot_data, fig1, 2)
 
-        # Add subplot: RUNOFF #2
-        plot_plotly_runoff2(plot_data, fig1, 3)
+        # Add subplot: RUNOFF CONTRIBUTION
+        plot_plotly_runoff_contrib(plot_data, fig1, 3)
 
         # Add subplot: HBV
         plot_plotly_hbv(plot_data, fig1, 4)
@@ -1546,11 +1546,11 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             vertical_spacing=0.15
         )
 
-        # Add subplot: RUNOFF (annual data)
+        # Add subplot: MATILDA RUNOFF (annual data)
         plot_plotly_runoff(plot_annual_data, fig2, 1)
 
-        # Add subplot: RUNOFF2 (annual data)
-        plot_plotly_runoff2(plot_annual_data, fig2, 2)
+        # Add subplot: RUNOFF CONTRIBUTION (annual data)
+        plot_plotly_runoff_contrib(plot_annual_data, fig2, 2)
 
         # update general layout settings
         fig2.update_layout(
