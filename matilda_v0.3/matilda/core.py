@@ -1057,6 +1057,9 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
                 'melt_on_glaciers': output_MATILDA['DDM_total_melt_updated_scaled'],
                 'ice_melt_on_glaciers': output_MATILDA['DDM_ice_melt_updated_scaled'],
                 'snow_melt_on_glaciers': output_MATILDA['DDM_snow_melt_updated_scaled'],
+                'refreezing_ice': output_MATILDA['DDM_refreezing_ice_updated_scaled'],
+                'refreezing_snow': output_MATILDA['DDM_refreezing_snow_updated_scaled'],
+                'refreezing_hbv': output_MATILDA['HBV_refreezing'],
                 'total_refreezing': output_MATILDA['DDM_refreezing_ice_updated_scaled'] + output_MATILDA['DDM_refreezing_snow_updated_scaled'] + output_MATILDA['HBV_refreezing'],
                 'SMB': output_MATILDA['DDM_smb'],
                 'actual_evaporation': output_MATILDA['HBV_AET'],
@@ -1085,6 +1088,9 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
                 'melt_on_glaciers': output_MATILDA['DDM_total_melt_scaled'],
                 'ice_melt_on_glaciers': output_MATILDA['DDM_ice_melt_scaled'],
                 'snow_melt_on_glaciers': output_MATILDA['DDM_snow_melt_scaled'],
+                'refreezing_ice': output_MATILDA['DDM_refreezing_ice_scaled'],
+                'refreezing_snow': output_MATILDA['DDM_refreezing_snow_scaled'],
+                'refreezing_hbv': output_MATILDA['HBV_refreezing'],
                 'total_refreezing': output_MATILDA['DDM_refreezing_ice_scaled'] + output_MATILDA['DDM_refreezing_snow_scaled'] + output_MATILDA['HBV_refreezing'],
                 'SMB': output_MATILDA['DDM_smb'],
                 'actual_evaporation': output_MATILDA['HBV_AET'],
@@ -1107,6 +1113,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
              'upper_groundwater': output_MATILDA['HBV_upper_gw'],
              'lower_groundwater': output_MATILDA['HBV_lower_gw'],
              'snow_melt': output_MATILDA['HBV_melt_off_glacier'],
+             'refreezing_hbv': output_MATILDA['HBV_refreezing'],
              'total_refreezing': output_MATILDA['HBV_refreezing'],
              'actual_evaporation': output_MATILDA['HBV_AET'],
              'runoff': output_MATILDA['Q_HBV'],
@@ -1178,7 +1185,6 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             # obs = output_MATILDA[1]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
             obs = output_MATILDA[0]["observed_runoff"].resample(parameter.freq).agg(pd.Series.sum, min_count=1)
         if "Q_DDM" in output_MATILDA[1].columns:
-            # TODO: add missing parameters
             plot_data = output_MATILDA[0].resample(parameter.freq).agg(
                 {"avg_temp_catchment": "mean",
                  "prec_off_glaciers": "sum",
@@ -1191,14 +1197,13 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                  "total_runoff": "sum",
                  "actual_evaporation": "sum",
                  "snowpack_off_glaciers": "mean",
+                 "refreezing_snow":"sum",
+                 "refreezing_ice": "sum",
+                 "refreezing_hbv": "sum",
                  "total_refreezing": "sum",
-                 #"DDM_refreezing_ice_scaled":"sum",
-                 #"DDM_refreezing_snow_scaled":"sum",
                  "soil_moisture": "mean",
                  "upper_groundwater": "mean",
                  "lower_groundwater": "mean"}, skipna=False)
-            #plot_data.rename(columns={'DDM_refreezing_ice_scaled':'DDM_refreezing_ice', 'DDM_refreezing_snow_scaled':'DDM_refreezing_snow'}, inplace=True)
-
         else:
             # TODO: add missing parameters
             plot_data = output_MATILDA[0].resample(parameter.freq).agg(
@@ -1209,6 +1214,8 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                  "total_runoff": "sum",
                  "actual_evaporation": "sum",
                  "snowpack_off_glaciers": "mean",
+                 "refreezing_hbv": "sum",
+                 "total_refreezing": "sum",
                  "soil_moisture": "mean",
                  "upper_groundwater": "mean",
                  "lower_groundwater": "mean"}, skipna=False)
@@ -1380,25 +1387,21 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                            legendgroup="runoff"),
                 row=row, col=1)
 
-            # TODO: replace missing parameters
-            # # two new series for refreezing
+        # two new series for refreezing
+        if 'refreezing_snow' in plot_data.columns:
             fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["total_refreezing"], name="MATILDA total refreeze",
-                           fillcolor="#adb5bd", legendgroup="runoff",#, legendgroup="refreeze", legendgrouptitle_text="Refreeze",
+                go.Scatter(x=x_vals, y=plot_data["refreezing_snow"], name="MATILDA snow refreeze",
+                           fillcolor="#adb5bd", legendgroup="refreeze", legendgrouptitle_text="Refreeze",
                            mode='none', fill='tozeroy'),
                 row=row, col=1)
-            # fig.add_trace(
-            #     go.Scatter(x=x_vals, y=plot_data["DDM_refreezing_snow"], name="MATILDA snow refreeze",
-            #                fillcolor="#adb5bd", legendgroup="refreeze", legendgrouptitle_text="Refreeze",
-            #                mode='none', fill='tozeroy'),
-            #     row=row, col=1)
-            #
-            # fig.add_trace(
-            #     go.Scatter(x=x_vals, y=plot_data["DDM_refreezing_ice"], name="MATILDA ice refreeze",
-            #                fillcolor="#6c757d", legendgroup="refreeze",
-            #                mode='none', fill='tozeroy'),
-            #     row=row, col=1)
+        if 'refreezing_ice' in plot_data.columns:
+            fig.add_trace(
+                go.Scatter(x=x_vals, y=plot_data["refreezing_ice"], name="MATILDA ice refreeze",
+                           fillcolor="#6c757d", legendgroup="refreeze",
+                           mode='none', fill='tozeroy'),
+                row=row, col=1)
 
+        # add coefficient to plot
         fig.add_annotation(xref='x domain', yref='y domain', x=0.99, y=0.95, xanchor="right", showarrow=False,
                            text='<b>KGE coeff ' + str(round(output_MATILDA[2], 2)) + '</b>',
                            row=row, col=1)
@@ -1408,7 +1411,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["actual_evaporation"], name="Actual evapotranspiration", line_color='#16425b',
-                       legendgroup="hbv", legendgrouptitle_text="HBV sub-domains"),
+                       legendgroup="hbv", legendgrouptitle_text="HBV subdomains"),
             row=row, col=1)
         fig.add_trace(
             go.Scatter(x=x_vals, y=plot_data["soil_moisture"], name="Soil moisture", line_color='#d9dcd6',
@@ -1457,7 +1460,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         title = [" Meteorological input parameters ",
                  " Simulated vs observed runoff ",
                  " Runoff contributions ",
-                 " Output from the HBV model "
+                 " HBV subdomains "
                  ]
         title_f = []
         for i in range(len(title)):
