@@ -1384,13 +1384,13 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         # two new series for refreezing
         if 'refreezing_snow' in plot_data.columns:
             fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["refreezing_snow"], name="MATILDA snow refreeze",
-                           fillcolor="#adb5bd", legendgroup="refreeze", legendgrouptitle_text="Refreeze",
+                go.Scatter(x=x_vals, y=plot_data["refreezing_snow"], name="MATILDA snow refreezing",
+                           fillcolor="#adb5bd", legendgroup="refreeze", legendgrouptitle_text="Refreezing",
                            mode='none', fill='tozeroy'),
                 row=row, col=1)
         if 'refreezing_ice' in plot_data.columns:
             fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["refreezing_ice"], name="MATILDA ice refreeze",
+                go.Scatter(x=x_vals, y=plot_data["refreezing_ice"], name="MATILDA ice refreezing",
                            fillcolor="#6c757d", legendgroup="refreeze",
                            mode='none', fill='tozeroy'),
                 row=row, col=1)
@@ -1451,7 +1451,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             date_range = range_from
         else:
             date_range = range_from + "-" + range_to
-        title = [" Meteorological input parameters ",
+        title = [" Meteorological forcing data ",
                  " Simulated vs observed runoff ",
                  " Runoff contributions ",
                  " HBV subdomains "
