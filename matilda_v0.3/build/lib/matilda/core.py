@@ -386,12 +386,7 @@ def melt_rates(snow, pdd, parameter):
 def calculate_glaciermelt(ds, parameter):
     """Degree Day Model to calculate the accumulation, snow and ice melt and runoff rate from the glaciers.
     Roughly based on PYPDD (github.com/juseg/pypdd)
-    - # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)
-    pypdd.py line 311
-        Compute accumulation rate from temperature and precipitation.
-        The fraction of precipitation that falls as snow decreases linearly
-        from one to zero between temperature thresholds defined by the
-        `temp_snow` and `temp_rain` attributes. """
+    - # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)"""
 
     print("Calculating glacial melt")
 
@@ -422,7 +417,7 @@ def calculate_glaciermelt(ds, parameter):
         snow_depth[i] -= snow_melt_tmp
 
     # convert from list to array for arithmetic calculations
-    snow_depth = np.array(snow_depth)
+    snow_depth = np.array(snow_depth)   # not actual depth but mm w.e.!
     ice_melt = np.array(ice_melt)
     snow_melt = np.array(snow_melt)
 
@@ -446,7 +441,7 @@ def calculate_glaciermelt(ds, parameter):
         actual_runoff.append(KG[i] * SG)
         glacier_reservoir.append(SG)
 
-    # final glacier module output
+    # final glacier module output (everything in mm w.e.)
     glacier_melt = xr.merge(
         [xr.DataArray(inst_smb, name="DDM_smb"),
          xr.DataArray(pdd, name="pdd"),
@@ -519,7 +514,7 @@ def create_lookup_table(glacier_profile, parameter):
     glacier_profile["delta_h"] = (glacier_profile["norm_elevation"] + a) ** y + (
                 b * (glacier_profile["norm_elevation"] + a)) + c
 
-    ai_scaled = ai.copy()  # setting ai_scaled with the initial values
+    ai_scaled = ai.copy()  # initial values set as ai_scaled 
 
     fs = deltaM / (sum(ai * glacier_profile["delta_h"]))  # a) initial ai
 
@@ -573,38 +568,54 @@ def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
     # determining the hydrological year
     output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1,
                                         output_DDM.index.year)
-    # initial smb from the glacier routine in m w.e.
+    # initial smb from the glacier routine in mm w.e.
     m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
-    m = m / 1000  # in m
+
+    print('m:')
+    print(m)
+
+    print('area:')
+    print(sum(glacier_profile["Area"]))
+    print(sum(glacier_profile["Area"]))
+
     # initial area
     initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
-    # dataframe with the smb change per hydrological year in m w.e.
-    glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum() / 1000 * 0.9}).reset_index()  # do we have to scale this?
+    # dataframe with the smb change per hydrological year in mm w.e.
+    glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum()}).reset_index()  # do we have to scale this?
+    # re-calculate the mean glacier elevation based on the glacier profile in rough elevation zones for consistency (method outlined in following loop)
+    init_dist = initial_area.values / initial_area.values.sum()     # portions of glaciarized area elev zones
+    init_elev = init_dist * lookup_table.columns.values             # multiply portions with average zone elevations
+    init_elev = int(init_elev.sum())
 
-    glacier_change_area = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac]})
+    glacier_change_area = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac], "glacier_elev": init_elev})
 
     # setting initial values for the loop
     new_area = parameter.area_glac
-    smb_sum = 0
+    smb_cum = 0
     i = 1
     for i in range(len(glacier_change)):
         year = glacier_change["water_year"][i]
         smb = glacier_change["smb"][i]
         # scale the smb to the catchment
-        smb = smb * (new_area / parameter.area_cat)
+        # smb = smb * (new_area / parameter.area_cat)             # Ergibt das Sinn? MB wird mit jedem Jahr kleiner durch schrumpfende Gletscherfläche....
         # add the smb from the previous year(s) to the new year
-        smb_sum = smb_sum + smb
+        smb_cum = smb_cum + smb
         # calculate the percentage of melt in comparison to the initial mass
-        smb_percentage = round((-smb_sum / m) * 100)
+        smb_percentage = round((-smb_cum / m) * 100)
         if (smb_percentage <= 99) & (smb_percentage >= 0):
             # select the correct row from the lookup table depending on the smb
             area_melt = lookup_table.iloc[smb_percentage]
             # derive the new glacier area by multiplying the initial area with the area changes
             new_area = np.nansum((area_melt.values * initial_area.values))*parameter.area_cat
+            # derive new spatial distribution of glacierized area (relative portion in every elevation zone)
+            new_distribution = ((area_melt.values * initial_area.values) * parameter.area_cat) / new_area
+            # multiply relative portions with mean zone elevations to get rough estimate for new mean elevation
+            new_distribution = new_distribution * lookup_table.columns.values   # column headers contain elevations
+            new_distribution = int(new_distribution.sum())
         else:
             new_area = 0
         # scale the output with the new glacierized area
-        glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_sum":smb_sum}, ignore_index=True)
+        glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_cum":smb_cum, "glacier_elev":new_distribution}, ignore_index=True)
         for col in up_cols:
             output_DDM[col + "_updated_scaled"] = np.where(output_DDM["water_year"] == year, output_DDM[col] * (new_area / parameter.area_cat), output_DDM[col + "_updated_scaled"])
 
@@ -961,7 +972,7 @@ def create_statistics(output_MATILDA):
 
 
 def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None):
-    """The main MATILDA simulation. It consists of linear scaling of the data (if elevations for data, catchment and glacier
+    """The main MATILDA simulation. It applies a linear scaling of the data (if elevations
     are provided) and executes the DDM and HBV modules subsequently."""
 
     # Filter warnings:

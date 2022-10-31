@@ -13,7 +13,6 @@ from matilda.core import matilda_simulation, matilda_parameter, matilda_preproc,
 
 ## Model input
 working_directory = sys.path[0]      # Points to the folder where the script is located. Change to your needs.
-working_directory = '/home/phillip/Seafile/Ana-Lena_Phillip/data/matilda/Example'
 os.chdir(working_directory)
 df = pd.read_csv('forcing_data.csv')
 obs = pd.read_csv('runoff_data.csv')
