@@ -1,6 +1,6 @@
 # MATILDA - Modeling Water Resources in Glacierized Catchments
 
-The MATILDA framework combines a simple positive degree-day routine (DDM) to compute glacial melt with the hydrological bucket model HBV (Bergström, 1986). The goal is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable users to estimate future water resources for different climate change scenarios.
+The MATILDA framework combines a simple positive degree-day routine (DDM) to compute glacial melt with the hydrological bucket model HBV (Bergström, 1986). The aim is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable users to estimate future water resources for different climate change scenarios.
 MATILDA is an ongoing project and therefore a ***work in progress***.
 
 ## Overview
@@ -21,12 +21,13 @@ It requires the following Python3 libraries:
 - datetime
 - hydroeval
 - HydroErr
+- Plotly
 
 The MATILDA package and dependencies can be installed to your local machine by using pip or a comparable package manager. You can either install the package by using the link to this repository:
 ```
 pip install -e 'git+https://github.com/cryotools/matilda.git/#egg=matilda&subdirectory=matilda_v0.3'
 ```
-...or clone this repository to you local machine, navigate to the matilda_v0.3 directory and use:
+...or clone this repository to you local machine, navigate to the matilda_v0.2 directory and use:
 ```
 pip install .
 ```
@@ -63,7 +64,7 @@ To include the deltaH parameterization from [Huss and Hock 2015](https://doi.org
 
 * Elevation - elevation of each band (10 m intervals recommended)
 * Area - area of each band as a fraction of the total glacier area
-* WE -  ice thickness in m w.e.
+* WE -  ice thickness in mm w.e.
 * EleZone - combined bands over 100-200 m.
 
 The deltaH parametrization routine is based on the workflow outlined by [Seibert et.al. (2018)](https://doi.org/10.5194/hess-22-2211-2018).
@@ -82,7 +83,8 @@ To use the full workflow the following steps are recommended:
 - Plot runoff, meteorological parameters, and HBV output variables using *MATILDA_plots* function. 
 - All the output including the plots and parameters can be saved to your local disk with the *MATILDA_save_output* function.
 
-An example script for the workflow can be found [here](MATILDA/example_workflow.py).
+## Application example
+An example script and 3y of sample data can be found [here](Example/example_workflow.py).
 
 ## Built using
 * [pypdd](https://github.com/juseg/pypdd.git) - Python positive degree day model for glacier surface mass balance
@@ -98,7 +100,7 @@ See also the list of [contributors](https://www.geographie.hu-berlin.de/en/profe
 
 ## License
 
-This project is licensed under the HU Berlin License.
+This project is licensed under the MIT License.
 
 ### References
 

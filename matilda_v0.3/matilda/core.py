@@ -568,21 +568,18 @@ def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
     # determining the hydrological year
     output_DDM["water_year"] = np.where((output_DDM.index.month) >= parameter.hydro_year, output_DDM.index.year + 1,
                                         output_DDM.index.year)
-    # initial smb from the glacier routine in mm w.e.                   # DAS IST KEINE SMB SONDERN DIE EISMASSE!!!???
-    m = sum((glacier_profile["Area"]) * glacier_profile["WE"])          # DIE RELATIVE FLÄCHE WIRD MIT DER EISMENGE MULTIPLIZIERT???
 
-    print('m:')
-    print(m)
-
-    print('area:')
-    print(sum(glacier_profile["Area"]))
+    # initial glacier mass from the glacier profile  in mm w.e. (relative to the whole catchment)
+    m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
 
     # initial area
     initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
+
     # dataframe with the smb change per hydrological year in mm w.e.
-    glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum()}).reset_index()  # do we have to scale this?
+    glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum()}).reset_index()
+
     # re-calculate the mean glacier elevation based on the glacier profile in rough elevation zones for consistency (method outlined in following loop)
-    init_dist = initial_area.values / initial_area.values.sum()     # portions of glaciarized area elev zones
+    init_dist = initial_area.values / initial_area.values.sum()     # portions of glacierized area elev zones
     init_elev = init_dist * lookup_table.columns.values             # multiply portions with average zone elevations
     init_elev = int(init_elev.sum())
 
@@ -595,8 +592,8 @@ def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
     for i in range(len(glacier_change)):
         year = glacier_change["water_year"][i]
         smb = glacier_change["smb"][i]
-        # scale the smb to the catchment
-        # smb = smb * (new_area / parameter.area_cat)             # Ergibt das Sinn? MB wird mit jedem Jahr kleiner durch schrumpfende Gletscherfläche....
+        # scale the smb to the (updated) glacierized fraction of the catchment
+        smb = smb * (new_area / parameter.area_cat)       # SMB is area (re-)scaled because m is area scaled as well
         # add the smb from the previous year(s) to the new year
         smb_cum = smb_cum + smb
         # calculate the percentage of melt in comparison to the initial mass
@@ -606,7 +603,7 @@ def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
             area_melt = lookup_table.iloc[smb_percentage]
             # derive the new glacier area by multiplying the initial area with the area changes
             new_area = np.nansum((area_melt.values * initial_area.values))*parameter.area_cat
-            # derive new spatial distribution of glacierized area (relative portion in every elevation zone)
+            # derive new spatial distribution of glacierized area (relative fraction in every elevation zone)
             new_distribution = ((area_melt.values * initial_area.values) * parameter.area_cat) / new_area
             # multiply relative portions with mean zone elevations to get rough estimate for new mean elevation
             new_distribution = new_distribution * lookup_table.columns.values   # column headers contain elevations
@@ -614,7 +611,7 @@ def glacier_change(output_DDM, lookup_table, glacier_profile, parameter):
         else:
             new_area = 0
         # scale the output with the new glacierized area
-        glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_cum":smb_cum, "glacier_elev":new_distribution}, ignore_index=True)
+        glacier_change_area = glacier_change_area.append({'time': year, "glacier_area":new_area, "smb_scaled_cum":smb_cum, "glacier_elev":new_distribution}, ignore_index=True)
         for col in up_cols:
             output_DDM[col + "_updated_scaled"] = np.where(output_DDM["water_year"] == year, output_DDM[col] * (new_area / parameter.area_cat), output_DDM[col + "_updated_scaled"])
 

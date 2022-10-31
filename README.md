@@ -64,7 +64,7 @@ To include the deltaH parameterization from [Huss and Hock 2015](https://doi.org
 
 * Elevation - elevation of each band (10 m intervals recommended)
 * Area - area of each band as a fraction of the total glacier area
-* WE -  ice thickness in m w.e.
+* WE -  ice thickness in mm w.e.
 * EleZone - combined bands over 100-200 m.
 
 The deltaH parametrization routine is based on the workflow outlined by [Seibert et.al. (2018)](https://doi.org/10.5194/hess-22-2211-2018).
