@@ -40,3 +40,7 @@ AG	   - Calibration parameter for glacier storage-release scheme. High values re
 	   [0, 1]
 RFS  	   - Proportion of melt water that refreezes in snowpack.
            [0.05, 0.25]
+           
+pfilter    - Threshold above which precipitation values are elevation scaled using lr_prec. This addresses the common issue of reanalysis data to overestimate the frequency of
+	     low precipitation events. Handle with care! Should be fixed depending on the input data before parameter optimization.
+	   [0, 0.5]
