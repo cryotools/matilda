@@ -1195,6 +1195,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 {"avg_temp_catchment": "mean",
                  "prec_off_glaciers": "sum",
                  "prec_on_glaciers": "sum",
+                 "total_precipitation": "sum",
                  "evap_off_glaciers": "sum",
                  "melt_off_glaciers": "sum",
                  "melt_on_glaciers": "sum",
@@ -1213,6 +1214,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             plot_data = output_MATILDA[0].resample(parameter.freq).agg(
                 {"avg_temp_catchment": "mean",
                  "prec_off_glaciers": "sum",
+                 "total_precipitation": "sum",
                  "evap_off_glaciers": "sum",
                  "runoff_without_glaciers": "sum",
                  "total_runoff": "sum",
@@ -1249,16 +1251,18 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         ax1.plot(x_vals, (plot_data["avg_temp_catchment"]), c="#d7191c")
         if plot_length > (365 * 5):
             # bar chart has very poor performance for large data sets -> switch to line chart
-            ax2.plot(x_vals, plot_data["prec_off_glaciers"], color="#2c7bb6")
+            ax2.fill_between(x_vals, plot_data["total_precipitation"], plot_data["prec_off_glaciers"], color='#77bbff')
+            ax2.fill_between(x_vals, plot_data["prec_off_glaciers"], 0, color='#3594dc')
         else:
-            ax2.bar(x_vals, plot_data["prec_off_glaciers"], width=10, color="#2c7bb6")
+            ax2.bar(x_vals, plot_data["prec_off_glaciers"], width=10, color="#3594dc")
+            ax2.bar(x_vals, plot_data["prec_on_glaciers"], width=10, color="#77bbff", bottom=plot_data["prec_off_glaciers"])
         ax3.plot(x_vals, plot_data["evap_off_glaciers"], c="#008837")
         plt.xlabel("Date", fontsize=9)
         ax1.grid(linewidth=0.25), ax2.grid(linewidth=0.25), ax3.grid(linewidth=0.25)
         ax3.sharey(ax2)
         ax1.set_title("Mean temperature", fontsize=9)
-        ax2.set_title("Precipitation sum", fontsize=9)
-        ax3.set_title("Pot. Evapotranspiration", fontsize=9)
+        ax2.set_title("Precipitation off/on glacier", fontsize=9)
+        ax3.set_title("Pot. evapotranspiration", fontsize=9)
         ax1.set_ylabel("[°C]", fontsize=9)
         ax2.set_ylabel("[mm]", fontsize=9)
         ax3.set_ylabel("[mm]", fontsize=9)
@@ -1366,12 +1370,20 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(x=x_vals, y=plot_data["avg_temp_catchment"], name="Mean temperature", line_color="#d7191c", legendgroup="meteo",
                        legendgrouptitle_text="Meteo"),
             row=row, col=1, secondary_y=False)
+        # fig.add_trace(
+        #     go.Bar(x=x_vals, y=plot_data["total_precipitation"], name="Precipitation sum", marker_color="#2c7bb6",
+        #                legendgroup="meteo",  offsetgroup=0),
+        #     row=row, col=1, secondary_y=True)
         fig.add_trace(
-            go.Bar(x=x_vals, y=plot_data["prec_off_glaciers"], name="Precipitation sum", marker_color="#2c7bb6",
+            go.Bar(x=x_vals, y=plot_data["prec_off_glaciers"], name="Precipitation off glacier", marker_color="#3594dc",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
         fig.add_trace(
-            go.Bar(x=x_vals, y=plot_data["evap_off_glaciers"] * -1, name="Pot. Evapotranspiration", marker_color="#008837",
+            go.Bar(x=x_vals, y=plot_data["prec_on_glaciers"], name="Precipitation on glacier", marker_color="#77bbff",
+                       legendgroup="meteo"),
+            row=row, col=1, secondary_y=True)
+        fig.add_trace(
+            go.Bar(x=x_vals, y=plot_data["evap_off_glaciers"] * -1, name="Pot. evapotranspiration", marker_color="#008837",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
 
@@ -1510,6 +1522,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             xaxis_showticklabels=True,
             xaxis2_showticklabels=True,
             xaxis3_showticklabels=True,
+            barmode='relative',
             hovermode="x",
             title={
                 "text": parameter.freq_long + " MATILDA Results (" + date_range + ")",
@@ -1521,7 +1534,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 "ticksuffix": " °C"
             },
             yaxis2={
-                "ticksuffix": " mm"
+                "ticksuffix": " mm",
             },
             yaxis3={
                 "ticksuffix": " mm",
