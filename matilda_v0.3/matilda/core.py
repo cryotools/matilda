@@ -650,8 +650,8 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
     init_dist = initial_area.values / initial_area.values.sum()     # fractions of glacierized area elev zones
     init_elev = init_dist * lookup_table.columns.values             # multiply fractions with average zone elevations
     init_elev = int(init_elev.sum())
-    print("Prior glacier elevation: " + str(parameter.ele_glac))
-    print("Recalculated glacier elevation: " + str(init_elev))
+    print(">> Prior glacier elevation: " + str(parameter.ele_glac) + 'm')
+    print(">> Recalculated glacier elevation: " + str(init_elev) + 'm')
 
     # create initial df of glacier change
     glacier_change = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac],
@@ -680,8 +680,8 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
         data_update = data[parameter.sim_start:parameter.sim_end]
         input_df_glacier = input_df_glacier[parameter.sim_start:parameter.sim_end]
         print("WARNING! The provided setup period does not cover the full hydrological year the simulation period"
-              "starts in. The initial surface mass balance (SMB) of the first hydrological year in the glacier rescaling"
-              " routine therefore possibly misses a significant part of the accumulation period (e.g. Oct-Dec).")
+              "starts in. The initial surface mass balance (SMB) of the first hydrological year in the glacier "
+              "rescaling routine therefore possibly misses a significant part of the accumulation period (e.g. Oct-Dec).")
     else:
         data_update = data[startdate:parameter.sim_end]
         input_df_glacier = input_df_glacier[startdate:parameter.sim_end]
@@ -719,13 +719,26 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
             if i < len(data_update.water_year.unique()) - 1:
 
                 smb_unscaled = output_DDM_year["DDM_smb"].sum()
+                if i is 0 and smb_unscaled > 0:
+                    print("ERROR: The cumulative surface mass balance in the first year of the simulation period is "
+                          "positive. You may want to shift the starting year.")
                 # scale the smb to the (updated) glacierized fraction of the catchment
                 smb = smb_unscaled * (new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
                 # add the smb from the previous year(s) to the new year
                 smb_cum = smb_cum + smb
+                if smb_cum > 0:
+                    print("ERROR: The cumulative surface mass balance in the simulation period is positive. "
+                          "The glacier rescaling routine cannot model glacier extent exceeding the initial status of "
+                          "the provided glacier profile. In order to exclude this run from parameter optimization "
+                          "routines, a flag is passed and simulated runoff is set to 0.01.")
+                    smb_cum = m
+                    new_distribution = parameter.ele_glac
+                    smb_flag = True
+                else:
+                    smb_flag = False
                 # calculate the percentage of melt in comparison to the initial mass
                 smb_percentage = round((-smb_cum / m) * 100)
-                if (smb_percentage <= 99) & (smb_percentage >= 0):
+                if (smb_percentage < 99) & (smb_percentage >= 0):
                     # select the correct row from the lookup table depending on the smb
                     area_melt = lookup_table.iloc[smb_percentage]
                     # derive the new glacier area by multiplying the initial area with the area changes
@@ -743,7 +756,6 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                     'time': year, "glacier_area": new_area, "glacier_elev": new_distribution, 'smb_water_year': smb_unscaled,
                     "smb_scaled_cum": smb_cum}, index=[i])], ignore_index=True)
 
-
             # Scale DDM output to new glacierized fraction
             for col in up_cols:
                 output_DDM_year[col + "_updated_scaled"] = np.where(output_DDM_year["water_year"] == year,
@@ -751,6 +763,9 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                                                                output_DDM_year[col + "_updated_scaled"])
             # Append year to full dataset
             output_DDM = pd.concat([output_DDM, output_DDM_year])
+            
+            if smb_flag:
+                output_DDM['smb_flag'] = 1
 
         output_DDM = output_DDM[parameter.sim_start:parameter.sim_end]
         return output_DDM, glacier_change, input_df_catchment
@@ -1130,7 +1145,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                                                                                                   glacier_profile,
                                                                                                   parameter)
             else:
-                print("ERROR: No glacier profile for glacier elevation rescaling! Provide a glacier profile or"
+                print("ERROR: No glacier profile passed for glacier elevation rescaling! Provide a glacier profile or"
                       " set elev_rescaling=False")
                 return
         else:
@@ -1138,6 +1153,9 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
             glacier_change = str("No glacier changes calculated")
 
     else:
+        print("WARNING: Glacier elevation scaling is turned off. The average glacier elevation is treated as constant. "
+              "This might cause a significant bias in glacier melt on larger time scales! Set elev_rescaling=True "
+              "to annually rescale glacier elevations.")
         # Scale input data to fit catchments elevations
         if parameter.ele_dat is not None:
             input_df_glacier, input_df_catchment = input_scaling(df_preproc, parameter)
@@ -1205,6 +1223,9 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
         output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"]
 
     output_MATILDA = output_MATILDA[parameter.sim_start:parameter.sim_end]
+
+    if "smb_flag" in output_MATILDA.columns:
+        output_MATILDA['Q_Total'] = 0.01
 
     # Add compact output
     if parameter.area_glac > 0:
@@ -1287,6 +1308,8 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
 
     # if obs is not None:
     #     output_MATILDA.loc[output_MATILDA.isnull().any(axis=1), :] = np.nan
+
+
 
     # Model efficiency coefficients
     if obs is not None:
