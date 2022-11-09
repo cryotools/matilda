@@ -38,7 +38,7 @@ CWH        - Fraction (portion) of meltwater and rainfall which retains in snowp
            [0, 0.2] (usually 0.1)
 AG	   - Calibration parameter for glacier storage-release scheme. High values result in a small reservoir and instant release. Low values extend storage and delay release.
 	   [0, 1]
-RFS  	   - Proportion of melt water that refreezes in snowpack.
+RFS  	   - Fraction of melt water that refreezes in snowpack.
            [0.05, 0.25]
            
 pfilter    - Threshold above which precipitation values are elevation scaled using lr_prec. This addresses the common issue of reanalysis data to overestimate the frequency of

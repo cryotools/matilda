@@ -50,7 +50,7 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         elif isinstance(parameter_set, pd.DataFrame):
             parameter_set = parameter_set.set_index(parameter_set.columns[0])
         else:
-            print("ERROR: parameter_set requires either dict as created by mspot or pd.DataFrame!")
+            print("ERROR: parameter_set can either be passed as dict and or pd.DataFrames!")
             return
 
         if "lr_temp" in parameter_set.index:
