@@ -763,7 +763,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                                                                output_DDM_year[col + "_updated_scaled"])
             # Append year to full dataset
             output_DDM = pd.concat([output_DDM, output_DDM_year])
-            
+
             if smb_flag:
                 output_DDM['smb_flag'] = 1
 
@@ -1134,7 +1134,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
 
     print('---')
     print('Initiating MATILDA simulation')
-    
+
     # Rescale glacier elevation or not?
     if elev_rescaling:
         # Execute glacier-rescaling module
@@ -1162,14 +1162,14 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
         else:
             input_df_glacier = df_preproc.copy()
             input_df_catchment = df_preproc.copy()
-    
+
         input_df_glacier = input_df_glacier[parameter.sim_start:parameter.sim_end]
-    
+
         # Execute DDM module
         if parameter.area_glac > 0:
             degreedays_ds = calculate_PDD(input_df_glacier)
             output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
-    
+
         # Execute glacier re-scaling module
         if parameter.area_glac > 0:
             if glacier_profile is not None:
@@ -1179,7 +1179,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                 # scaling DDM output to fraction of catchment area
                 for col in output_DDM.columns.drop(['DDM_smb','pdd']):
                      output_DDM[col + "_scaled"] = output_DDM[col] * (parameter.area_glac / parameter.area_cat)
-    
+
                 lookup_table = str("No lookup table generated")
                 glacier_change = str("No glacier changes calculated")
         else:
@@ -1378,6 +1378,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 {"avg_temp_catchment": "mean",
                  "prec_off_glaciers": "sum",
                  "prec_on_glaciers": "sum",
+                 "total_precipitation": "sum",
                  "evap_off_glaciers": "sum",
                  "melt_off_glaciers": "sum",
                  "melt_on_glaciers": "sum",
@@ -1396,6 +1397,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             plot_data = output_MATILDA[0].resample(parameter.freq).agg(
                 {"avg_temp_catchment": "mean",
                  "prec_off_glaciers": "sum",
+                 "total_precipitation": "sum",
                  "evap_off_glaciers": "sum",
                  "runoff_without_glaciers": "sum",
                  "total_runoff": "sum",
@@ -1426,18 +1428,24 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     # Plotting the meteorological parameters
     def plot_meteo(plot_data, parameter):
         fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10, 6))
-        ax1.plot(plot_data.index.to_pydatetime(), (plot_data["avg_temp_catchment"]), c="#d7191c")
-        if parameter.freq == "Y" or parameter.freq == "D":
-            ax2.plot(plot_data.index.to_pydatetime(), plot_data["prec_off_glaciers"], color="#2c7bb6")
+
+        x_vals = plot_data.index.to_pydatetime()
+        plot_length = len(x_vals)
+        ax1.plot(x_vals, (plot_data["avg_temp_catchment"]), c="#d7191c")
+        if plot_length > (365 * 5):
+            # bar chart has very poor performance for large data sets -> switch to line chart
+            ax2.fill_between(x_vals, plot_data["total_precipitation"], plot_data["prec_off_glaciers"], color='#77bbff')
+            ax2.fill_between(x_vals, plot_data["prec_off_glaciers"], 0, color='#3594dc')
         else:
-            ax2.bar(plot_data.index.to_pydatetime(), plot_data["prec_off_glaciers"], width=10, color="#2c7bb6")
-        ax3.plot(plot_data.index.to_pydatetime(), plot_data["evap_off_glaciers"], c="#008837")
+            ax2.bar(x_vals, plot_data["prec_off_glaciers"], width=10, color="#3594dc")
+            ax2.bar(x_vals, plot_data["prec_on_glaciers"], width=10, color="#77bbff", bottom=plot_data["prec_off_glaciers"])
+        ax3.plot(x_vals, plot_data["evap_off_glaciers"], c="#008837")
         plt.xlabel("Date", fontsize=9)
         ax1.grid(linewidth=0.25), ax2.grid(linewidth=0.25), ax3.grid(linewidth=0.25)
         ax3.sharey(ax2)
         ax1.set_title("Mean temperature", fontsize=9)
-        ax2.set_title("Precipitation sum", fontsize=9)
-        ax3.set_title("Pot. Evapotranspiration", fontsize=9)
+        ax2.set_title("Precipitation off/on glacier", fontsize=9)
+        ax3.set_title("Pot. evapotranspiration", fontsize=9)
         ax1.set_ylabel("[°C]", fontsize=9)
         ax2.set_ylabel("[mm]", fontsize=9)
         ax3.set_ylabel("[mm]", fontsize=9)
@@ -1459,13 +1467,15 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         plot_data["plot"] = 0
         # plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(14, 4.5), gridspec_kw={'width_ratios': [2.75, 1]})
+
+        x_vals = plot_data.index.to_pydatetime()
         if 'observed_runoff' in plot_data.columns:
-            ax1.plot(plot_data.index.to_pydatetime(), plot_data["observed_runoff"], c="#E69F00", label="", linewidth=1.2)
-        ax1.fill_between(plot_data.index.to_pydatetime(), plot_data["plot"], plot_data["runoff_without_glaciers"], color='#56B4E9',
+            ax1.plot(x_vals, plot_data["observed_runoff"], c="#E69F00", label="", linewidth=1.2)
+        ax1.fill_between(x_vals, plot_data["plot"], plot_data["runoff_without_glaciers"], color='#56B4E9',
                          alpha=.75, label="")
         if "total_runoff" in plot_data.columns:
-            ax1.plot(plot_data.index.to_pydatetime(), plot_data["total_runoff"], c="k", label="", linewidth=0.75, alpha=0.75)
-            ax1.fill_between(plot_data.index.to_pydatetime(), plot_data["runoff_without_glaciers"], plot_data["total_runoff"], color='#CC79A7',
+            ax1.plot(x_vals, plot_data["total_runoff"], c="k", label="", linewidth=0.75, alpha=0.75)
+            ax1.fill_between(x_vals, plot_data["runoff_without_glaciers"], plot_data["total_runoff"], color='#CC79A7',
                              alpha=.75, label="")
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
         if isinstance(output_MATILDA[2], float):
@@ -1475,15 +1485,17 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         else:
             anchored_text = AnchoredText('KGE coeff exceeds boundaries', loc=2, frameon=False)
         ax1.add_artist(anchored_text)
+
+        x_vals = plot_annual_data.index.to_pydatetime()
         if 'observed_runoff' in plot_annual_data.columns:
-            ax2.plot(plot_annual_data.index.to_pydatetime(), plot_annual_data["observed_runoff"], c="#E69F00",
+            ax2.plot(x_vals, plot_annual_data["observed_runoff"], c="#E69F00",
                      label="Observations", linewidth=1.2)
-        ax2.fill_between(plot_annual_data.index.to_pydatetime(), plot_annual_data["plot"], plot_annual_data["runoff_without_glaciers"], color='#56B4E9',
+        ax2.fill_between(x_vals, plot_annual_data["plot"], plot_annual_data["runoff_without_glaciers"], color='#56B4E9',
                          alpha=.75, label="MATILDA catchment runoff")
         if "total_runoff" in plot_annual_data.columns:
-            ax2.plot(plot_annual_data.index.to_pydatetime(), plot_annual_data["total_runoff"], c="k", label="MATILDA total runoff",
+            ax2.plot(x_vals, plot_annual_data["total_runoff"], c="k", label="MATILDA total runoff",
                      linewidth=0.75, alpha=0.75)
-            ax2.fill_between(plot_annual_data.index.to_pydatetime(), plot_annual_data["runoff_without_glaciers"], plot_annual_data["total_runoff"], color='#CC79A7',
+            ax2.fill_between(x_vals, plot_annual_data["runoff_without_glaciers"], plot_annual_data["total_runoff"], color='#CC79A7',
                              alpha=.75, label="MATILDA glacial runoff")
         ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
         ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
@@ -1506,11 +1518,13 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     # Plotting the HBV output parameters
     def plot_hbv(plot_data, parameter):
         fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, sharex=True, figsize=(10, 6))
-        ax1.plot(plot_data.index.to_pydatetime(), plot_data["actual_evaporation"], "k")
-        ax2.plot(plot_data.index.to_pydatetime(), plot_data["soil_moisture"], "k")
-        ax3.plot(plot_data.index.to_pydatetime(), plot_data["snowpack_off_glaciers"], "k")
-        ax4.plot(plot_data.index.to_pydatetime(), plot_data["upper_groundwater"], "k")
-        ax5.plot(plot_data.index.to_pydatetime(), plot_data["lower_groundwater"], "k")
+
+        x_vals = plot_data.index.to_pydatetime()
+        ax1.plot(x_vals, plot_data["actual_evaporation"], "k")
+        ax2.plot(x_vals, plot_data["soil_moisture"], "k")
+        ax3.plot(x_vals, plot_data["snowpack_off_glaciers"], "k")
+        ax4.plot(x_vals, plot_data["upper_groundwater"], "k")
+        ax5.plot(x_vals, plot_data["lower_groundwater"], "k")
         ax1.set_title("Actual evapotranspiration", fontsize=9)
         ax2.set_title("Soil moisture", fontsize=9)
         ax3.set_title("Water in snowpack", fontsize=9)
@@ -1539,12 +1553,20 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(x=x_vals, y=plot_data["avg_temp_catchment"], name="Mean temperature", line_color="#d7191c", legendgroup="meteo",
                        legendgrouptitle_text="Meteo"),
             row=row, col=1, secondary_y=False)
+        # fig.add_trace(
+        #     go.Bar(x=x_vals, y=plot_data["total_precipitation"], name="Precipitation sum", marker_color="#2c7bb6",
+        #                legendgroup="meteo",  offsetgroup=0),
+        #     row=row, col=1, secondary_y=True)
         fig.add_trace(
-            go.Bar(x=x_vals, y=plot_data["prec_off_glaciers"], name="Precipitation sum", marker_color="#2c7bb6",
+            go.Bar(x=x_vals, y=plot_data["prec_off_glaciers"], name="Precipitation off glacier", marker_color="#3594dc",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
         fig.add_trace(
-            go.Bar(x=x_vals, y=plot_data["evap_off_glaciers"] * -1, name="Pot. Evapotranspiration", marker_color="#008837",
+            go.Bar(x=x_vals, y=plot_data["prec_on_glaciers"], name="Precipitation on glacier", marker_color="#77bbff",
+                       legendgroup="meteo"),
+            row=row, col=1, secondary_y=True)
+        fig.add_trace(
+            go.Bar(x=x_vals, y=plot_data["evap_off_glaciers"] * -1, name="Pot. evapotranspiration", marker_color="#008837",
                        legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
 
@@ -1683,6 +1705,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             xaxis_showticklabels=True,
             xaxis2_showticklabels=True,
             xaxis3_showticklabels=True,
+            barmode='relative',
             hovermode="x",
             title={
                 "text": parameter.freq_long + " MATILDA Results (" + date_range + ")",
@@ -1694,7 +1717,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 "ticksuffix": " °C"
             },
             yaxis2={
-                "ticksuffix": " mm"
+                "ticksuffix": " mm",
             },
             yaxis3={
                 "ticksuffix": " mm",
