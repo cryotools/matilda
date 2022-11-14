@@ -1132,7 +1132,7 @@ def create_statistics(output_MATILDA):
     return stats
 
 
-def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, elev_rescaling=True):
+def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, elev_rescaling=False):
     """The main MATILDA simulation. It applies a linear scaling of the data (if elevations
     are provided) and executes the DDM and HBV modules subsequently."""
 
