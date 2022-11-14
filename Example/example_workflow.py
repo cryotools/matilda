@@ -38,11 +38,11 @@ output_matilda = matilda_simulation(df, obs=obs, output=working_directory,
                                     # glacier_profile='glacier_profile.csv'
 
                                     # 3. Include interactive plots:
-                                    plot_type='all'
+                                    plot_type='all'	# If you receive errors relating to plotly either try a different plotly version or change plot_type to "print"
                                     )
 
 
-## The same but in a step-wise run:
+## The same but step-wise:
 
 # Set model and data parameters
 parameter = matilda_parameter(df, set_up_start='2010-01-01', set_up_end='2010-12-31',
@@ -56,7 +56,7 @@ df, obs = matilda_preproc(df, parameter, obs=obs)
 # Run glacier and hydro routines
 output_matilda = matilda_submodules(df, parameter, obs=obs)
 
-# Create plots for input data (fig1), matilda runoff simulation (fig2), HBV variables (fig3), and interactive plots (fig 4 and 5).
+# Create plots for input data (fig1), matilda runoff simulation (fig2), HBV variables (fig3), and interactive plots (fig4 and 5).
 output_matilda = matilda_plots(output_matilda, parameter, plot_type='all')
 
 # Save output to disk

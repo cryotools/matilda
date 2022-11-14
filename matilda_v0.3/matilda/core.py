@@ -450,7 +450,7 @@ def calculate_glaciermelt(ds, parameter, prints=True):
         actual_runoff.append(KG[i] * SG)
         glacier_reservoir.append(SG)
 
-    # final glacier module output (everything in mm w.e.)
+    # final glacier module output (everything but temperature and pdd in mm w.e.)
     glacier_melt = xr.merge(
         [xr.DataArray(inst_smb, name="DDM_smb"),
          xr.DataArray(pdd, name="pdd"),
