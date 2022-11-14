@@ -109,9 +109,17 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     if area_glac is None:
         area_glac = 0
     if area_glac > area_cat:
-        print("WARNING: Glacier area exceeds overall catchment area")
+        print("ERROR: Glacier area exceeds overall catchment area")
+        return
     if ele_dat is not None and ele_cat is None:
-        print("WARNING: Catchment reference elevation is missing")
+        print("WARNING: Catchment reference elevation is missing. The data can not be elevation scaled.")
+    if ele_cat is None or ele_glac is None:
+        print("WARNING: Reference elevations for catchment and glacier area need to be provided to scale the model"
+              "domains correctly!")
+        ele_non_glac = None
+    else:
+        # Calculate the mean elevation of the non-glacierized catchment area
+        ele_non_glac = (ele_cat - area_glac / area_cat * ele_glac) * area_cat / (area_cat - area_glac)
     if area_glac is not None or area_glac > 0:
         if ele_glac is None and ele_dat is not None:
             print("WARNING: Glacier reference elevation is missing")
@@ -219,13 +227,13 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end,
          "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac,
-         "ele_dat": ele_dat, "ele_glac": ele_glac, "ele_cat": ele_cat, "hydro_year": hydro_year, "soi": soi,
+         "ele_dat": ele_dat, "ele_glac": ele_glac, "ele_non_glac": ele_non_glac, "hydro_year": hydro_year, "soi": soi,
          "warn": warn, "pfilter": pfilter, "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow,
          "TT_rain": TT_rain, "TT_diff": TT_diff, "CFMAX_snow": CFMAX_snow, "CFMAX_ice": CFMAX_ice,
          "CFMAX_rel": CFMAX_rel, "BETA": BETA, "CET": CET, "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP,
          "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG,
          "CFR_ice": CFR_ice, "RFS": RFS})
-    print("Parameters set:")
+    print("Parameter set:")
     print(str(parameter))
     return parameter
 
@@ -305,8 +313,8 @@ def input_scaling(df_preproc, parameter):
         input_df_glacier["RRR"] = np.where(input_df_glacier["RRR"] < 0, 0, input_df_glacier["RRR"])
     else:
         input_df_glacier = df_preproc.copy()
-    if parameter.ele_cat is not None:
-        elev_diff_catchment = parameter.ele_cat - parameter.ele_dat
+    if parameter.ele_non_glac is not None:
+        elev_diff_catchment = parameter.ele_non_glac - parameter.ele_dat
         input_df_catchment = df_preproc.copy()
         input_df_catchment["T2"] = input_df_catchment["T2"] + elev_diff_catchment * float(parameter.lr_temp)
         input_df_catchment["RRR"] = np.where(input_df_catchment["RRR"] > parameter.pfilter,     # Apply precipitation lapse rate only, when there is precipitation!
@@ -771,7 +779,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
         return output_DDM, glacier_change, input_df_catchment
 
     else:
-        print("ERROR: You need to provide ele_cat in order to apply the glacier-rescaling routine.")
+        print("ERROR: You need to provide ele_dat in order to apply the glacier-rescaling routine.")
         return
 
 
