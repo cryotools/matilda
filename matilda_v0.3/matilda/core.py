@@ -227,8 +227,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end,
          "freq": freq, "freq_long": freq_long, "lat": lat, "area_cat": area_cat, "area_glac": area_glac,
-         "ele_dat": ele_dat, "ele_glac": ele_glac, "ele_non_glac": ele_non_glac, "hydro_year": hydro_year, "soi": soi,
-         "warn": warn, "pfilter": pfilter, "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow,
+         "ele_dat": ele_dat, "ele_cat": ele_cat, "ele_glac": ele_glac, "ele_non_glac": ele_non_glac, "hydro_year": hydro_year,
+         "soi": soi, "warn": warn, "pfilter": pfilter, "lr_temp": lr_temp, "lr_prec": lr_prec, "TT_snow": TT_snow,
          "TT_rain": TT_rain, "TT_diff": TT_diff, "CFMAX_snow": CFMAX_snow, "CFMAX_ice": CFMAX_ice,
          "CFMAX_rel": CFMAX_rel, "BETA": BETA, "CET": CET, "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP,
          "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG,
@@ -597,12 +597,7 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
     # dataframe with the smb change per hydrological year in mm w.e.
     glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum()}).reset_index()
 
-    # re-calculate the mean glacier elevation based on the glacier profile in rough elevation zones for consistency (method outlined in following loop)
-    init_dist = initial_area.values / initial_area.values.sum()     # portions of glacierized area elev zones
-    init_elev = init_dist * lookup_table.columns.values             # multiply portions with average zone elevations
-    init_elev = int(init_elev.sum())
-
-    glacier_change_area = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac], "glacier_elev": init_elev})
+    glacier_change_area = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac]})
 
     # setting initial values for the loop
     new_area = parameter.area_glac
@@ -622,16 +617,11 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
             area_melt = lookup_table.iloc[smb_percentage]
             # derive the new glacier area by multiplying the initial area with the area changes
             new_area = np.nansum((area_melt.values * initial_area.values))*parameter.area_cat
-            # derive new spatial distribution of glacierized area (relative fraction in every elevation zone)
-            new_distribution = ((area_melt.values * initial_area.values) * parameter.area_cat) / new_area
-            # multiply relative portions with mean zone elevations to get rough estimate for new mean elevation
-            new_distribution = new_distribution * lookup_table.columns.values   # column headers contain elevations
-            new_distribution = int(new_distribution.sum())
         else:
             new_area = 0
         # scale the output with the new glacierized area
         glacier_change_area = glacier_change_area.append({
-            'time': year, "glacier_area": new_area, "smb_scaled_cum": smb_cum, "glacier_elev": new_distribution
+            'time': year, "glacier_area": new_area, "smb_scaled_cum": smb_cum
         }, ignore_index=True)
         for col in up_cols:
             output_DDM[col + "_updated_scaled"] = np.where(output_DDM["water_year"] == year, output_DDM[col] * (new_area / parameter.area_cat), output_DDM[col + "_updated_scaled"])
@@ -654,19 +644,25 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
     initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
 
     # re-calculate the mean glacier elevation based on the glacier profile in rough elevation zones for consistency (method outlined in following loop)
-    print("Recalculating initial glacier elevation based on glacier profile")
+    print("Recalculating initial elevations based on glacier profile")
     init_dist = initial_area.values / initial_area.values.sum()     # fractions of glacierized area elev zones
     init_elev = init_dist * lookup_table.columns.values             # multiply fractions with average zone elevations
     init_elev = int(init_elev.sum())
-    print(">> Prior glacier elevation: " + str(parameter.ele_glac) + 'm')
-    print(">> Recalculated glacier elevation: " + str(init_elev) + 'm')
+    print(">> Prior glacier elevation: " + str(parameter.ele_glac) + 'm a.s.l.')
+    print(">> Recalculated glacier elevation: " + str(init_elev) + 'm a.s.l.')
+
+    # re-calculate the mean non-glacierized elevation accordingly
+    ele_non_glac = (parameter.ele_cat - parameter.area_glac
+                                      / parameter.area_cat * init_elev) \
+                                     * parameter.area_cat / (parameter.area_cat
+                                                                     - parameter.area_glac)
+
+    print(">> Prior non-glacierized elevation: " + str(round(parameter.ele_non_glac)) + 'm a.s.l.')
+    print(">> Recalculated non-glacierized elevation: " + str(round(ele_non_glac)) + 'm a.s.l.')
 
     # create initial df of glacier change
     glacier_change = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac],
                                         "glacier_elev": init_elev})
-
-    # create non-updated dataframes for both sub-catchments (catchment parameters remain untouched)
-    input_df_glacier, input_df_catchment = input_scaling(data, parameter)
 
     # Setup initial variables for main loop
     new_area = parameter.area_glac
@@ -674,6 +670,10 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
     output_DDM = pd.DataFrame()
     parameter_updated = copy.deepcopy(parameter)
     parameter_updated.ele_glac = init_elev
+    parameter_updated.ele_non_glac = ele_non_glac
+
+    # create initial non-updated dataframes
+    input_df_glacier, input_df_catchment = input_scaling(data, parameter_updated)
 
     # Slice input data to simulation period (with full hydrological years if the setup period allows it)
     if datetime.fromisoformat(parameter.sim_start).month < parameter.hydro_year:
@@ -687,20 +687,26 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
         # Provided setup period does not cover the full hydrological year sim_start falls in
         data_update = data[parameter.sim_start:parameter.sim_end]
         input_df_glacier = input_df_glacier[parameter.sim_start:parameter.sim_end]
+        input_df_catchment_spinup = input_df_catchment[parameter.set_up_start:parameter.sim_start]
+        input_df_catchment = input_df_catchment[parameter.sim_start:parameter.sim_end]
+
+
         print("WARNING! The provided setup period does not cover the full hydrological year the simulation period"
               "starts in. The initial surface mass balance (SMB) of the first hydrological year in the glacier "
               "rescaling routine therefore possibly misses a significant part of the accumulation period (e.g. Oct-Dec).")
     else:
         data_update = data[startdate:parameter.sim_end]
         input_df_glacier = input_df_glacier[startdate:parameter.sim_end]
+        input_df_catchment_spinup = input_df_catchment[parameter.set_up_start:startdate]
+        input_df_catchment = input_df_catchment[startdate:parameter.sim_end]
 
     # MAIN LOOP
     # Loop through simulation period annually updating catchment fractions and scaling elevations
     if parameter.ele_dat is not None:
 
         print('Calculating glacier evolution')
-        for i in range(len(data_update.water_year.unique())): #[:-1]
-            year = data_update.water_year.unique()[i] # [:-1]
+        for i in range(len(data_update.water_year.unique())):
+            year = data_update.water_year.unique()[i]
             mask = data_update.water_year == year
 
             # Use updated glacier area of the previous year
@@ -709,8 +715,15 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
             if i is not 0:
                 parameter_updated.ele_glac = new_distribution
 
-            # Scale glacier routine input in selected year with updated parameters (catchment parameters stay constant)
-            input_df_glacier[mask] = input_scaling(data_update[mask], parameter_updated)[0]
+            # Calculate the updated mean elevation of the non-glacierized catchment area
+            parameter_updated.ele_non_glac = (parameter_updated.ele_cat - parameter_updated.area_glac
+                                             / parameter_updated.area_cat * parameter_updated.ele_glac) \
+                                             * parameter_updated.area_cat / (parameter_updated.area_cat
+                                                                             - parameter_updated.area_glac)
+
+
+            # Scale glacier and hbv routine inputs in selected year with updated parameters
+            input_df_glacier[mask], input_df_catchment[mask] = input_scaling(data_update[mask], parameter_updated)
 
             # Calculate positive degree days and glacier ablation/accumulation
             degreedays_ds = calculate_PDD(input_df_glacier[mask], prints=False)
@@ -776,6 +789,9 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                 output_DDM['smb_flag'] = 1
 
         output_DDM = output_DDM[parameter.sim_start:parameter.sim_end]
+        # Add spinup original spin-up period back to HBV input
+        input_df_catchment = pd.concat([input_df_catchment_spinup, input_df_catchment])
+
         return output_DDM, glacier_change, input_df_catchment
 
     else:
@@ -1053,6 +1069,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             if soil_wetness > 1: soil_wetness = 1
             # soil recharge
             recharge = (RAIN[t] + tosoil) * soil_wetness
+
             # soil moisture update
             SM[t] = SM[t - 1] + RAIN[t] + tosoil - recharge
             # excess of water calculation
