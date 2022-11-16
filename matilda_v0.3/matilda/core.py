@@ -799,7 +799,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
         return
 
 
-def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
+def hbv_simulation(input_df_catchment, parameter, glacier_area=None, output_DDM=None):
         """Compute the runoff from the catchment with the HBV model
             Python Code based on the LHMP (github.com/hydrogo/LHMP -
             Ayzel Georgy. (2016). LHMP: lumped hydrological modelling playground. Zenodo. doi: 10.5281/zenodo.59501)
@@ -1068,10 +1068,21 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
             if soil_wetness < 0: soil_wetness = 0
             if soil_wetness > 1: soil_wetness = 1
             # soil recharge
-            recharge = (RAIN[t] + tosoil) * soil_wetness
+            # recharge = (RAIN[t] + tosoil) * soil_wetness
+            # # soil moisture update
+            # SM[t] = SM[t - 1] + RAIN[t] + tosoil - recharge
 
+# Add glacier output here?
+            # soil recharge
+            recharge = (RAIN[t] + tosoil + output_DDM.Q_DDM_updated_scaled[t]) * soil_wetness
             # soil moisture update
-            SM[t] = SM[t - 1] + RAIN[t] + tosoil - recharge
+            SM[t] = SM[t - 1] + RAIN[t] + tosoil + output_DDM.Q_DDM_updated_scaled[t] - recharge
+
+            # add output_DDM to function input
+            # add line to spin-up routine --> Q_DDM doesn't cover the spinup period
+
+
+
             # excess of water calculation
             excess = SM[t] - parameter.FC
             # control excess
@@ -1212,10 +1223,20 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
             glacier_change = str("No glacier changes calculated")
 
     # Execute HBV module:
+    # if glacier_profile is not None:
+    #     output_HBV = hbv_simulation(input_df_catchment, parameter, glacier_area=glacier_change)
+    # else:
+    #     output_HBV = hbv_simulation(input_df_catchment, parameter)
+
     if glacier_profile is not None:
-        output_HBV = hbv_simulation(input_df_catchment, parameter, glacier_area=glacier_change)
+        output_HBV = hbv_simulation(input_df_catchment, parameter, output_DDM=output_DDM, glacier_area=glacier_change)
     else:
-        output_HBV = hbv_simulation(input_df_catchment, parameter)
+        if output_DDM is None:
+            output_HBV = hbv_simulation(input_df_catchment, parameter)
+        else:
+            output_HBV = hbv_simulation(input_df_catchment, parameter, output_DDM=output_DDM)
+
+
     output_HBV = output_HBV[parameter.sim_start:parameter.sim_end]
 
     # Output postprocessing
@@ -1229,7 +1250,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
 
     if parameter.area_glac > 0:
         if glacier_profile is not None:
-            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_updated_scaled"]
+            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] #+ output_MATILDA["Q_DDM_updated_scaled"]
             output_MATILDA["Prec_total"] = output_MATILDA["DDM_rain_updated_scaled"] +\
                                            output_MATILDA["DDM_snow_updated_scaled"] +\
                                            output_MATILDA["HBV_rain"] +\
@@ -1237,7 +1258,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
             output_MATILDA["Melt_total"] = output_MATILDA["DDM_total_melt_updated_scaled"] +\
                                            output_MATILDA["HBV_melt_off_glacier"]
         else:
-            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] + output_MATILDA["Q_DDM_scaled"]
+            output_MATILDA["Q_Total"] = output_MATILDA["Q_HBV"] #+ output_MATILDA["Q_DDM_scaled"]
             output_MATILDA["Prec_total"] = output_MATILDA["DDM_rain_scaled"] + \
                                            output_MATILDA["DDM_snow_scaled"] + \
                                            output_MATILDA["HBV_rain"] + \
