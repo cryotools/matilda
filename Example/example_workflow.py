@@ -13,7 +13,6 @@ from matilda.core import matilda_simulation, matilda_parameter, matilda_preproc,
 
 ## Model input
 working_directory = sys.path[0]      # Points to the folder where the script is located. Change to your needs.
-working_directory = "/home/phillip/Seafile/Ana-Lena_Phillip/data/matilda/Example"
 os.chdir(working_directory)
 df = pd.read_csv('forcing_data.csv')
 obs = pd.read_csv('runoff_data.csv')
@@ -42,27 +41,6 @@ output_matilda = matilda_simulation(df, obs=obs, output=working_directory,
                                     # 3. Include interactive plots:
                                     plot_type='all'	# If you receive errors relating to plotly either try a different plotly version or change plot_type to "print"
                                     )
-
-
-## The same but step-wise:
-
-# Set model and data parameters
-parameter = matilda_parameter(df, set_up_start='2010-01-01', set_up_end='2010-12-31',
-                              sim_start='2011-01-01', sim_end='2013-12-31', freq="D",
-                              lat=42, area_cat=316, area_glac=33, ele_dat=2550, ele_glac=4000, ele_cat=3650,
-                              PCORR=1.5)
-
-# Data preprocessing
-df, obs = matilda_preproc(df, parameter, obs=obs)
-
-# Run glacier and hydro routines
-output_matilda = matilda_submodules(df, parameter, obs=obs)
-
-# Create plots for input data (fig1), matilda runoff simulation (fig2), HBV variables (fig3), and interactive plots (fig4 and 5).
-output_matilda = matilda_plots(output_matilda, parameter, plot_type='all')
-
-# Save output to disk
-matilda_save_output(output_matilda, parameter, output_path=working_directory)
 
 
 
