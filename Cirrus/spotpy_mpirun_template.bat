@@ -14,4 +14,4 @@
 echo "Job uses a total of $SLURM_NTASKS cores"
 
 module load anaconda
-mpirun -n  $SLURM_NTASKS python -u mspot_script
+mpirun -n  $SLURM_NTASKS /home/susterph/env/bin/python -u mspot_script

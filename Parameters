@@ -28,9 +28,9 @@ TT_snow    - Temperature below which all precipitation is solid. Between TT_snow
            [-1.5, 2.5]
 TT_diff    - Difference of TT_snow and temperature above which all precipitation is liquid (TT_rain). (°K)
            [0.2, 4]
-CFMAX_snow - Snow melt rate (mm/day per K above freezing point).
-           [1, 5]
-CFMAX_rel  - Factor to calculate ice melt rate from CFMAX_snow. CFMAX_ice = CFMAX_rel * CFMAX_snow.
+CFMAX_ice - Ice melt rate (mm/day per K above freezing point).
+           [1.2, 12]
+CFMAX_rel  - Factor to calculate snow melt rate from CFMAX_ice. CFMAX_snow =  CFMAX_ice / CFMAX_rel
            [1.2, 2.5]
 SFCF       - Snowfall correction Factor
            [0.4, 1]
