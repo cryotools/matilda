@@ -63,7 +63,7 @@ To include the deltaH parameterization from [Huss and Hock 2015](https://doi.org
 | ..  	     | ...   | ...       | ... 	   |
 
 * Elevation - elevation of each band (10 m intervals recommended)
-* Area - area of each band as a fraction of the total glacier area
+* Area - glacier area in each band as a fraction of the total catchment area
 * WE -  ice thickness in mm w.e.
 * EleZone - combined bands over 100-200 m.
 

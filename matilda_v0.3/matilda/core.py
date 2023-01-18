@@ -201,9 +201,9 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print("WARNING: Parameter UZL exceeds boundaries [0, 500].")
     if 0.5 > PCORR or PCORR > 2:
         print("WARNING: Parameter PCORR exceeds boundaries [0.5, 2].")
-    if -1.5 > TT_snow or TT_snow > 2.5:
+    if -1.5 > TT_snow or TT_snow > 1.5:
         print("WARNING: Parameter TT_snow exceeds boundaries [-1.5, 2.5].")
-    if 0.2 > TT_diff or TT_diff > 4:
+    if 0.5 > TT_diff or TT_diff > 2.5:
         print("WARNING: Parameter TT_diff exceeds boundaries [0.2, 4].")
     if 1.2 > CFMAX_rel or CFMAX_rel > 2.5:
         print("WARNING: Parameter CFMAX_rel exceeds boundaries [1.2, 2.5].")
@@ -284,8 +284,10 @@ def matilda_preproc(input_df, parameter, obs=None):
 
 
     if obs is not None:
+        print("Input data preprocessing successful")
         return df_preproc, obs_preproc
     if obs is None:
+        print("Input data preprocessing successful")
         return df_preproc
 
 
@@ -652,13 +654,17 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
     print(">> Recalculated glacier elevation: " + str(init_elev) + 'm a.s.l.')
 
     # re-calculate the mean non-glacierized elevation accordingly
-    ele_non_glac = (parameter.ele_cat - parameter.area_glac
+    if parameter.ele_cat is None:
+        ele_non_glac = None
+    else:
+        ele_non_glac = (parameter.ele_cat - parameter.area_glac
                                       / parameter.area_cat * init_elev) \
                                      * parameter.area_cat / (parameter.area_cat
                                                                      - parameter.area_glac)
+    if ele_non_glac is not None:
+        print(">> Prior non-glacierized elevation: " + str(round(parameter.ele_non_glac)) + 'm a.s.l.')
+        print(">> Recalculated non-glacierized elevation: " + str(round(ele_non_glac)) + 'm a.s.l.')
 
-    print(">> Prior non-glacierized elevation: " + str(round(parameter.ele_non_glac)) + 'm a.s.l.')
-    print(">> Recalculated non-glacierized elevation: " + str(round(ele_non_glac)) + 'm a.s.l.')
 
     # create initial df of glacier change
     glacier_change = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac],
@@ -716,7 +722,10 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                 parameter_updated.ele_glac = new_distribution
 
             # Calculate the updated mean elevation of the non-glacierized catchment area
-            parameter_updated.ele_non_glac = (parameter_updated.ele_cat - parameter_updated.area_glac
+            if parameter_updated.ele_cat is None:
+                parameter_updated.ele_non_glac = None
+            else:
+                parameter_updated.ele_non_glac = (parameter_updated.ele_cat - parameter_updated.area_glac
                                              / parameter_updated.area_cat * parameter_updated.ele_glac) \
                                              * parameter_updated.area_cat / (parameter_updated.area_cat
                                                                              - parameter_updated.area_glac)
@@ -751,7 +760,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                     print("ERROR: The cumulative surface mass balance in the simulation period is positive. "
                           "The glacier rescaling routine cannot model glacier extent exceeding the initial status of "
                           "the provided glacier profile. In order to exclude this run from parameter optimization "
-                          "routines, a flag is passed and simulated runoff is set to 0.01.")
+                          "routines, a flag is passed, simulated runoff is set to 0.01, and SMB to 9999.")
                     smb_cum = m
                     new_distribution = parameter.ele_glac
                     smb_flag = True
@@ -787,6 +796,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
 
             if smb_flag:
                 output_DDM['smb_flag'] = 1
+                output_DDM['DDM_smb'] = 9999    # To exclude run from parameter optimization of glacial parameters
 
         output_DDM = output_DDM[parameter.sim_start:parameter.sim_end]
         # Add spinup original spin-up period back to HBV input
@@ -1345,8 +1355,8 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
         sim_new['mod'] = pd.DataFrame(sim)
         sim_new['obs'] = target
         clean = sim_new.dropna()
-        sim = clean['obs']
-        target = clean['mod']
+        sim = clean['mod']
+        target = clean['obs']
 
         if parameter.freq == "D":
             nash_sut = he.nse(sim, target, remove_zero=True)
