@@ -673,6 +673,8 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
     # Setup initial variables for main loop
     new_area = parameter.area_glac
     smb_cum = 0
+    surplus = 0
+    warn = True
     output_DDM = pd.DataFrame()
     parameter_updated = copy.deepcopy(parameter)
     parameter_updated.ele_glac = init_elev
@@ -748,24 +750,57 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
             # Rescale glacier geometry and update glacier parameters in all but the last (incomplete) water year
             if i < len(data_update.water_year.unique()) - 1:
 
+                # smb_unscaled = output_DDM_year["DDM_smb"].sum()
+                # if i is 0 and smb_unscaled > 0:
+                #     print("ERROR: The cumulative surface mass balance in the first year of the simulation period is "
+                #           "positive. You may want to shift the starting year.")
+                # # scale the smb to the (updated) glacierized fraction of the catchment
+                # smb = smb_unscaled * (new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
+                # # add the smb from the previous year(s) to the new year
+                # smb_cum = smb_cum + smb
+                # if smb_cum > 0:
+                #     print("ERROR: The cumulative surface mass balance in the simulation period is positive. "
+                #           "The glacier rescaling routine cannot model glacier extent exceeding the initial status of "
+                #           "the provided glacier profile. In order to exclude this run from parameter optimization "
+                #           "routines, a flag is passed, simulated runoff is set to 0.01, and SMB to 9999.")
+                #     smb_cum = m
+                #     new_distribution = parameter.ele_glac
+                #     smb_flag = True
+                # else:
+                #     smb_flag = False
+
+
                 smb_unscaled = output_DDM_year["DDM_smb"].sum()
-                if i is 0 and smb_unscaled > 0:
-                    print("ERROR: The cumulative surface mass balance in the first year of the simulation period is "
-                          "positive. You may want to shift the starting year.")
+
                 # scale the smb to the (updated) glacierized fraction of the catchment
                 smb = smb_unscaled * (new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
+
+                # If the cumulative SMB has been positive in previous years the surplus is added here
+                if surplus > 0:
+                    if smb < 0:
+                        surplus = max(surplus + smb, 0)
+                        smb = 0
+
                 # add the smb from the previous year(s) to the new year
                 smb_cum = smb_cum + smb
+
+                # Check whether glacier extent exceeds the initial state (smb_cum > 0). Shift surplus to next year(s).
                 if smb_cum > 0:
-                    print("ERROR: The cumulative surface mass balance in the simulation period is positive. "
-                          "The glacier rescaling routine cannot model glacier extent exceeding the initial status of "
-                          "the provided glacier profile. In order to exclude this run from parameter optimization "
-                          "routines, a flag is passed, simulated runoff is set to 0.01, and SMB to 9999.")
-                    smb_cum = m
-                    new_distribution = parameter.ele_glac
-                    smb_flag = True
-                else:
-                    smb_flag = False
+                    if warn:
+                        print("WARNING: At some point of the simulation period th cumulative surface mass balance is"
+                          " positive. The glacier rescaling routine cannot model glacier extent exceeding the initial"
+                          " status of the provided glacier profile. The surplus is stored and added in subsequent years"
+                          " with negative mass balances to maintain the long-term average balance.")
+                        warn = False
+                    surplus += max(smb_cum, 0)
+                    smb_cum = 0
+
+                smb_flag = False
+
+
+
+
+
                 # calculate the percentage of melt in comparison to the initial mass
                 smb_percentage = round((-smb_cum / m) * 100)
                 if (smb_percentage < 99) & (smb_percentage >= 0):
@@ -784,7 +819,8 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                 # Create glacier change dataframe for subsequent functions (skip last incomplete year)
                 glacier_change = pd.concat([glacier_change, pd.DataFrame({
                     'time': year, "glacier_area": new_area, "glacier_elev": new_distribution, 'smb_water_year': smb_unscaled,
-                    "smb_scaled_cum": smb_cum}, index=[i])], ignore_index=True)
+                    "smb_scaled_capped_cum": smb_cum, "smb_scaled_capped": smb, "surplus": surplus
+                }, index=[i])], ignore_index=True)
 
             # Scale DDM output to new glacierized fraction
             for col in up_cols:
@@ -1293,7 +1329,10 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                 'runoff_without_glaciers': output_MATILDA['Q_HBV'],
                 'runoff_from_glaciers': output_MATILDA['Q_DDM_updated_scaled'],
                 'total_runoff': output_MATILDA['Q_Total'],
-                'observed_runoff': output_MATILDA['Qobs']}, index=output_MATILDA.index)
+                # 'observed_runoff': output_MATILDA['Qobs']
+                 }, index=output_MATILDA.index)
+            if obs is not None:
+                output_MATILDA_compact['observed_runoff'] = output_MATILDA['Qobs']
         else:
             output_MATILDA_compact = pd.DataFrame(
                 {'avg_temp_catchment': output_MATILDA['HBV_temp'],
@@ -1323,7 +1362,10 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                 'runoff_without_glaciers': output_MATILDA['Q_HBV'],
                 'runoff_from_glaciers': output_MATILDA['Q_DDM_scaled'],
                 'total_runoff': output_MATILDA['Q_Total'],
-                'observed_runoff': output_MATILDA['Qobs']}, index=output_MATILDA.index)
+                # 'observed_runoff': output_MATILDA['Qobs']
+                 }, index=output_MATILDA.index)
+            if obs is not None:
+                output_MATILDA_compact['observed_runoff'] = output_MATILDA['Qobs']
 
     else:
         output_MATILDA_compact = pd.DataFrame(
@@ -1339,9 +1381,12 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
              'total_refreezing': output_MATILDA['HBV_refreezing'],
              'actual_evaporation': output_MATILDA['HBV_AET'],
              'runoff': output_MATILDA['Q_HBV'],
-             'observed_runoff': output_MATILDA['Qobs']}, index=output_MATILDA.index)
+             # 'observed_runoff': output_MATILDA['Qobs']
+             }, index=output_MATILDA.index)
+        if obs is not None:
+                output_MATILDA_compact['observed_runoff'] = output_MATILDA['Qobs']
 
-    # if obs is not None:
+            # if obs is not None:
     #     output_MATILDA.loc[output_MATILDA.isnull().any(axis=1), :] = np.nan
 
 
@@ -1513,6 +1558,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             ax1.fill_between(x_vals, plot_data["runoff_without_glaciers"], plot_data["total_runoff"], color='#CC79A7',
                              alpha=.75, label="")
         ax1.set_ylabel("Runoff [mm]", fontsize=9)
+
         if isinstance(output_MATILDA[2], float):
             anchored_text = AnchoredText('KGE coeff ' + str(round(output_MATILDA[2], 2)), loc=1, frameon=False)
         elif 'observed_runoff' not in plot_data.columns:
@@ -1645,7 +1691,8 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 row=row, col=1)
 
         # add coefficient to plot
-        fig.add_annotation(xref='x domain', yref='y domain', x=0.99, y=0.95, xanchor="right", showarrow=False,
+        if not isinstance(output_MATILDA[2], str):
+            fig.add_annotation(xref='x domain', yref='y domain', x=0.99, y=0.95, xanchor="right", showarrow=False,
                            text='<b>KGE coeff ' + str(round(output_MATILDA[2], 2)) + '</b>',
                            row=row, col=1)
 
