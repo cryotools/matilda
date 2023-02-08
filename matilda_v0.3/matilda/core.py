@@ -775,15 +775,16 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                 # scale the smb to the (updated) glacierized fraction of the catchment
                 smb = smb_unscaled * (new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
 
+                smb_scaled = smb.copy()
+
                 # If the cumulative SMB has been positive in previous years the surplus is added here
                 if surplus > 0:
                     if smb < 0:
-                        surplus = max(surplus + smb, 0)
-                        smb = 0
-
+                        diff = surplus + smb
+                        surplus = max(diff, 0)
+                        smb = min(diff, 0)
                 # add the smb from the previous year(s) to the new year
                 smb_cum = smb_cum + smb
-
                 # Check whether glacier extent exceeds the initial state (smb_cum > 0). Shift surplus to next year(s).
                 if smb_cum > 0:
                     if warn:
@@ -795,10 +796,8 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
                     surplus += max(smb_cum, 0)
                     smb_cum = 0
 
+
                 smb_flag = False
-
-
-
 
 
                 # calculate the percentage of melt in comparison to the initial mass
@@ -818,9 +817,10 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter):
 
                 # Create glacier change dataframe for subsequent functions (skip last incomplete year)
                 glacier_change = pd.concat([glacier_change, pd.DataFrame({
-                    'time': year, "glacier_area": new_area, "glacier_elev": new_distribution, 'smb_water_year': smb_unscaled,
-                    "smb_scaled_capped_cum": smb_cum, "smb_scaled_capped": smb, "surplus": surplus
-                }, index=[i])], ignore_index=True)
+                    'time': year, "glacier_area": new_area, "glacier_elev": new_distribution,
+                    'smb_water_year': smb_unscaled, 'smb_scaled': smb_scaled, "smb_scaled_capped": smb,
+                    "smb_scaled_capped_cum": smb_cum, "surplus": surplus
+                    }, index=[i])], ignore_index=True)
 
             # Scale DDM output to new glacierized fraction
             for col in up_cols:
