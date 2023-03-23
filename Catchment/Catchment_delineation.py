@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pysheds.grid import Grid
 import fiona
-import gdal
+# import gdal
+# import GDAL
 import warnings
 warnings.filterwarnings('ignore')
 
