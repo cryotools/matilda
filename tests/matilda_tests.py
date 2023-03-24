@@ -37,7 +37,7 @@ cmip_path = '/met/cmip6/'
 ## Read files
 
 obs = pd.read_csv(input_path + runoff_obs)
-glacier_profile = pd.read_csv(wd + "/kyzulsuu_glacier_profile.csv")
+glacier_profile = pd.read_csv('/home/phillip/Seafile/EBA-CA/Repositories/matilda_edu/output/glacier_profile.csv')#wd + "/kyzulsuu_glacier_profile.csv")
 
 # Catchment-wide har aggregate
 t2m_agg = pd.read_csv(input_path + t2m_agg_path, index_col='time', parse_dates=['time'])
@@ -45,31 +45,31 @@ tp_agg = pd.read_csv(input_path + tp_agg_path, index_col='time', parse_dates=['t
 har = pd.concat([t2m_agg.har, tp_agg.har], axis=1).reset_index()
 har.columns = ['TIMESTAMP', 'T2', 'RRR']
 
-# CMIP6
-scen = ['1_2_6', '2_4_5', '3_7_0', '5_8_5']
-cmip_corrT_mod = {}
-cmip_corrP_mod = {}
-
-for s in scen:
-    name = 'ssp' + s[:1]
-    cmip_corrT_mod[name] = pd.read_csv(
-        input_path + cmip_path + 't2m_CMIP6_all_models_adjusted2harv2-catchm_42.516-79.0167_1982-01-01-2100-12-31_'
-        + name + '.csv', index_col='time', parse_dates=['time'])
-    cmip_corrP_mod[name] = pd.read_csv(
-        input_path + cmip_path + 'tp_CMIP6_all_models_adjusted2harv2-catchm_42.516-79.0167_1982-01-01-2100-12-31_'
-        + name + '.csv', index_col='time', parse_dates=['time'])
-
-# Create MATILDA input
-matilda_scenarios = {}
-for s in [1, 2, 3, 5]:
-    s = 'ssp' + str(s)
-    matilda_scenarios[s] = {}
-    for m in cmip_corrT_mod[s].columns:
-        model = pd.DataFrame({'T2': cmip_corrT_mod[s][m],
-                              'RRR': cmip_corrP_mod[s][m]})#['1997-01-01':]
-        model = model.reset_index()
-        mod_dict = {m: model.rename(columns={'time': 'TIMESTAMP'})}
-        matilda_scenarios[s].update(mod_dict)
+# # CMIP6
+# scen = ['1_2_6', '2_4_5', '3_7_0', '5_8_5']
+# cmip_corrT_mod = {}
+# cmip_corrP_mod = {}
+#
+# for s in scen:
+#     name = 'ssp' + s[:1]
+#     cmip_corrT_mod[name] = pd.read_csv(
+#         input_path + cmip_path + 't2m_CMIP6_all_models_adjusted2harv2-catchm_42.516-79.0167_1982-01-01-2100-12-31_'
+#         + name + '.csv', index_col='time', parse_dates=['time'])
+#     cmip_corrP_mod[name] = pd.read_csv(
+#         input_path + cmip_path + 'tp_CMIP6_all_models_adjusted2harv2-catchm_42.516-79.0167_1982-01-01-2100-12-31_'
+#         + name + '.csv', index_col='time', parse_dates=['time'])
+#
+# # Create MATILDA input
+# matilda_scenarios = {}
+# for s in [1, 2, 3, 5]:
+#     s = 'ssp' + str(s)
+#     matilda_scenarios[s] = {}
+#     for m in cmip_corrT_mod[s].columns:
+#         model = pd.DataFrame({'T2': cmip_corrT_mod[s][m],
+#                               'RRR': cmip_corrP_mod[s][m]})#['1997-01-01':]
+#         model = model.reset_index()
+#         mod_dict = {m: model.rename(columns={'time': 'TIMESTAMP'})}
+#         matilda_scenarios[s].update(mod_dict)
 
 ## MATILDA
 

@@ -838,7 +838,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                     new_distribution = ((area_melt.values * initial_area.values) * parameter.area_cat) / new_area
                     # multiply relative portions with mean zone elevations to get rough estimate for new mean elevation
                     new_distribution = new_distribution * lookup_table.columns.values  # column headers contain elevations
-                    new_distribution = int(new_distribution.sum())
+                    new_distribution = int(np.nansum(new_distribution))
                 else:
                     new_area = 0
 
