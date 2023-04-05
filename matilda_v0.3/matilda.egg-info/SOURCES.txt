@@ -3,6 +3,7 @@ README.md
 setup.py
 matilda/__init__.py
 matilda/core.py
+matilda/mspot_glacier.py
 matilda.egg-info/PKG-INFO
 matilda.egg-info/SOURCES.txt
 matilda.egg-info/dependency_links.txt

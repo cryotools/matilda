@@ -653,7 +653,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
     data["water_year"] = np.where((data.index.month) >= parameter.hydro_year, data.index.year + 1, data.index.year)
 
     # initial glacier mass from the glacier profile in mm w.e. (relative to the whole catchment)
-    m = sum((glacier_profile["Area"]) * glacier_profile["WE"])
+    m = np.nansum((glacier_profile["Area"]) * glacier_profile["WE"])
 
     # initial area
     initial_area = glacier_profile.groupby("EleZone")["Area"].sum()

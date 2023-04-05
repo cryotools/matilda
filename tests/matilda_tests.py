@@ -1,15 +1,10 @@
 # -*- coding: UTF-8 -*-
 ## import
-import random
-import numpy as np
 import pandas as pd
 from pathlib import Path
 import sys
-from bias_correction import BiasCorrection
 import socket
 import matplotlib.pyplot as plt
-import random
-from scipy import stats
 
 host = socket.gethostname()
 if 'node' in host:
@@ -75,7 +70,7 @@ har.columns = ['TIMESTAMP', 'T2', 'RRR']
 
 matilda_settings = {"set_up_start": '1997-01-01', "set_up_end": '1999-12-31',
                     "sim_start": '2000-01-01', "sim_end": '2020-12-31', "freq": "M", "glacier_profile": glacier_profile,
-                    "area_cat": 295.763, "lat": 42.33, "warn": False, "plot_type": "all", "plots": True,
+                    "area_cat": 295.763, "lat": 42.33, "warn": True, "plot_type": "all", "plots": True,
                     "elev_rescaling": True,
                     "ele_dat": 3256, "ele_cat": 3295, "area_glac": 32.51, "ele_glac": 4068, "pfilter": 0,
 
