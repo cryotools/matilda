@@ -89,6 +89,6 @@ output_MATILDA = matilda_simulation(har, obs, **matilda_settings, parameter_set=
 #       + str(round(output_MATILDA[5].smb_water_year.std() / 1000, 2)) + ') m w.e.')
 # print(output_MATILDA[5])
 
-# output_MATILDA[7].show()
+output_MATILDA[7].show()
 # output_MATILDA[9].show()
 
