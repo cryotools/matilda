@@ -25,7 +25,7 @@ It requires the following Python3 libraries:
 
 The MATILDA package and dependencies can be installed to your local machine by using pip or a comparable package manager. You can either install the package by using the link to this repository:
 ```
-pip install -e 'git+https://github.com/cryotools/matilda.git/#egg=matilda&subdirectory=matilda_v0.3'
+pip install -e "git+https://github.com/cryotools/matilda.git/#egg=matilda&subdirectory=matilda_v0.3"
 ```
 ...or clone this repository to you local machine, navigate to the matilda_v0.2 directory and use:
 ```
