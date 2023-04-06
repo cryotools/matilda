@@ -73,7 +73,6 @@ matilda_settings = {"set_up_start": '1997-01-01', "set_up_end": '1999-12-31',
                     "area_cat": 295.763, "lat": 42.33, "warn": True, "plot_type": "all", "plots": True,
                     "elev_rescaling": True,
                     "ele_dat": 3256, "ele_cat": 3295, "area_glac": 32.51, "ele_glac": 4068, "pfilter": 0,
-
                     'drop_surplus': False}
 
 # har_lrtemp007-005_PCORR08-12_lhs_multiobj_mb160_50000:
@@ -91,4 +90,3 @@ output_MATILDA = matilda_simulation(har, obs, **matilda_settings, parameter_set=
 
 output_MATILDA[7].show()
 # output_MATILDA[9].show()
-

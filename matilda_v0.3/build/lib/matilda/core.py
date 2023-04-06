@@ -169,7 +169,7 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
             print(
                 "Error: The season of interest (soi) needs to be specified as 2-element list: [first_calendar_month, last_calendar_month]")
             sys.exit()
-        elif len(soi) is not 2:
+        elif len(soi) != 2:
             print(
                 "Error: The season of interest (soi) needs to be specified as 2-element list: [first_calendar_month, last_calendar_month]")
             sys.exit()
@@ -510,7 +510,7 @@ def create_lookup_table(glacier_profile, parameter):
     ai = glacier_profile["Area"]  # ai is the glacier area of each elevation zone, starts with initial values
 
     lookup_table = pd.DataFrame()
-    lookup_table = lookup_table.append(initial_area, ignore_index=True)
+    lookup_table = pd.concat([lookup_table, initial_area.to_frame().T], ignore_index=True)
 
     # Pre-simulation
     # 1. calculate total glacier mass in mm water equivalent: M = sum(ai * hi)
@@ -556,7 +556,7 @@ def create_lookup_table(glacier_profile, parameter):
             pd.Series(np.where(hi_k < 0, hi_k, 0)) * ai)  # Calculate leftover (i.e. the 'negative' glacier volume)
 
         hi_k = pd.Series(np.where(hi_k < 0, np.nan,
-                                  hi_k))  # Set those zones that have a negative weq to NaN to make sure they will be excluded from now on
+                                  hi_k))  # Set those zones that have a negative we to NaN to make sure they will be excluded from now on
 
         # 6. width scaling
         ai_scaled = ai * np.sqrt((hi_k / hi_initial))
@@ -564,7 +564,7 @@ def create_lookup_table(glacier_profile, parameter):
         # 7. create lookup table
         # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
 
-        lookup_table = lookup_table.append(ai_scaled, ignore_index=True)
+        lookup_table = pd.concat([lookup_table, ai_scaled.to_frame().T], ignore_index=True)
 
         if sum(pd.Series(np.where(np.isnan(ai_scaled), 0, ai)) * glacier_profile["delta_h"]) == 0:
             ai_scaled = np.where(ai_scaled == 1, 1, 0)
@@ -733,7 +733,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
             # Use updated glacier area of the previous year
             parameter_updated.area_glac = new_area
             # Use updated glacier elevation of the previous year
-            if i is not 0:
+            if i != 0:
                 parameter_updated.ele_glac = new_distribution
 
             # Calculate the updated mean elevation of the non-glacierized catchment area
@@ -768,7 +768,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                 # if True: model runs with positive MB_cum at any time are 'dropped' (runoff = 0.01, SMB 9999)
                 if drop_surplus:
 
-                    if i is 0 and smb_unscaled > 0:
+                    if i == 0 and smb_unscaled > 0:
                         print('**********\n'
                             "ERROR:\n"
                             "The cumulative surface mass balance in the first year of the simulation period is \n"
@@ -1224,7 +1224,8 @@ def create_statistics(output_MATILDA):
     sum = pd.DataFrame(output_MATILDA.sum())
     sum.columns = ["sum"]
     sum = sum.transpose()
-    stats = stats.append(sum)
+    # stats = stats.append(sum)
+    stats = pd.concat([stats, sum])
     stats = stats.round(3)
     return stats
 
