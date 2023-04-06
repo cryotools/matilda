@@ -27,7 +27,7 @@ The MATILDA package and dependencies can be installed to your local machine by u
 ```
 pip install git+https://github.com/cryotools/matilda.git
 ```
-...or clone this repository to you local machine, navigate to the matilda_v0.3 directory and use:
+...or clone this repository to you local machine, navigate to top directory and use:
 ```
 pip install .
 ```
