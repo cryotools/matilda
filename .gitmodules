@@ -1,6 +1,0 @@
-[submodule "pypdd"]
-	path = pypdd
-	url = https://github.com/juseg/pypdd
-[submodule "LHMP"]
-	path = LHMP
-	url = https://github.com/hydrogo/LHMP.git

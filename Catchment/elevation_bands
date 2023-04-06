@@ -1,3 +1,0 @@
-#!/bin/bash
-
-gdal_contour -a elev $1 $2 -i $3
