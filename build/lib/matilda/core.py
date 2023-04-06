@@ -943,8 +943,10 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
     # get the new glacier area for each year      --> I think this section is redundant. glacier_area does not cover the set_up period!
     if glacier_area is not None:
-        glacier_area = glacier_area.iloc[1:, :]
+
+        glacier_area = glacier_area.iloc[1:, :].copy()
         glacier_area["time"] = glacier_area["time"].astype(str).astype(float).astype(int)
+
         SNOW2 = pd.DataFrame(SNOW_cal)
         SNOW2["area"] = 0
         for year in range(len(glacier_area)):
@@ -1057,7 +1059,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
     # get the new glacier area for each year
     if glacier_area is not None:
-        glacier_area = glacier_area.iloc[1:, :]
+        glacier_area = glacier_area.iloc[1:, :].copy()
         glacier_area["time"] = glacier_area["time"].astype(str).astype(float).astype(int)
         SNOW2 = pd.DataFrame(SNOW)
         SNOW2["area"] = 0
