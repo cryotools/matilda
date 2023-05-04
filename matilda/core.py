@@ -610,7 +610,8 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
     # dataframe with the smb change per hydrological year in mm w.e.
     glacier_change = pd.DataFrame({"smb": output_DDM.groupby("water_year")["DDM_smb"].sum()}).reset_index()
 
-    glacier_change_area = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac]})
+    initial_year = output_DDM['water_year'].iloc[0]
+    glacier_change_area = pd.DataFrame({"time": initial_year, "glacier_area": [parameter.area_glac]})
 
     # setting initial values for the loop
     new_area = parameter.area_glac
@@ -640,6 +641,10 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
             output_DDM[col + "_updated_scaled"] = np.where(output_DDM["water_year"] == year,
                                                            output_DDM[col] * (new_area / parameter.area_cat),
                                                            output_DDM[col + "_updated_scaled"])
+
+        glacier_change_area['time'] = pd.to_datetime(glacier_change_area['time'], format='%Y')
+        glacier_change_area.set_index('time', inplace=True)
+        glacier_change_area['time'] = glacier_change_area['time'].dt.strftime('%Y')
 
     return output_DDM, glacier_change_area
 
@@ -677,10 +682,6 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
     if ele_non_glac is not None:
         print(">> Prior non-glacierized elevation: " + str(round(parameter.ele_non_glac)) + 'm a.s.l.')
         print(">> Recalculated non-glacierized elevation: " + str(round(ele_non_glac)) + 'm a.s.l.')
-
-    # create initial df of glacier change
-    glacier_change = pd.DataFrame({"time": "initial", "glacier_area": [parameter.area_glac],
-                                   "glacier_elev": init_elev})
 
     # Setup initial variables for main loop
     new_area = parameter.area_glac
@@ -721,6 +722,10 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
         input_df_glacier = input_df_glacier[startdate:parameter.sim_end]
         input_df_catchment_spinup = input_df_catchment[parameter.set_up_start:startdate]
         input_df_catchment = input_df_catchment[startdate:parameter.sim_end]
+
+    # create initial df of glacier change
+    glacier_change = pd.DataFrame({"time": startyear, "glacier_area": [parameter.area_glac],
+                                   "glacier_elev": init_elev})
 
     # Loop through simulation period annually updating catchment fractions and scaling elevations
     if parameter.ele_dat is not None:
@@ -842,7 +847,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                 else:
                     new_area = 0
 
-                # Create glacier change dataframe for subsequent functions (skip last incomplete year)
+                # Append to glacier change dataframe for subsequent functions (skip last incomplete year)
                 if drop_surplus:
                     glacier_change = pd.concat([glacier_change, pd.DataFrame({
                         'time': year, "glacier_area": new_area, "glacier_elev": new_distribution,
@@ -868,15 +873,18 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                 output_DDM['smb_flag'] = 1
                 output_DDM['DDM_smb'] = 9999  # To exclude run from parameter optimization of glacial parameters
 
+        glacier_change['time'] = pd.to_datetime(glacier_change['time'], format='%Y')
+        glacier_change.set_index('time', inplace=True, drop=False)
+        glacier_change['time'] = glacier_change['time'].dt.strftime('%Y')
+
         output_DDM = output_DDM[parameter.sim_start:parameter.sim_end]
-        # Add spinup original spin-up period back to HBV input
+        # Add original spin-up period back to HBV input
         input_df_catchment = pd.concat([input_df_catchment_spinup, input_df_catchment])
 
         return output_DDM, glacier_change, input_df_catchment
 
     else:
-        print("ERROR: You need to provide ele_dat in order to apply the glacier-rescaling routine.")
-        return
+        raise ValueError("You need to provide ele_dat in order to apply the glacier-rescaling routine.")
 
 
 def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
@@ -945,8 +953,6 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     if glacier_area is not None:
 
         glacier_area = glacier_area.iloc[1:, :].copy()
-        glacier_area["time"] = glacier_area["time"].astype(str).astype(float).astype(int)
-
         SNOW2 = pd.DataFrame(SNOW_cal)
         SNOW2["area"] = 0
         for year in range(len(glacier_area)):
@@ -1060,7 +1066,6 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     # get the new glacier area for each year
     if glacier_area is not None:
         glacier_area = glacier_area.iloc[1:, :].copy()
-        glacier_area["time"] = glacier_area["time"].astype(str).astype(float).astype(int)
         SNOW2 = pd.DataFrame(SNOW)
         SNOW2["area"] = 0
         for year in range(len(glacier_area)):
