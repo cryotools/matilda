@@ -643,8 +643,10 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
                                                            output_DDM[col + "_updated_scaled"])
 
         glacier_change_area['time'] = pd.to_datetime(glacier_change_area['time'], format='%Y')
-        glacier_change_area.set_index('time', inplace=True)
+        glacier_change_area.set_index('time', inplace=True, drop=False)
         glacier_change_area['time'] = glacier_change_area['time'].dt.strftime('%Y')
+        glacier_change = glacier_change.rename_axis('TIMESTAMP')
+
 
     return output_DDM, glacier_change_area
 
@@ -876,6 +878,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
         glacier_change['time'] = pd.to_datetime(glacier_change['time'], format='%Y')
         glacier_change.set_index('time', inplace=True, drop=False)
         glacier_change['time'] = glacier_change['time'].dt.strftime('%Y')
+        glacier_change = glacier_change.rename_axis('TIMESTAMP')
 
         output_DDM = output_DDM[parameter.sim_start:parameter.sim_end]
         # Add original spin-up period back to HBV input
