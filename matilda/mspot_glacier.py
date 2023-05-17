@@ -156,9 +156,12 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
             # SPOTPY expects to get one or multiple values back,
             # that define the performance of the model run
             if target_mb is not None:
-                obj2 = abs(evaluation[1] - simulation[1])
-                simulation = simulation[0]
-                evaluation = evaluation[0]
+                sim_runoff, sim_smb = simulation
+                eval_runoff, eval_smb = evaluation
+
+                obj2 = abs(eval_smb - sim_smb)
+                simulation = sim_runoff
+                evaluation = eval_runoff
 
             # Crop both timeseries to same periods without NAs
             sim_new = pd.DataFrame()
