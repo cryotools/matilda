@@ -1240,6 +1240,8 @@ def create_statistics(output_MATILDA):
     return stats
 
 
+
+
 def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, elev_rescaling=False, drop_surplus=False):
     """The main MATILDA simulation. It applies a linear scaling of the data (if elevations
     are provided) and executes the DDM and HBV modules subsequently."""
@@ -1374,8 +1376,9 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                  'total_melt': output_MATILDA['Melt_total'],
                  'runoff_without_glaciers': output_MATILDA['Q_HBV'],
                  'runoff_from_glaciers': output_MATILDA['Q_DDM_updated_scaled'],
+                 'runoff_ratio': np.where(output_MATILDA['Prec_total'] == 0, 0,
+                                          output_MATILDA['Q_Total'] / output_MATILDA['Prec_total']),
                  'total_runoff': output_MATILDA['Q_Total'],
-                 # 'observed_runoff': output_MATILDA['Qobs']
                  }, index=output_MATILDA.index)
             if obs is not None:
                 output_MATILDA_compact['observed_runoff'] = output_MATILDA['Qobs']
@@ -1408,8 +1411,9 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                  'total_melt': output_MATILDA['Melt_total'],
                  'runoff_without_glaciers': output_MATILDA['Q_HBV'],
                  'runoff_from_glaciers': output_MATILDA['Q_DDM_scaled'],
+                 'runoff_ratio': np.where(output_MATILDA['Prec_total'] == 0, 0,
+                                          output_MATILDA['Q_Total'] / output_MATILDA['Prec_total']),
                  'total_runoff': output_MATILDA['Q_Total'],
-                 # 'observed_runoff': output_MATILDA['Qobs']
                  }, index=output_MATILDA.index)
             if obs is not None:
                 output_MATILDA_compact['observed_runoff'] = output_MATILDA['Qobs']
@@ -1427,8 +1431,9 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
              'snow_melt': output_MATILDA['HBV_melt_off_glacier'],
              'total_refreezing': output_MATILDA['HBV_refreezing'],
              'actual_evaporation': output_MATILDA['HBV_AET'],
+             'runoff_ratio': np.where(output_MATILDA['HBV_prec'] == 0, 0,
+                                      output_MATILDA['Q_HBV'] / output_MATILDA['HBV_prec']),
              'runoff': output_MATILDA['Q_HBV'],
-             # 'observed_runoff': output_MATILDA['Qobs']
              }, index=output_MATILDA.index)
         if obs is not None:
             output_MATILDA_compact['observed_runoff'] = output_MATILDA['Qobs']

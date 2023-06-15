@@ -42,6 +42,14 @@ def yesno(question):
     return False
 
 
+def dict2bounds(p_dict, drop=[]):
+    for i in drop:
+        del p_dict[i]
+    p = {**dict(zip([i + '_lo' for i in p_dict.keys()], p_dict.values())),
+         **dict(zip([i + '_up' for i in p_dict.keys()], p_dict.values()))}
+    return p
+
+
 def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
                area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi = None, glacier_profile=None,
                elev_rescaling=True, target_mb = None,
@@ -68,6 +76,7 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
             RFS_lo=0.05, RFS_up=0.25,
 
             interf=4, freqst=2):
+
 
     class spot_setup:
         # defining all parameters and the distribution
@@ -156,9 +165,12 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
             # SPOTPY expects to get one or multiple values back,
             # that define the performance of the model run
             if target_mb is not None:
-                obj2 = abs(evaluation[1] - simulation[1])
-                simulation = simulation[0]
-                evaluation = evaluation[0]
+                sim_runoff, sim_smb = simulation
+                eval_runoff, eval_smb = evaluation
+
+                obj2 = abs(eval_smb - sim_smb)
+                simulation = sim_runoff
+                evaluation = eval_runoff
 
             # Crop both timeseries to same periods without NAs
             sim_new = pd.DataFrame()
@@ -539,13 +551,6 @@ def get_par_bounds(path, threshold=10, percentage=True, drop=[]):
 
     return par_bounds
 
-
-def dict2bounds(p_dict, drop=[]):
-    for i in drop:
-        del p_dict[i]
-    p = {**dict(zip([i + '_lo' for i in p_dict.keys()], p_dict.values())),
-         **dict(zip([i + '_up' for i in p_dict.keys()], p_dict.values()))}
-    return p
 
 
 def scaled_pdd(data, elev, lr):
