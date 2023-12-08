@@ -348,7 +348,7 @@ def input_scaling(df_preproc, parameter):
     return input_df_glacier, input_df_catchment
 
 
-def calculate_PDD(ds, prints=True):
+def calculate_PDD(ds, parameter, prints=True):
     """Calculation of positive degree days in the provided timeseries."""
 
     if prints:
@@ -383,7 +383,7 @@ def calculate_PDD(ds, prints=True):
                        xr.DataArray(snow)])
 
     # calculate the positive degree days
-    pdd_ds["pdd"] = xr.where(pdd_ds["temp_mean"] > 0, pdd_ds["temp_mean"], 0)
+    pdd_ds["pdd"] = xr.where(pdd_ds["temp_mean"] > parameter.TT_snow, pdd_ds["temp_mean"], 0)
 
     return pdd_ds
 
@@ -756,7 +756,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
             input_df_glacier[mask], input_df_catchment[mask] = input_scaling(data_update[mask], parameter_updated)
 
             # Calculate positive degree days and glacier ablation/accumulation
-            degreedays_ds = calculate_PDD(input_df_glacier[mask], prints=False)
+            degreedays_ds = calculate_PDD(input_df_glacier[mask], parameter, prints=False)
             output_DDM_year = calculate_glaciermelt(degreedays_ds, parameter_updated, prints=False)
             output_DDM_year['water_year'] = data_update.water_year[mask]
 
@@ -1285,7 +1285,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
 
         # Execute DDM module
         if parameter.area_glac > 0:
-            degreedays_ds = calculate_PDD(input_df_glacier)
+            degreedays_ds = calculate_PDD(input_df_glacier, parameter)
             output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
         # Execute glacier re-scaling module
