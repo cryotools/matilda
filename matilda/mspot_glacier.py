@@ -140,26 +140,26 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
             self.obs = obs
 
         def simulation(self, x, param_names=param_names, fix_param=fix_param, fix_val=fix_val):
-            # with HiddenPrints():
+            with HiddenPrints():
                 # Setup all parameters for sampling
-            args = {}
-            for par_name in param_names:
-                args[par_name] = x[par_name]
+                args = {}
+                for par_name in param_names:
+                    args[par_name] = x[par_name]
 
-            # Fix parameters on desired values if defined (otherwise use default values)
-            if fix_param is not None:
-                for p in fix_param:
-                    if fix_val is not None:
-                        if p in fix_val:
-                            args[p] = fix_val[p]
+                # Fix parameters on desired values if defined (otherwise use default values)
+                if fix_param is not None:
+                    for p in fix_param:
+                        if fix_val is not None:
+                            if p in fix_val:
+                                args[p] = fix_val[p]
 
-            sim = matilda_simulation(self.Input, obs=self.obs,
-                                     output=None, set_up_start=set_up_start, set_up_end=set_up_end,
-                                     sim_start=sim_start, sim_end=sim_end, freq=freq, lat=lat, soi=soi,
-                                     area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
-                                     ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
-                                     glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
-                                     **args)
+                sim = matilda_simulation(self.Input, obs=self.obs,
+                                         output=None, set_up_start=set_up_start, set_up_end=set_up_end,
+                                         sim_start=sim_start, sim_end=sim_end, freq=freq, lat=lat, soi=soi,
+                                         area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
+                                         ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
+                                         glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
+                                         **args)
             if target_mb is None:
                 return sim[0].total_runoff
             else:
