@@ -625,7 +625,7 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
             area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi=None, glacier_profile=None,
             interf=4, freqst=2, parallel=False, cores=2, save_sim=True, elev_rescaling=True,
             glacier_only=False, obs_type="annual", target_mb=None,
-            algorithm='sceua', obj_dir="maximize", fix_param=None, fix_val=None, **kwargs):
+            algorithm='sceua', obj_dir="maximize", fix_param=None, fix_val=None, con_limit=1.0, **kwargs):
 
     cwd = os.getcwd()
     if output is not None:
@@ -667,7 +667,7 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
         elif algorithm == 'sceua':
             sampler.sample(rep, ngs=cores)
         elif algorithm == 'demcz':
-            sampler.sample(rep, nChains=cores)
+            sampler.sample(rep, nChains=cores, convergenceCriteria=con_limit)
         else:
             print('ERROR: The selected algorithm is ineligible for parallel computing.'
                   'Either select a different algorithm (mc, lhs, fast, rope, sceua or demcz) or set "parallel = False".')

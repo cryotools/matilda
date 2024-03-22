@@ -1,0 +1,4 @@
+cd /home/susterph/repos/matilda/
+(git switch <branch_name>)
+git pull
+/home/susterph/env/bin/python -m pip install .
