@@ -348,7 +348,7 @@ def input_scaling(df_preproc, parameter):
     return input_df_glacier, input_df_catchment
 
 
-def calculate_PDD(ds, prints=True):
+def calculate_PDD(ds, parameter, prints=True):
     """Calculation of positive degree days in the provided timeseries."""
 
     if prints:
@@ -756,7 +756,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
             input_df_glacier[mask], input_df_catchment[mask] = input_scaling(data_update[mask], parameter_updated)
 
             # Calculate positive degree days and glacier ablation/accumulation
-            degreedays_ds = calculate_PDD(input_df_glacier[mask], prints=False)
+            degreedays_ds = calculate_PDD(input_df_glacier[mask], parameter, prints=False)
             output_DDM_year = calculate_glaciermelt(degreedays_ds, parameter_updated, prints=False)
             output_DDM_year['water_year'] = data_update.water_year[mask]
 
@@ -1004,7 +1004,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SNOWPACK_cal[t] = SNOWPACK_cal[t - 1] + SNOW_cal[t]
         # how snowpack melts
         # day-degree simple melting
-        melt = parameter.CFMAX_snow * (Temp_cal[t] - parameter.TT_snow)
+        melt = parameter.CFMAX_snow * Temp_cal[t]
         # control melting
         if melt < 0: melt = 0
         melt = min(melt, SNOWPACK_cal[t])
@@ -1125,7 +1125,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SNOWPACK[t] = SNOWPACK[t - 1] + SNOW[t]
         # how snowpack melts
         # temperature index melting (PDD)
-        melt = parameter.CFMAX_snow * (Temp[t] - parameter.TT_snow)
+        melt = parameter.CFMAX_snow * Temp[t]
         # control melting
         if melt < 0: melt = 0
         melt = min(melt, SNOWPACK[t])
@@ -1285,7 +1285,7 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
 
         # Execute DDM module
         if parameter.area_glac > 0:
-            degreedays_ds = calculate_PDD(input_df_glacier)
+            degreedays_ds = calculate_PDD(input_df_glacier, parameter)
             output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
         # Execute glacier re-scaling module

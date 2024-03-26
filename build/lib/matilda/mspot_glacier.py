@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import spotpy  # Load the SPOT package into your working storage
 from datetime import date, datetime
 import HydroErr as he
+from scipy.stats import gamma
 from spotpy.parameter import Uniform
 from spotpy.objectivefunctions import mae, rmse
 from spotpy import analyser  # Load the Plotting extension
@@ -50,6 +51,49 @@ def dict2bounds(p_dict, drop=[]):
     return p
 
 
+def loglike_kge(qsim, qobs):
+    """
+    Calculate a pseudo log-likelihood function based on the Kling-Gupta Efficiency (KGE) and a gamma distribution.
+
+    Parameters:
+    -----------
+    Qsim : array_like
+        Array of simulated flow values.
+    Qobs : array_like
+        Array of observed flow values.
+
+    Returns:
+    --------
+    float
+        The calculated value of the log-likelihood function.
+
+    Notes:
+    ------
+    The log-likelihood function is calculated based on the Kling-Gupta Efficiency (KGE) between simulated
+    and observed flow values following Liu et. al. (2022). The KGE is first computed using the hydroeval library.
+    Then, the Exceedance Deviation (ED) is derived from the KGE. Finally, the log-likelihood function is
+    computed using the gamma probability density function (PDF) with shape parameter (a) set to 0.5 and scale
+    parameter (scale) set to 1. The function returns the calculated log-likelihood value.
+
+    References:
+    -----------
+    - Liu, Y., Fernández-Ortega, J., Mudarra, M., and Hartmann, A. (2022):  "Pitfalls and a feasible solution for
+      using KGE as an informal likelihood function in MCMC methods: DREAM(ZS) as an example". HESS, 26(20)
+    - Kling, H., Gupta, H., & Yilmaz, K. K. (2012). "Model selection criteria for rainfall-runoff
+      models: Representation of variability in Bayesian Model Averaging." Water Resources Research, 48(6), W06306.
+    - hydroeval: https://github.com/ThibHlln/hydroeval
+    - scipy.stats.gamma: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html
+    """
+    # Calculate KGE
+    n = len(qobs)
+    KGE = he.kge_2012(qsim, qobs, remove_zero=True)
+    ED = 1 - KGE
+
+    # Calculate log-likelihood function
+    gammapdf = gamma.pdf(ED, a=0.5, scale=1)
+    log_L = 0.5 * n * np.log(gammapdf)
+
+    return log_L
 
 
 
@@ -59,7 +103,7 @@ def dict2bounds(p_dict, drop=[]):
 
 def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
                area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi = None, glacier_profile=None,
-               elev_rescaling=True, target_mb = None, fix_param=None, fix_val=None,
+               elev_rescaling=True, target_mb = None, fix_param=None, fix_val=None, obj_func=None,
             lr_temp_lo=-0.01, lr_temp_up=-0.003,
             lr_prec_lo=0, lr_prec_up=0.002,
             BETA_lo=1, BETA_up=6,
@@ -134,32 +178,32 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
 
         par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
 
-        def __init__(self, df, obs, obj_func=None):
+        def __init__(self, df, obs, obj_func=obj_func):
             self.obj_func = obj_func
             self.Input = df
             self.obs = obs
 
         def simulation(self, x, param_names=param_names, fix_param=fix_param, fix_val=fix_val):
-            # with HiddenPrints():
+            with HiddenPrints():
                 # Setup all parameters for sampling
-            args = {}
-            for par_name in param_names:
-                args[par_name] = x[par_name]
+                args = {}
+                for par_name in param_names:
+                    args[par_name] = x[par_name]
 
-            # Fix parameters on desired values if defined (otherwise use default values)
-            if fix_param is not None:
-                for p in fix_param:
-                    if fix_val is not None:
-                        if p in fix_val:
-                            args[p] = fix_val[p]
+                # Fix parameters on desired values if defined (otherwise use default values)
+                if fix_param is not None:
+                    for p in fix_param:
+                        if fix_val is not None:
+                            if p in fix_val:
+                                args[p] = fix_val[p]
 
-            sim = matilda_simulation(self.Input, obs=self.obs,
-                                     output=None, set_up_start=set_up_start, set_up_end=set_up_end,
-                                     sim_start=sim_start, sim_end=sim_end, freq=freq, lat=lat, soi=soi,
-                                     area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
-                                     ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
-                                     glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
-                                     **args)
+                sim = matilda_simulation(self.Input, obs=self.obs,
+                                         output=None, set_up_start=set_up_start, set_up_end=set_up_end,
+                                         sim_start=sim_start, sim_end=sim_end, freq=freq, lat=lat, soi=soi,
+                                         area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
+                                         ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
+                                         glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
+                                         **args)
             if target_mb is None:
                 return sim[0].total_runoff
             else:
@@ -396,6 +440,7 @@ def annual(year, data):
 
 def spot_setup_glacier(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
                area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi=None, glacier_profile=None, obs_type="annual",
+               obj_func=None,
             lr_temp_lo=-0.01, lr_temp_up=-0.003,
             lr_prec_lo=0, lr_prec_up=0.002,
             PCORR_lo=0.5, PCORR_up=2,
@@ -430,7 +475,7 @@ def spot_setup_glacier(set_up_start=None, set_up_end=None, sim_start=None, sim_e
 
         par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
 
-        def __init__(self, df, obs, obj_func=None):
+        def __init__(self, df, obs, obj_func=obj_func):
             self.obj_func = obj_func
             self.Input = df
             self.obs = obs
@@ -625,7 +670,7 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
             area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi=None, glacier_profile=None,
             interf=4, freqst=2, parallel=False, cores=2, save_sim=True, elev_rescaling=True,
             glacier_only=False, obs_type="annual", target_mb=None,
-            algorithm='sceua', obj_dir="maximize", fix_param=None, fix_val=None, **kwargs):
+            algorithm='sceua', obj_dir="maximize", fix_param=None, fix_val=None, con_limit=1.0, **kwargs):
 
     cwd = os.getcwd()
     if output is not None:
@@ -667,7 +712,7 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
         elif algorithm == 'sceua':
             sampler.sample(rep, ngs=cores)
         elif algorithm == 'demcz':
-            sampler.sample(rep, nChains=cores)
+            sampler.sample(rep, nChains=cores, convergenceCriteria=con_limit)
         else:
             print('ERROR: The selected algorithm is ineligible for parallel computing.'
                   'Either select a different algorithm (mc, lhs, fast, rope, sceua or demcz) or set "parallel = False".')
