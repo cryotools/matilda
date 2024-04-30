@@ -1142,8 +1142,10 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SNOWPACK[t] = SNOWPACK[t] + refreezing
         # meltwater after refreezing
         SNOWMELT[t] = SNOWMELT[t] - refreezing
+        
         # Total melt off-glacier
-        off_glac[t] = SNOWMELT[t]
+        off_glac[t] = melt - refreezing
+        
         # recharge to soil
         tosoil = SNOWMELT[t] - (parameter.CWH * SNOWPACK[t])
         # control recharge to soil
