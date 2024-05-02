@@ -177,8 +177,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     # Check model parameters
     if 0 > pfilter or lr_temp > 0.5:
         print("WARNING: Parameter pfilter exceeds the recommended threshold [0, 0.5].")
-    if -0.01 > lr_temp or lr_temp > -0.003:
-        print("WARNING: Parameter lr_temp exceeds boundaries [-0.01, -0.003].")
+    if -0.0065 > lr_temp or lr_temp > -0.0055:
+        print("WARNING: Parameter lr_temp exceeds boundaries [-0.0065, -0.0055].")
     if 0 > lr_prec or lr_prec > 0.002:
         print("WARNING: Parameter lr_prec exceeds boundaries [0, 0.002].")
     if 1 > BETA or BETA > 6:

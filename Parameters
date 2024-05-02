@@ -1,5 +1,5 @@
 lr_temp    - Lapse rate of air temperature (ascending) (K/m)
-           [-0.01, -0.003] (usually -0.006)
+           [-0.0065, -0.0055] (usually -0.006)
 lr_prec    - Lapse rate of precipitation (ascending) (mm/m)
            [0, 0.002]
 BETA       - Parameter that determines the relative contribution to runoff from rain or snowmelt

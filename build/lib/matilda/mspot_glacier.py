@@ -103,7 +103,7 @@ def loglike_kge(qsim, qobs):
 
 def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
                area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi = None, glacier_profile=None,
-               elev_rescaling=True, target_mb = None, fix_param=None, fix_val=None, obj_func=None,
+               elev_rescaling=True, target_mb=None, target_swe=None, swe_scaling=None, fix_param=None, fix_val=None, obj_func=None,
             lr_temp_lo=-0.01, lr_temp_up=-0.003,
             lr_prec_lo=0, lr_prec_up=0.002,
             BETA_lo=1, BETA_up=6,
@@ -178,12 +178,13 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
 
         par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
 
-        def __init__(self, df, obs, obj_func=obj_func):
+        def __init__(self, df, obs, swe, obj_func=obj_func):
             self.obj_func = obj_func
             self.Input = df
             self.obs = obs
+            self.swe = swe
 
-        def simulation(self, x, param_names=param_names, fix_param=fix_param, fix_val=fix_val):
+        def simulation(self, x, param_names=param_names, fix_param=fix_param, fix_val=fix_val, swe_scaling=swe_scaling):
             with HiddenPrints():
                 # Setup all parameters for sampling
                 args = {}
@@ -204,10 +205,20 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
                                          ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
                                          glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
                                          **args)
+                swe_sim = sim[0].snowpack_off_glaciers['2000-01-01':'2017-09-30'].to_frame(name="SWE_sim")
+                if swe_scaling is not None:
+                    swe_sim = swe_sim * swe_scaling
             if target_mb is None:
-                return sim[0].total_runoff
+                if target_swe is None:
+                    return sim[0].total_runoff
+                else:
+                    return [sim[0].total_runoff, swe_sim.SWE_sim]
             else:
-                return [sim[0].total_runoff, sim[5].smb_water_year.mean()]
+                if target_swe is None:
+                    return [sim[0].total_runoff, sim[5].smb_water_year.mean()]
+                else:
+                    return [sim[0].total_runoff, sim[5].smb_water_year.mean(), swe_sim.SWE_sim]
+
 
         def evaluation(self):
             obs_preproc = self.obs.copy()
@@ -229,21 +240,46 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
             obs_preproc = obs_preproc.reindex(idx)
             obs_preproc = obs_preproc.fillna(np.NaN)
 
+            if target_swe is not None:
+                swe_obs = self.swe
+                if "Date" in self.swe.columns:
+                    swe_obs['Date'] = pd.to_datetime(swe_obs['Date'])
+                    swe_obs.set_index('Date', inplace=True)
+                swe_obs = swe_obs * 1000
+                swe_obs = swe_obs['2000-01-01':'2017-09-30']
+
             if target_mb is None:
-                return obs_preproc.Qobs
+                if target_swe is None:
+                    return obs_preproc.Qobs
+                else:
+                    return [obs_preproc.Qobs, swe_obs.SWE_Mean]
             else:
-                return [obs_preproc.Qobs, target_mb]
+                if target_swe is None:
+                    return [obs_preproc.Qobs, target_mb]
+                else:
+                    return [obs_preproc.Qobs, target_mb, swe_obs.SWE_Mean]
+
 
         def objectivefunction(self, simulation, evaluation, params=None):
             # SPOTPY expects to get one or multiple values back,
             # that define the performance of the model run
             if target_mb is not None:
-                sim_runoff, sim_smb = simulation
-                eval_runoff, eval_smb = evaluation
+                if target_swe is not None:
+                    sim_runoff, sim_smb, sim_swe = simulation
+                    eval_runoff, eval_smb, eval_swe = evaluation
+                    obj3 = he.kge_2012(sim_swe, eval_swe, remove_zero=False)
+                else:
+                    sim_runoff, sim_smb = simulation
+                    eval_runoff, eval_smb = evaluation
 
                 obj2 = abs(eval_smb - sim_smb)
                 simulation = sim_runoff
                 evaluation = eval_runoff
+
+            elif target_swe is not None:
+                sim_runoff, sim_swe = simulation
+                eval_runoff, eval_swe = evaluation
+                obj3 = he.kge_2012(sim_swe, eval_swe, remove_zero=False)
 
             # Crop both timeseries to same periods without NAs
             sim_new = pd.DataFrame()
@@ -263,9 +299,15 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
                 obj1 = self.obj_func(evaluation_clean, simulation_clean)
 
             if target_mb is None:
-                return obj1
+                if target_swe is None:
+                    return obj1
+                else:
+                    return [obj1, obj3]
             else:
-                return [obj1, obj2]
+                if target_swe is None:
+                    return [obj1, obj2]
+                else:
+                    return [obj1, obj2, obj3]
 
     return spot_setup
 
@@ -669,7 +711,7 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
             set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
             area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi=None, glacier_profile=None,
             interf=4, freqst=2, parallel=False, cores=2, save_sim=True, elev_rescaling=True,
-            glacier_only=False, obs_type="annual", target_mb=None,
+            glacier_only=False, obs_type="annual", target_mb=None, target_swe=None, swe_scaling=None,
             algorithm='lhs', obj_dir="maximize", fix_param=None, fix_val=None,
             demcz_args: dict = None,    # DEMCz settings
             **kwargs):
@@ -692,9 +734,10 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
                         freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
                         ele_cat=ele_cat, lat=lat, soi=soi, interf=interf, freqst=freqst, glacier_profile=glacier_profile,
                         elev_rescaling=elev_rescaling, target_mb=target_mb, fix_param=fix_param, fix_val=fix_val,
+                        target_swe=target_swe, swe_scaling=swe_scaling,
                         **kwargs)
 
-    psample_setup = setup(df, obs, obj_func)  # Define custom objective function using obj_func=
+    psample_setup = setup(df, obs, target_swe, obj_func)  # Define custom objective function using obj_func=
     alg_selector = {'mc': spotpy.algorithms.mc, 'sceua': spotpy.algorithms.sceua, 'mcmc': spotpy.algorithms.mcmc,
                     'mle': spotpy.algorithms.mle, 'abc': spotpy.algorithms.abc, 'sa': spotpy.algorithms.sa,
                     'dds': spotpy.algorithms.dds, 'demcz': spotpy.algorithms.demcz,
