@@ -33,7 +33,7 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
                       parameter_set=None,
                       soi=None, warn=False, pfilter=0,
                       lr_temp=-0.006, lr_prec=0, \
-                      hydro_year=10, TT_snow=0, TT_diff=2, CFMAX_ice=5, CFMAX_rel=2, \
+                      hydro_year=10, TT_snow=0, TT_diff=2, CFMAX_snow=2.5, CFMAX_rel=2, \
                       BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RFS=0.15,
                       # Constants
@@ -52,7 +52,7 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         elif isinstance(parameter_set, pd.DataFrame):
             parameter_set = parameter_set.set_index(parameter_set.columns[0])
         else:
-            print("ERROR: parameter_set can either be passed as dict and or pd.DataFrames!")
+            print("ERROR: parameter_set can either be passed as dict and or pd.DataFrame!")
             return
 
         if "lr_temp" in parameter_set.index:
@@ -85,8 +85,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
             TT_snow = parameter_set.loc["TT_snow"].values.item()
         if "TT_diff" in parameter_set.index:
             TT_diff = parameter_set.loc["TT_diff"].values.item()
-        if "CFMAX_ice" in parameter_set.index:
-            CFMAX_ice = parameter_set.loc["CFMAX_ice"].values.item()
+        if "CFMAX_snow" in parameter_set.index:
+            CFMAX_snow = parameter_set.loc["CFMAX_snow"].values.item()
         if "CFMAX_rel" in parameter_set.index:
             CFMAX_rel = parameter_set.loc["CFMAX_rel"].values.item()
         if "SFCF" in parameter_set.index:
@@ -177,8 +177,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     # Check model parameters
     if 0 > pfilter or lr_temp > 0.5:
         print("WARNING: Parameter pfilter exceeds the recommended threshold [0, 0.5].")
-    if -0.01 > lr_temp or lr_temp > -0.003:
-        print("WARNING: Parameter lr_temp exceeds boundaries [-0.01, -0.003].")
+    if -0.0065 > lr_temp or lr_temp > -0.0055:
+        print("WARNING: Parameter lr_temp exceeds boundaries [-0.0065, -0.0055].")
     if 0 > lr_prec or lr_prec > 0.002:
         print("WARNING: Parameter lr_prec exceeds boundaries [0, 0.002].")
     if 1 > BETA or BETA > 6:
@@ -208,10 +208,10 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print("WARNING: Parameter TT_snow exceeds boundaries [-1.5, 2.5].")
     if 0.5 > TT_diff or TT_diff > 2.5:
         print("WARNING: Parameter TT_diff exceeds boundaries [0.2, 4].")
-    if 1.2 > CFMAX_rel or CFMAX_rel > 2.5:
-        print("WARNING: Parameter CFMAX_rel exceeds boundaries [1.2, 2.5].")
-    if 1 > CFMAX_ice or CFMAX_ice > 12:
-        print("WARNING: Parameter CFMAX_ice exceeds boundaries [1, 12].")
+    if 1.2 > CFMAX_rel or CFMAX_rel > 2:
+        print("WARNING: Parameter CFMAX_rel exceeds boundaries [1.2, 2].")
+    if 0.5 > CFMAX_snow or CFMAX_snow > 10:
+        print("WARNING: Parameter CFMAX_snow exceeds boundaries [0.5, 10].")
     if 0.4 > SFCF or SFCF > 1:
         print("WARNING: Parameter SFCF exceeds boundaries [0.4, 1].")
     if 0 > CWH or CWH > 0.2:
@@ -225,7 +225,7 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     TT_rain = TT_diff + TT_snow
 
     # calculate ice melt factor:
-    CFMAX_snow = CFMAX_ice / CFMAX_rel
+    CFMAX_ice = CFMAX_snow * CFMAX_rel
 
     parameter = pd.Series(
         {"set_up_start": set_up_start, "set_up_end": set_up_end, "sim_start": sim_start, "sim_end": sim_end,
