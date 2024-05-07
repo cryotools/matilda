@@ -119,8 +119,8 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
             PCORR_lo=0.5, PCORR_up=2,
             TT_snow_lo=-1.5, TT_snow_up=1.5,
             TT_diff_lo=0.5, TT_diff_up=2.5,
-            CFMAX_ice_lo=1.2, CFMAX_ice_up=12,
-            CFMAX_rel_lo=1.2, CFMAX_rel_up=2.5,
+            CFMAX_snow_lo=0.5, CFMAX_snow_up=10,
+            CFMAX_rel_lo=1.2, CFMAX_rel_up=2,
             SFCF_lo=0.4, SFCF_up=1,
             CWH_lo=0, CWH_up=0.2,
             AG_lo=0, AG_up=1,
@@ -146,7 +146,7 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
         PCORR = Uniform(low=PCORR_lo, high=PCORR_up)
         TT_snow = Uniform(low=TT_snow_lo, high=TT_snow_up)
         TT_diff = Uniform(low=TT_diff_lo, high=TT_diff_up)
-        CFMAX_ice = Uniform(low=CFMAX_ice_lo, high=CFMAX_ice_up)
+        CFMAX_snow = Uniform(low=CFMAX_snow_lo, high=CFMAX_snow_up)
         CFMAX_rel = Uniform(low=CFMAX_rel_lo, high=CFMAX_rel_up)
         SFCF = Uniform(low=SFCF_lo, high=SFCF_up)
         CWH = Uniform(low=CWH_lo, high=CWH_up)
@@ -155,11 +155,11 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
 
         # Create the list containing the variables
         param = [lr_temp, lr_prec, BETA, CET, FC, K0, K1, K2, LP, MAXBAS, PERC, UZL, PCORR,
-                 TT_snow, TT_diff, CFMAX_ice, CFMAX_rel, SFCF, CWH, AG, RFS]
+                 TT_snow, TT_diff, CFMAX_snow, CFMAX_rel, SFCF, CWH, AG, RFS]
 
         # Exclude parameters defined in fix_param
         param_names = ['lr_temp', 'lr_prec', 'BETA', 'CET', 'FC', 'K0', 'K1', 'K2', 'LP', 'MAXBAS', 'PERC', 'UZL',
-                       'PCORR', 'TT_snow', 'TT_diff', 'CFMAX_ice', 'CFMAX_rel', 'SFCF', 'CWH', 'AG', 'RFS']
+                       'PCORR', 'TT_snow', 'TT_diff', 'CFMAX_snow', 'CFMAX_rel', 'SFCF', 'CWH', 'AG', 'RFS']
 
         # Exclude parameters that should be fixed
         if fix_param:
@@ -488,8 +488,8 @@ def spot_setup_glacier(set_up_start=None, set_up_end=None, sim_start=None, sim_e
             PCORR_lo=0.5, PCORR_up=2,
             TT_snow_lo=-1.5, TT_snow_up=1.5,
             TT_diff_lo=0.5, TT_diff_up=2.5,
-            CFMAX_ice_lo=1.2, CFMAX_ice_up=12,
-            CFMAX_rel_lo=1.2, CFMAX_rel_up=2.5,
+            CFMAX_snow_lo=0.5, CFMAX_snow_up=10,
+            CFMAX_rel_lo=1.2, CFMAX_rel_up=2,
             SFCF_lo=0.4, SFCF_up=1,
             RFS_lo=0.05, RFS_up=0.25,
 
@@ -498,13 +498,13 @@ def spot_setup_glacier(set_up_start=None, set_up_end=None, sim_start=None, sim_e
     class spot_setup:
         # defining all parameters and the distribution
         param = lr_temp, lr_prec, PCORR, \
-                TT_snow, TT_diff, CFMAX_ice, CFMAX_rel, SFCF, RFS = [
+                TT_snow, TT_diff, CFMAX_snow, CFMAX_rel, SFCF, RFS = [
             Uniform(low=lr_temp_lo, high=lr_temp_up),  # lr_temp
             Uniform(low=lr_prec_lo, high=lr_prec_up),  # lr_prec
             Uniform(low=PCORR_lo, high=PCORR_up),  # PCORR
             Uniform(low=TT_snow_lo, high=TT_snow_up),  # TT_snow
             Uniform(low=TT_diff_lo, high=TT_diff_up),  # TT_diff
-            Uniform(low=CFMAX_ice_lo, high=CFMAX_ice_up), # CFMAX_snow
+            Uniform(low=CFMAX_snow_lo, high=CFMAX_snow_up), # CFMAX_snow
             Uniform(low=CFMAX_rel_lo, high=CFMAX_rel_up),  # CFMAX_rel
             Uniform(low=SFCF_lo, high=SFCF_up),  # SFCF
             Uniform(low=RFS_lo, high=RFS_up),  # RFS
@@ -531,7 +531,7 @@ def spot_setup_glacier(set_up_start=None, set_up_end=None, sim_start=None, sim_e
                                          ele_glac=ele_glac, ele_cat=None,
 
                                          lr_temp=x.lr_temp, lr_prec=x.lr_prec, PCORR=x.PCORR,
-                                         TT_snow=x.TT_snow, TT_diff=x.TT_diff, CFMAX_ice=x.CFMAX_ice,
+                                         TT_snow=x.TT_snow, TT_diff=x.TT_diff, CFMAX_snow=x.CFMAX_snow,
                                          CFMAX_rel=x.CFMAX_rel, SFCF=x.SFCF, RFS=x.RFS)
 
                 df_preproc = matilda_preproc(self.Input, parameter)
@@ -783,7 +783,7 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
     
     if fix_param is not None:
         print('Fixed parameters:\n')
-        defaults = {'lr_temp': -0.006, 'lr_prec': 0, 'TT_snow': 0, 'TT_diff': 2, 'CFMAX_ice': 5, 'CFMAX_rel': 2,
+        defaults = {'lr_temp': -0.006, 'lr_prec': 0, 'TT_snow': 0, 'TT_diff': 2, 'CFMAX_snow': 2.5, 'CFMAX_rel': 2,
                     'BETA': 1.0, 'CET': 0.15, 'FC': 250, 'K0': 0.055, 'K1': 0.055, 'K2': 0.04, 'LP': 0.7,
                     'MAXBAS': 3.0, 'PERC': 1.5, 'UZL': 120, 'PCORR': 1.0, 'SFCF': 0.7, 'CWH': 0.1, 'AG': 0.7,
                     'RFS': 0.15}
