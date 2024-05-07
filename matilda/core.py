@@ -177,8 +177,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
     # Check model parameters
     if 0 > pfilter or lr_temp > 0.5:
         print("WARNING: Parameter pfilter exceeds the recommended threshold [0, 0.5].")
-    if -0.01 > lr_temp or lr_temp > -0.003:
-        print("WARNING: Parameter lr_temp exceeds boundaries [-0.01, -0.003].")
+    if -0.0065 > lr_temp or lr_temp > -0.0055:
+        print("WARNING: Parameter lr_temp exceeds boundaries [-0.0065, -0.0055].")
     if 0 > lr_prec or lr_prec > 0.002:
         print("WARNING: Parameter lr_prec exceeds boundaries [0, 0.002].")
     if 1 > BETA or BETA > 6:
@@ -383,7 +383,7 @@ def calculate_PDD(ds, parameter, prints=True):
                        xr.DataArray(snow)])
 
     # calculate the positive degree days
-    pdd_ds["pdd"] = xr.where(pdd_ds["temp_mean"] > parameter.TT_snow, pdd_ds["temp_mean"], 0)
+    pdd_ds["pdd"] = xr.where(pdd_ds["temp_mean"] > 0, pdd_ds["temp_mean"], 0)
 
     return pdd_ds
 
@@ -1004,7 +1004,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SNOWPACK_cal[t] = SNOWPACK_cal[t - 1] + SNOW_cal[t]
         # how snowpack melts
         # day-degree simple melting
-        melt = parameter.CFMAX_snow * (Temp_cal[t] - parameter.TT_snow)
+        melt = parameter.CFMAX_snow * Temp_cal[t]
         # control melting
         if melt < 0: melt = 0
         melt = min(melt, SNOWPACK_cal[t])
@@ -1125,7 +1125,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SNOWPACK[t] = SNOWPACK[t - 1] + SNOW[t]
         # how snowpack melts
         # temperature index melting (PDD)
-        melt = parameter.CFMAX_snow * (Temp[t] - parameter.TT_snow)
+        melt = parameter.CFMAX_snow * Temp[t]
         # control melting
         if melt < 0: melt = 0
         melt = min(melt, SNOWPACK[t])
@@ -1142,8 +1142,10 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SNOWPACK[t] = SNOWPACK[t] + refreezing
         # meltwater after refreezing
         SNOWMELT[t] = SNOWMELT[t] - refreezing
+        
         # Total melt off-glacier
-        off_glac[t] = SNOWMELT[t]
+        off_glac[t] = melt - refreezing
+        
         # recharge to soil
         tosoil = SNOWMELT[t] - (parameter.CWH * SNOWPACK[t])
         # control recharge to soil

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import spotpy  # Load the SPOT package into your working storage
 from datetime import date, datetime
 import HydroErr as he
+from scipy.stats import gamma
 from spotpy.parameter import Uniform
 from spotpy.objectivefunctions import mae, rmse
 from spotpy import analyser  # Load the Plotting extension
@@ -50,9 +51,59 @@ def dict2bounds(p_dict, drop=[]):
     return p
 
 
+def loglike_kge(qsim, qobs):
+    """
+    Calculate a pseudo log-likelihood function based on the Kling-Gupta Efficiency (KGE) and a gamma distribution.
+
+    Parameters:
+    -----------
+    Qsim : array_like
+        Array of simulated flow values.
+    Qobs : array_like
+        Array of observed flow values.
+
+    Returns:
+    --------
+    float
+        The calculated value of the log-likelihood function.
+
+    Notes:
+    ------
+    The log-likelihood function is calculated based on the Kling-Gupta Efficiency (KGE) between simulated
+    and observed flow values following Liu et. al. (2022). The KGE is first computed using the hydroeval library.
+    Then, the Exceedance Deviation (ED) is derived from the KGE. Finally, the log-likelihood function is
+    computed using the gamma probability density function (PDF) with shape parameter (a) set to 0.5 and scale
+    parameter (scale) set to 1. The function returns the calculated log-likelihood value.
+
+    References:
+    -----------
+    - Liu, Y., Fernández-Ortega, J., Mudarra, M., and Hartmann, A. (2022):  "Pitfalls and a feasible solution for
+      using KGE as an informal likelihood function in MCMC methods: DREAM(ZS) as an example". HESS, 26(20)
+    - Kling, H., Gupta, H., & Yilmaz, K. K. (2012). "Model selection criteria for rainfall-runoff
+      models: Representation of variability in Bayesian Model Averaging." Water Resources Research, 48(6), W06306.
+    - hydroeval: https://github.com/ThibHlln/hydroeval
+    - scipy.stats.gamma: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html
+    """
+    # Calculate KGE
+    n = len(qobs)
+    KGE = he.kge_2012(qsim, qobs, remove_zero=True)
+    ED = 1 - KGE
+
+    # Calculate log-likelihood function
+    gammapdf = gamma.pdf(ED, a=0.5, scale=1)
+    log_L = 0.5 * n * np.log(gammapdf)
+
+    return log_L
+
+
+
+
+
+
+
 def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
                area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi = None, glacier_profile=None,
-               elev_rescaling=True, target_mb = None,
+               elev_rescaling=True, target_mb=None, target_swe=None, swe_scaling=None, fix_param=None, fix_val=None, obj_func=None,
             lr_temp_lo=-0.01, lr_temp_up=-0.003,
             lr_prec_lo=0, lr_prec_up=0.002,
             BETA_lo=1, BETA_up=6,
@@ -80,30 +131,45 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
 
     class spot_setup:
         # defining all parameters and the distribution
-        param = lr_temp, lr_prec, BETA, CET, FC, K0, K1, K2, LP, MAXBAS, PERC, UZL, PCORR, \
-                TT_snow, TT_diff, CFMAX_ice, CFMAX_rel, SFCF, CWH, AG, RFS = [
-            Uniform(low=lr_temp_lo, high=lr_temp_up),  # lr_temp
-            Uniform(low=lr_prec_lo, high=lr_prec_up),  # lr_prec
-            Uniform(low=BETA_lo, high=BETA_up),  # BETA
-            Uniform(low=CET_lo, high=CET_up),  # CET
-            Uniform(low=FC_lo, high=FC_up),  # FC
-            Uniform(low=K0_lo, high=K0_up),  # K0
-            Uniform(low=K1_lo, high=K1_up),  # K1
-            Uniform(low=K2_lo, high=K2_up),  # K2
-            Uniform(low=LP_lo, high=LP_up),  # LP
-            Uniform(low=MAXBAS_lo, high=MAXBAS_up),  # MAXBAS
-            Uniform(low=PERC_lo, high=PERC_up),  # PERC
-            Uniform(low=UZL_lo, high=UZL_up),  # UZL
-            Uniform(low=PCORR_lo, high=PCORR_up),  # PCORR
-            Uniform(low=TT_snow_lo, high=TT_snow_up),  # TT_snow
-            Uniform(low=TT_diff_lo, high=TT_diff_up),  # TT_diff
-            Uniform(low=CFMAX_ice_lo, high=CFMAX_ice_up), # CFMAX_ice
-            Uniform(low=CFMAX_rel_lo, high=CFMAX_rel_up),  # CFMAX_rel
-            Uniform(low=SFCF_lo, high=SFCF_up),  # SFCF
-            Uniform(low=CWH_lo, high=CWH_up),  # CWH
-            Uniform(low=AG_lo, high=AG_up),  # AG
-            Uniform(low=RFS_lo, high=RFS_up),  # RFS
-        ]
+        lr_temp = Uniform(low=lr_temp_lo, high=lr_temp_up)
+        lr_prec = Uniform(low=lr_prec_lo, high=lr_prec_up)
+        BETA = Uniform(low=BETA_lo, high=BETA_up)
+        CET = Uniform(low=CET_lo, high=CET_up)
+        FC = Uniform(low=FC_lo, high=FC_up)
+        K0 = Uniform(low=K0_lo, high=K0_up)
+        K1 = Uniform(low=K1_lo, high=K1_up)
+        K2 = Uniform(low=K2_lo, high=K2_up)
+        LP = Uniform(low=LP_lo, high=LP_up)
+        MAXBAS = Uniform(low=MAXBAS_lo, high=MAXBAS_up)
+        PERC = Uniform(low=PERC_lo, high=PERC_up)
+        UZL = Uniform(low=UZL_lo, high=UZL_up)
+        PCORR = Uniform(low=PCORR_lo, high=PCORR_up)
+        TT_snow = Uniform(low=TT_snow_lo, high=TT_snow_up)
+        TT_diff = Uniform(low=TT_diff_lo, high=TT_diff_up)
+        CFMAX_ice = Uniform(low=CFMAX_ice_lo, high=CFMAX_ice_up)
+        CFMAX_rel = Uniform(low=CFMAX_rel_lo, high=CFMAX_rel_up)
+        SFCF = Uniform(low=SFCF_lo, high=SFCF_up)
+        CWH = Uniform(low=CWH_lo, high=CWH_up)
+        AG = Uniform(low=AG_lo, high=AG_up)
+        RFS = Uniform(low=RFS_lo, high=RFS_up)
+
+        # Create the list containing the variables
+        param = [lr_temp, lr_prec, BETA, CET, FC, K0, K1, K2, LP, MAXBAS, PERC, UZL, PCORR,
+                 TT_snow, TT_diff, CFMAX_ice, CFMAX_rel, SFCF, CWH, AG, RFS]
+
+        # Exclude parameters defined in fix_param
+        param_names = ['lr_temp', 'lr_prec', 'BETA', 'CET', 'FC', 'K0', 'K1', 'K2', 'LP', 'MAXBAS', 'PERC', 'UZL',
+                       'PCORR', 'TT_snow', 'TT_diff', 'CFMAX_ice', 'CFMAX_rel', 'SFCF', 'CWH', 'AG', 'RFS']
+
+        # Exclude parameters that should be fixed
+        if fix_param:
+            param = [p for p, name in zip(param, param_names) if name not in fix_param]
+            param_names = [param for param in param_names if param not in fix_param]
+            for par in fix_param:
+                if par in globals():
+                    del globals()[par]
+                if par in locals():
+                    del locals()[par]
 
         # Number of needed parameter iterations for parametrization and sensitivity analysis
         M = interf  # inference factor (default = 4)
@@ -112,29 +178,47 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
 
         par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
 
-        def __init__(self, df, obs, obj_func=None):
+        def __init__(self, df, obs, swe, obj_func=obj_func):
             self.obj_func = obj_func
             self.Input = df
             self.obs = obs
+            self.swe = swe
 
-        def simulation(self, x):
+        def simulation(self, x, param_names=param_names, fix_param=fix_param, fix_val=fix_val, swe_scaling=swe_scaling):
             with HiddenPrints():
-                sim = matilda_simulation(self.Input, obs=self.obs,
-                                                 output=None, set_up_start=set_up_start, set_up_end=set_up_end,
-                                                 sim_start=sim_start, sim_end=sim_end, freq=freq, lat=lat, soi=soi,
-                                                 area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
-                                                 ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
-                                                 glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
+                # Setup all parameters for sampling
+                args = {}
+                for par_name in param_names:
+                    args[par_name] = x[par_name]
 
-                                                 lr_temp=x.lr_temp, lr_prec=x.lr_prec,
-                                                 BETA=x.BETA, CET=x.CET, FC=x.FC, K0=x.K0, K1=x.K1, K2=x.K2, LP=x.LP,
-                                                 MAXBAS=x.MAXBAS, PERC=x.PERC, UZL=x.UZL, PCORR=x.PCORR,
-                                                 TT_snow=x.TT_snow, TT_diff=x.TT_diff, CFMAX_ice=x.CFMAX_ice,
-                                                 CFMAX_rel=x.CFMAX_rel, SFCF=x.SFCF, CWH=x.CWH, AG=x.AG, RFS=x.RFS)
+                # Fix parameters on desired values if defined (otherwise use default values)
+                if fix_param is not None:
+                    for p in fix_param:
+                        if fix_val is not None:
+                            if p in fix_val:
+                                args[p] = fix_val[p]
+
+                sim = matilda_simulation(self.Input, obs=self.obs,
+                                         output=None, set_up_start=set_up_start, set_up_end=set_up_end,
+                                         sim_start=sim_start, sim_end=sim_end, freq=freq, lat=lat, soi=soi,
+                                         area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
+                                         ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
+                                         glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
+                                         **args)
+                swe_sim = sim[0].snowpack_off_glaciers['2000-01-01':'2017-09-30'].to_frame(name="SWE_sim")
+                if swe_scaling is not None:
+                    swe_sim = swe_sim * swe_scaling
             if target_mb is None:
-                return sim[0].total_runoff
+                if target_swe is None:
+                    return sim[0].total_runoff
+                else:
+                    return [sim[0].total_runoff, swe_sim.SWE_sim]
             else:
-                return [sim[0].total_runoff, sim[5].smb_water_year.mean()]
+                if target_swe is None:
+                    return [sim[0].total_runoff, sim[5].smb_water_year.mean()]
+                else:
+                    return [sim[0].total_runoff, sim[5].smb_water_year.mean(), swe_sim.SWE_sim]
+
 
         def evaluation(self):
             obs_preproc = self.obs.copy()
@@ -156,21 +240,46 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
             obs_preproc = obs_preproc.reindex(idx)
             obs_preproc = obs_preproc.fillna(np.NaN)
 
+            if target_swe is not None:
+                swe_obs = self.swe
+                if "Date" in self.swe.columns:
+                    swe_obs['Date'] = pd.to_datetime(swe_obs['Date'])
+                    swe_obs.set_index('Date', inplace=True)
+                swe_obs = swe_obs * 1000
+                swe_obs = swe_obs['2000-01-01':'2017-09-30']
+
             if target_mb is None:
-                return obs_preproc.Qobs
+                if target_swe is None:
+                    return obs_preproc.Qobs
+                else:
+                    return [obs_preproc.Qobs, swe_obs.SWE_Mean]
             else:
-                return [obs_preproc.Qobs, target_mb]
+                if target_swe is None:
+                    return [obs_preproc.Qobs, target_mb]
+                else:
+                    return [obs_preproc.Qobs, target_mb, swe_obs.SWE_Mean]
+
 
         def objectivefunction(self, simulation, evaluation, params=None):
             # SPOTPY expects to get one or multiple values back,
             # that define the performance of the model run
             if target_mb is not None:
-                sim_runoff, sim_smb = simulation
-                eval_runoff, eval_smb = evaluation
+                if target_swe is not None:
+                    sim_runoff, sim_smb, sim_swe = simulation
+                    eval_runoff, eval_smb, eval_swe = evaluation
+                    obj3 = he.kge_2012(sim_swe, eval_swe, remove_zero=False)
+                else:
+                    sim_runoff, sim_smb = simulation
+                    eval_runoff, eval_smb = evaluation
 
                 obj2 = abs(eval_smb - sim_smb)
                 simulation = sim_runoff
                 evaluation = eval_runoff
+
+            elif target_swe is not None:
+                sim_runoff, sim_swe = simulation
+                eval_runoff, eval_swe = evaluation
+                obj3 = he.kge_2012(sim_swe, eval_swe, remove_zero=False)
 
             # Crop both timeseries to same periods without NAs
             sim_new = pd.DataFrame()
@@ -190,11 +299,168 @@ def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None,
                 obj1 = self.obj_func(evaluation_clean, simulation_clean)
 
             if target_mb is None:
-                return obj1
+                if target_swe is None:
+                    return obj1
+                else:
+                    return [obj1, obj3]
             else:
-                return [obj1, obj2]
+                if target_swe is None:
+                    return [obj1, obj2]
+                else:
+                    return [obj1, obj2, obj3]
 
     return spot_setup
+
+
+
+
+
+
+# def spot_setup(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
+#                area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi = None, glacier_profile=None,
+#                elev_rescaling=True, target_mb = None,
+#             lr_temp_lo=-0.01, lr_temp_up=-0.003,
+#             lr_prec_lo=0, lr_prec_up=0.002,
+#             BETA_lo=1, BETA_up=6,
+#             CET_lo=0, CET_up=0.3,
+#             FC_lo=50, FC_up=500,
+#             K0_lo=0.01, K0_up=0.4,
+#             K1_lo=0.01, K1_up=0.4,
+#             K2_lo=0.001, K2_up=0.15,
+#             LP_lo=0.3, LP_up=1,
+#             MAXBAS_lo=2,  MAXBAS_up=7,
+#             PERC_lo=0, PERC_up=3,
+#             UZL_lo=0, UZL_up=500,
+#             PCORR_lo=0.5, PCORR_up=2,
+#             TT_snow_lo=-1.5, TT_snow_up=1.5,
+#             TT_diff_lo=0.5, TT_diff_up=2.5,
+#             CFMAX_ice_lo=1.2, CFMAX_ice_up=12,
+#             CFMAX_rel_lo=1.2, CFMAX_rel_up=2.5,
+#             SFCF_lo=0.4, SFCF_up=1,
+#             CWH_lo=0, CWH_up=0.2,
+#             AG_lo=0, AG_up=1,
+#             RFS_lo=0.05, RFS_up=0.25,
+#
+#             interf=4, freqst=2):
+#
+#
+#     class spot_setup:
+#         # defining all parameters and the distribution
+#         param = lr_temp, lr_prec, BETA, CET, FC, K0, K1, K2, LP, MAXBAS, PERC, UZL, PCORR, \
+#                 TT_snow, TT_diff, CFMAX_ice, CFMAX_rel, SFCF, CWH, AG, RFS = [
+#             Uniform(low=lr_temp_lo, high=lr_temp_up),  # lr_temp
+#             Uniform(low=lr_prec_lo, high=lr_prec_up),  # lr_prec
+#             Uniform(low=BETA_lo, high=BETA_up),  # BETA
+#             Uniform(low=CET_lo, high=CET_up),  # CET
+#             Uniform(low=FC_lo, high=FC_up),  # FC
+#             Uniform(low=K0_lo, high=K0_up),  # K0
+#             Uniform(low=K1_lo, high=K1_up),  # K1
+#             Uniform(low=K2_lo, high=K2_up),  # K2
+#             Uniform(low=LP_lo, high=LP_up),  # LP
+#             Uniform(low=MAXBAS_lo, high=MAXBAS_up),  # MAXBAS
+#             Uniform(low=PERC_lo, high=PERC_up),  # PERC
+#             Uniform(low=UZL_lo, high=UZL_up),  # UZL
+#             Uniform(low=PCORR_lo, high=PCORR_up),  # PCORR
+#             Uniform(low=TT_snow_lo, high=TT_snow_up),  # TT_snow
+#             Uniform(low=TT_diff_lo, high=TT_diff_up),  # TT_diff
+#             Uniform(low=CFMAX_ice_lo, high=CFMAX_ice_up), # CFMAX_ice
+#             Uniform(low=CFMAX_rel_lo, high=CFMAX_rel_up),  # CFMAX_rel
+#             Uniform(low=SFCF_lo, high=SFCF_up),  # SFCF
+#             Uniform(low=CWH_lo, high=CWH_up),  # CWH
+#             Uniform(low=AG_lo, high=AG_up),  # AG
+#             Uniform(low=RFS_lo, high=RFS_up),  # RFS
+#         ]
+#
+#         # Number of needed parameter iterations for parametrization and sensitivity analysis
+#         M = interf  # inference factor (default = 4)
+#         d = freqst  # frequency step (default = 2)
+#         k = len(param)  # number of parameters
+#
+#         par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
+#
+#         def __init__(self, df, obs, obj_func=None):
+#             self.obj_func = obj_func
+#             self.Input = df
+#             self.obs = obs
+#
+#         def simulation(self, x):
+#             with HiddenPrints():
+#                 sim = matilda_simulation(self.Input, obs=self.obs,
+#                                                  output=None, set_up_start=set_up_start, set_up_end=set_up_end,
+#                                                  sim_start=sim_start, sim_end=sim_end, freq=freq, lat=lat, soi=soi,
+#                                                  area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat,
+#                                                  ele_glac=ele_glac, ele_cat=ele_cat, plots=False, warn=False,
+#                                                  glacier_profile=glacier_profile, elev_rescaling=elev_rescaling,
+#
+#                                                  lr_temp=x.lr_temp, lr_prec=x.lr_prec,
+#                                                  BETA=x.BETA, CET=x.CET, FC=x.FC, K0=x.K0, K1=x.K1, K2=x.K2, LP=x.LP,
+#                                                  MAXBAS=x.MAXBAS, PERC=x.PERC, UZL=x.UZL, PCORR=x.PCORR,
+#                                                  TT_snow=x.TT_snow, TT_diff=x.TT_diff, CFMAX_ice=x.CFMAX_ice,
+#                                                  CFMAX_rel=x.CFMAX_rel, SFCF=x.SFCF, CWH=x.CWH, AG=x.AG, RFS=x.RFS)
+#             if target_mb is None:
+#                 return sim[0].total_runoff
+#             else:
+#                 return [sim[0].total_runoff, sim[5].smb_water_year.mean()]
+#
+#         def evaluation(self):
+#             obs_preproc = self.obs.copy()
+#             obs_preproc.set_index('Date', inplace=True)
+#             obs_preproc.index = pd.to_datetime(obs_preproc.index)
+#             obs_preproc = obs_preproc[sim_start:sim_end]
+#             # Changing the input unit from m³/s to mm.
+#             obs_preproc["Qobs"] = obs_preproc["Qobs"] * 86400 / (area_cat * 1000000) * 1000
+#             # To daily resolution
+#             obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
+#             # Omit everything outside the specified season of interest (soi)
+#             if soi is not None:
+#                 obs_preproc = obs_preproc[obs_preproc.index.month.isin(range(soi[0], soi[1] + 1))]
+#             # Expanding the observation period full years filling up with NAs
+#             idx_first = obs_preproc.index.year[1]
+#             idx_last = obs_preproc.index.year[-1]
+#             idx = pd.date_range(start=date(idx_first, 1, 1), end=date(idx_last, 12, 31), freq='D',
+#                                 name=obs_preproc.index.name)
+#             obs_preproc = obs_preproc.reindex(idx)
+#             obs_preproc = obs_preproc.fillna(np.NaN)
+#
+#             if target_mb is None:
+#                 return obs_preproc.Qobs
+#             else:
+#                 return [obs_preproc.Qobs, target_mb]
+#
+#         def objectivefunction(self, simulation, evaluation, params=None):
+#             # SPOTPY expects to get one or multiple values back,
+#             # that define the performance of the model run
+#             if target_mb is not None:
+#                 sim_runoff, sim_smb = simulation
+#                 eval_runoff, eval_smb = evaluation
+#
+#                 obj2 = abs(eval_smb - sim_smb)
+#                 simulation = sim_runoff
+#                 evaluation = eval_runoff
+#
+#             # Crop both timeseries to same periods without NAs
+#             sim_new = pd.DataFrame()
+#             sim_new['mod'] = pd.DataFrame(simulation)
+#             sim_new['obs'] = evaluation
+#             clean = sim_new.dropna()
+#
+#             simulation_clean = clean['mod']
+#             evaluation_clean = clean['obs']
+#
+#             if not self.obj_func:
+#                 # This is used if not overwritten by user
+#                 # obj1 = kge(evaluation_clean, simulation_clean)          # SPOTPY internal kge
+#                 obj1 = he.kge_2012(simulation_clean, evaluation_clean, remove_zero=True) # same as MATILDA
+#             else:
+#                 # Way to ensure flexible spot setup class
+#                 obj1 = self.obj_func(evaluation_clean, simulation_clean)
+#
+#             if target_mb is None:
+#                 return obj1
+#             else:
+#                 return [obj1, obj2]
+#
+#     return spot_setup
 
 
 
@@ -216,6 +482,7 @@ def annual(year, data):
 
 def spot_setup_glacier(set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
                area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi=None, glacier_profile=None, obs_type="annual",
+               obj_func=None,
             lr_temp_lo=-0.01, lr_temp_up=-0.003,
             lr_prec_lo=0, lr_prec_up=0.002,
             PCORR_lo=0.5, PCORR_up=2,
@@ -250,7 +517,7 @@ def spot_setup_glacier(set_up_start=None, set_up_end=None, sim_start=None, sim_e
 
         par_iter = (1 + 4 * M ** 2 * (1 + (k - 2) * d)) * k
 
-        def __init__(self, df, obs, obj_func=None):
+        def __init__(self, df, obs, obj_func=obj_func):
             self.obj_func = obj_func
             self.Input = df
             self.obs = obs
@@ -436,12 +703,18 @@ def analyze_results(sampling_data, obs, algorithm, obj_dir="maximize", fig_path 
         return {'best_param': best_param, 'best_index': bestindex, 'best_model_run': best_model_run,
                 'best_objf': bestobjf}
 
+
+
+
+
 def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=None, obj_func=None, opt_iter=False, fig_path=None, #savefig=False,
             set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
             area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi=None, glacier_profile=None,
             interf=4, freqst=2, parallel=False, cores=2, save_sim=True, elev_rescaling=True,
-            glacier_only=False, obs_type="annual", target_mb=None,
-            algorithm='sceua', obj_dir="maximize", **kwargs):
+            glacier_only=False, obs_type="annual", target_mb=None, target_swe=None, swe_scaling=None,
+            algorithm='lhs', obj_dir="maximize", fix_param=None, fix_val=None,
+            demcz_args: dict = None,    # DEMCz settings
+            **kwargs):
 
     cwd = os.getcwd()
     if output is not None:
@@ -453,17 +726,18 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
         setup = spot_setup_glacier(set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end,
                            freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
                            ele_cat=ele_cat, lat=lat, soi=soi, interf=interf, freqst=freqst,
-                           glacier_profile=glacier_profile, obs_type=obs_type,
+                           glacier_profile=glacier_profile, obs_type=obs_type, fix_param=fix_param, fix_val=fix_val,
                            **kwargs)
 
     else:
         setup = spot_setup(set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end,
                         freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
                         ele_cat=ele_cat, lat=lat, soi=soi, interf=interf, freqst=freqst, glacier_profile=glacier_profile,
-                        elev_rescaling=elev_rescaling, target_mb=target_mb,
+                        elev_rescaling=elev_rescaling, target_mb=target_mb, fix_param=fix_param, fix_val=fix_val,
+                        target_swe=target_swe, swe_scaling=swe_scaling,
                         **kwargs)
 
-    psample_setup = setup(df, obs, obj_func)  # Define custom objective function using obj_func=
+    psample_setup = setup(df, obs, target_swe, obj_func)  # Define custom objective function using obj_func=
     alg_selector = {'mc': spotpy.algorithms.mc, 'sceua': spotpy.algorithms.sceua, 'mcmc': spotpy.algorithms.mcmc,
                     'mle': spotpy.algorithms.mle, 'abc': spotpy.algorithms.abc, 'sa': spotpy.algorithms.sa,
                     'dds': spotpy.algorithms.dds, 'demcz': spotpy.algorithms.demcz,
@@ -483,7 +757,7 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
         elif algorithm == 'sceua':
             sampler.sample(rep, ngs=cores)
         elif algorithm == 'demcz':
-            sampler.sample(rep, nChains=cores)
+            sampler.sample(rep, nChains=cores, **demcz_args)
         else:
             print('ERROR: The selected algorithm is ineligible for parallel computing.'
                   'Either select a different algorithm (mc, lhs, fast, rope, sceua or demcz) or set "parallel = False".')
@@ -506,7 +780,22 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
         psample_setup.evaluation().to_csv(dbname + '_observations.csv')
     else:
         psample_setup.evaluation()[0].to_csv(dbname + '_observations.csv')
-
+    
+    if fix_param is not None:
+        print('Fixed parameters:\n')
+        defaults = {'lr_temp': -0.006, 'lr_prec': 0, 'TT_snow': 0, 'TT_diff': 2, 'CFMAX_ice': 5, 'CFMAX_rel': 2,
+                    'BETA': 1.0, 'CET': 0.15, 'FC': 250, 'K0': 0.055, 'K1': 0.055, 'K2': 0.04, 'LP': 0.7,
+                    'MAXBAS': 3.0, 'PERC': 1.5, 'UZL': 120, 'PCORR': 1.0, 'SFCF': 0.7, 'CWH': 0.1, 'AG': 0.7,
+                    'RFS': 0.15}
+        print_par = {}
+        for p in fix_param:
+            if p in fix_val:
+                print_par[p] = fix_val[p]
+            else:
+                print_par[p] =defaults[p]
+        for key, value in print_par.items():
+            print(f'{key}: {value}')
+        print('\nNOTE: Fixed parameters are not listed in the final parameter set.\n')
 
     if not parallel:
 
@@ -520,6 +809,95 @@ def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=
         return results
 
     os.chdir(cwd)
+
+
+
+
+
+# def psample(df, obs, rep=10, output = None, dbname='matilda_par_smpl', dbformat=None, obj_func=None, opt_iter=False, fig_path=None, #savefig=False,
+#             set_up_start=None, set_up_end=None, sim_start=None, sim_end=None, freq="D", lat=None, area_cat=None,
+#             area_glac=None, ele_dat=None, ele_glac=None, ele_cat=None, soi=None, glacier_profile=None,
+#             interf=4, freqst=2, parallel=False, cores=2, save_sim=True, elev_rescaling=True,
+#             glacier_only=False, obs_type="annual", target_mb=None,
+#             algorithm='sceua', obj_dir="maximize", **kwargs):
+#
+#     cwd = os.getcwd()
+#     if output is not None:
+#         os.chdir(output)
+#
+#     # Setup model class:
+#
+#     if glacier_only:
+#         setup = spot_setup_glacier(set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end,
+#                            freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
+#                            ele_cat=ele_cat, lat=lat, soi=soi, interf=interf, freqst=freqst,
+#                            glacier_profile=glacier_profile, obs_type=obs_type,
+#                            **kwargs)
+#
+#     else:
+#         setup = spot_setup(set_up_start=set_up_start, set_up_end=set_up_end, sim_start=sim_start, sim_end=sim_end,
+#                         freq=freq, area_cat=area_cat, area_glac=area_glac, ele_dat=ele_dat, ele_glac=ele_glac,
+#                         ele_cat=ele_cat, lat=lat, soi=soi, interf=interf, freqst=freqst, glacier_profile=glacier_profile,
+#                         elev_rescaling=elev_rescaling, target_mb=target_mb,
+#                         **kwargs)
+#
+#     psample_setup = setup(df, obs, obj_func)  # Define custom objective function using obj_func=
+#     alg_selector = {'mc': spotpy.algorithms.mc, 'sceua': spotpy.algorithms.sceua, 'mcmc': spotpy.algorithms.mcmc,
+#                     'mle': spotpy.algorithms.mle, 'abc': spotpy.algorithms.abc, 'sa': spotpy.algorithms.sa,
+#                     'dds': spotpy.algorithms.dds, 'demcz': spotpy.algorithms.demcz,
+#                     'dream': spotpy.algorithms.dream, 'fscabc': spotpy.algorithms.fscabc,
+#                     'lhs': spotpy.algorithms.lhs, 'padds': spotpy.algorithms.padds,
+#                     'rope': spotpy.algorithms.rope, 'fast': spotpy.algorithms.fast,
+#                     'nsgaii': spotpy.algorithms.nsgaii}
+#
+#     if target_mb is not None:           # Format errors in database csv when saving simulations
+#         save_sim = False
+#
+#     if parallel:
+#         sampler = alg_selector[algorithm](psample_setup, dbname=dbname, dbformat=dbformat, parallel='mpi',
+#                                               optimization_direction=obj_dir, save_sim=save_sim)
+#         if algorithm == 'mc' or algorithm == 'lhs' or algorithm == 'fast' or algorithm == 'rope':
+#             sampler.sample(rep)
+#         elif algorithm == 'sceua':
+#             sampler.sample(rep, ngs=cores)
+#         elif algorithm == 'demcz':
+#             sampler.sample(rep, nChains=cores)
+#         else:
+#             print('ERROR: The selected algorithm is ineligible for parallel computing.'
+#                   'Either select a different algorithm (mc, lhs, fast, rope, sceua or demcz) or set "parallel = False".')
+#             return
+#     else:
+#         sampler = alg_selector[algorithm](psample_setup, dbname=dbname, dbformat=dbformat, save_sim=save_sim,
+#                                           optimization_direction=obj_dir)
+#         if opt_iter:
+#             if yesno("\n******** WARNING! Your optimum # of iterations is {0}. "
+#                      "This may take a long time.\n******** Do you wish to proceed".format(psample_setup.par_iter)):
+#                 sampler.sample(psample_setup.par_iter)  # ideal number of reps = psample_setup.par_iter
+#             else:
+#                 return
+#         else:
+#             sampler.sample(rep)
+#
+#     # Change dbformat to None for short tests but to 'csv' or 'sql' to avoid data loss in case off long calculations.
+#
+#     if target_mb is None:
+#         psample_setup.evaluation().to_csv(dbname + '_observations.csv')
+#     else:
+#         psample_setup.evaluation()[0].to_csv(dbname + '_observations.csv')
+#
+#
+#     if not parallel:
+#
+#         if target_mb is None:
+#             results = analyze_results(sampler, psample_setup.evaluation(), algorithm=algorithm, obj_dir=obj_dir,
+#                                   fig_path=fig_path, dbname=dbname, glacier_only=glacier_only)
+#         else:
+#             results = analyze_results(sampler, psample_setup.evaluation()[0], algorithm=algorithm, obj_dir=obj_dir,
+#                                   fig_path=fig_path, dbname=dbname, glacier_only=glacier_only, target_mb=target_mb)
+#
+#         return results
+#
+#     os.chdir(cwd)
 
 
 def load_parameters(path, algorithm, obj_dir="maximize", glacier_only=False):
