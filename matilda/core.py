@@ -2030,7 +2030,7 @@ def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                        plots=True, plot_type="print", hydro_year=10, elev_rescaling=False, pfilter=0,
                        drop_surplus=False,
                        parameter_set=None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
-                       TT_diff=2, CFMAX_ice=5, CFMAX_rel=2, BETA=1.0, CET=0.15,
+                       TT_diff=2, CFMAX_snow=2.5, CFMAX_rel=2, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0,
                        PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RFS=0.15):
     """Function to run the whole MATILDA simulation at once."""
@@ -2043,7 +2043,7 @@ def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                                   ele_glac=ele_glac, ele_cat=ele_cat, hydro_year=hydro_year,
                                   parameter_set=parameter_set, lr_temp=lr_temp,
                                   lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, pfilter=pfilter, \
-                                  TT_diff=TT_diff, CFMAX_ice=CFMAX_ice, CFMAX_rel=CFMAX_rel, \
+                                  TT_diff=TT_diff, CFMAX_snow=CFMAX_snow, CFMAX_rel=CFMAX_rel, \
                                   BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
                                   MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG, RFS=RFS)
 
