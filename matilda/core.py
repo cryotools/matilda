@@ -848,6 +848,12 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                     new_distribution = int(np.nansum(new_distribution))
                 else:
                     new_area = 0
+                    
+                glacier_mass_abs = (1 - smb_percentage * 0.01) * m
+                glacier_vol_init = (m / 1000) * parameter.area_glac * 1e6 / 0.908		# mass in mmwe, area in km^2
+                glacier_vol = (glacier_mass_abs / 1000) * new_area * 1e6 / 0.908
+                glacier_vol_perc = glacier_vol / glacier_vol_init
+
 
                 # Append to glacier change dataframe for subsequent functions (skip last incomplete year)
                 if drop_surplus:
@@ -860,6 +866,9 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                         'time': year, "glacier_area": new_area, "glacier_elev": new_distribution,
                         'smb_water_year': smb_unscaled, 'smb_scaled': smb_scaled, "smb_scaled_capped": smb,
                         "smb_scaled_capped_cum": smb_cum, "surplus": surplus
+                        
+                        , "glacier_melt_perc": smb_percentage, "glacier_mass_mmwe": glacier_mass_abs, "glacier_vol_m3":  glacier_vol, "glacier_vol_perc": glacier_vol_perc
+                        
                     }, index=[i])], ignore_index=True)
 
             # Scale DDM output to new glacierized fraction
