@@ -1567,7 +1567,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
         return plot_data, plot_annual_data
 
-    # Plotting the meteorological parameters
+    # Plot the meteorological variables
     def plot_meteo(plot_data, parameter):
         fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, figsize=(10, 6))
 
@@ -1606,6 +1606,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         fig.set_size_inches(10, 6)
         return fig
 
+    # Plot the runoff
     def plot_runoff(plot_data, plot_annual_data, parameter):
         plot_data["plot"] = 0
         # plot_data.loc[plot_data.isnull().any(axis=1), :] = np.nan
@@ -1660,7 +1661,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         fig.subplots_adjust(bottom=0.12)
         return fig
 
-    # Plotting the HBV output parameters
+    # Plot the HBV output variables
     def plot_hbv(plot_data, parameter):
         fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, sharex=True, figsize=(10, 6))
 
@@ -1691,7 +1692,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         fig.set_size_inches(10, 6)
         return fig
 
-    # Plotting the meteorological parameters with Plotly
+    # Plot the meteorological variables with Plotly
     def plot_plotly_meteo(plot_data, fig, row):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
@@ -1717,7 +1718,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                    legendgroup="meteo"),
             row=row, col=1, secondary_y=True)
 
-    # Plotting the runoff/refreezing output parameters with Plotly
+    # Plot the runoff/refreezing output variables with Plotly
     def plot_plotly_runoff(plot_data, fig, row):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
@@ -1763,7 +1764,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                                text='<b>KGE coeff ' + str(round(output_MATILDA[2], 2)) + '</b>',
                                row=row, col=1)
 
-    # Plotting the HBV output parameters with Plotly
+    # Plot the HBV output variables with Plotly
     def plot_plotly_hbv(plot_data, fig, row):
         x_vals = plot_data.index.to_pydatetime()
         fig.add_trace(
