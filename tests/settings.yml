@@ -1,0 +1,14 @@
+area_cat: 295.67484249904464
+area_glac: 31.829413146585885
+ele_cat: 3293.491688025922
+ele_dat: 3335.668840874115
+ele_glac: 4001.8798828125
+elev_rescaling: true
+freq: M
+lat: 42.18280043250193
+plot_type: all
+set_up_end: '1999-12-31'
+set_up_start: '1998-01-01'
+sim_end: '2020-12-31'
+sim_start: '2000-01-01'
+warn: false
