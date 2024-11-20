@@ -1,11 +1,72 @@
 # -*- coding: UTF-8 -*-
 """
-MATILDA (Modeling wATer resources In gLacierizeD cAtchments) is a combination of a degree day model and the HBV model (Bergstöm 1976) to compute total runoff of glacierized catchments.
-This file may use the input files created by the COSIPY-utility "aws2cosipy" as forcing data and or a simple dataframe with temperature, precipitation and if possible evapotranspiration and additional observation runoff data to validate it.
+MATILDA: Modeling wATer resources In gLacierizeD cAtchments
+===========================================================
+
+Description
+-----------
+MATILDA is a hydrological modeling framework designed to simulate runoff contributions in glacierized catchments. 
+It integrates a degree-day model (DDM) with the HBV hydrological model (Bergström, 1976) to partition runoff into 
+glacial and non-glacial components. The model can account for changes in glacier geometry through annual rescaling 
+based on elevation-band profiles.
+
+Core features include:
+- Preprocessing of meteorological input data.
+- Degree-day-based glacier melt modeling.
+- HBV-based rainfall-runoff simulation.
+- Optional elevation-based glacier geometry rescaling.
+- Output visualization and statistics generation.
+
+References
+----------
+1. Bergström, S. (1976). Development and application of a conceptual runoff model for Scandinavian catchments. 
+   SMHI Reports RHO No. 7.
+2. Ayzel, G. (2016). Lumped Hydrological Models Playground ([LHMP](https://github.com/hydrogo/LHMP)). Zenodo. 
+   https://doi.org/10.5281/zenodo.59501
+3. Seguinot, J. (2013–2018). Python positive degree-day model for glacier surface mass balance ([pypdd](https://github.com/juseg/pypdd)).
+4. Oudin, L., et al. (2005). Which potential evapotranspiration input for a lumped rainfall-runoff model?: 
+   Part 2—Towards a simple and efficient potential evapotranspiration model for rainfall-runoff modeling. 
+   Journal of Hydrology, 303(1), 290–306. https://doi.org/10.1016/j.jhydrol.2004.08.026
+
+Dependencies
+------------
+- Python 3.x
+- pandas
+- numpy
+- matplotlib
+- xarray
+- hydroeval
+- scipy
+
+Usage
+-----
+Run the MATILDA framework using the `matilda_simulation` function, which combines all preprocessing, modeling, and postprocessing steps. 
+The framework allows customization via parameters, input datasets, and optional outputs (e.g., plots and CSV files).
+
+Example:
+    ```python
+    output = matilda_simulation(
+        input_df=your_data,
+        obs=observed_runoff,
+        glacier_profile=glacier_profile_data,
+        output="output_folder",
+        plots=True
+    )
+    ```
+
+License
+-------
+This software is released under the MIT License. See LICENSE file for details.
+
+Contact
+-------
+For questions or contributions, please contact:
+- Developer: Phillip Schuster
+- Email: phillip.schuster@geo.hu-berlin.de
+- Institution: Humboldt-Universität zu Berlin
 """
-# Import all necessary python packages
+
 import sys
-import numpy
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -25,7 +86,6 @@ from plotly.subplots import make_subplots
 warnings.filterwarnings(action="ignore", module="HydroErr")
 
 
-# Setting the parameter for the MATILDA simulation
 def matilda_parameter(
     input_df,
     set_up_start=None,
@@ -69,7 +129,97 @@ def matilda_parameter(
     CFR_ice=0.01,  # fraction of ice melt refreezing in moulins
     **kwargs
 ):
-    """Creates a series from the provided and/or default parameters to be provided to all subsequent MATILDA modules."""
+    """
+    Creates a series from the provided and/or default parameters to be supplied to all subsequent MATILDA modules.
+
+    Parameters
+    ----------
+    input_df : pandas.DataFrame
+        Input DataFrame containing the time series data required for simulation.
+    set_up_start : str or None, optional
+        Start date of the setup period in "YYYY-MM-DD" format. Defaults to None.
+    set_up_end : str or None, optional
+        End date of the setup period in "YYYY-MM-DD" format. Defaults to None.
+    sim_start : str or None, optional
+        Start date of the simulation period in "YYYY-MM-DD" format. Defaults to None.
+    sim_end : str or None, optional
+        End date of the simulation period in "YYYY-MM-DD" format. Defaults to None.
+    freq : str, optional
+        Temporal frequency for simulation outputs, e.g., 'D' (daily), 'W' (weekly), 'M' (monthly), or 'Y' (yearly). Defaults to 'D'.
+    lat : float or None, optional
+        Latitude of the catchment for potential evapotranspiration calculations. Defaults to None.
+    area_cat : float or None, optional
+        Catchment area in square kilometers. Defaults to None.
+    area_glac : float or None, optional
+        Glacierized area within the catchment in square kilometers. Defaults to None.
+    ele_dat : float or None, optional
+        Elevation of the dataset used in the simulation. Defaults to None.
+    ele_glac : float or None, optional
+        Reference elevation of the glacierized area. Defaults to None.
+    ele_cat : float or None, optional
+        Reference elevation of the entire catchment. Defaults to None.
+    parameter_set : dict or pandas.DataFrame, optional
+        Input parameter set to override default values. Can be provided as a dictionary or DataFrame. Defaults to None.
+    soi : list of int or None, optional
+        Season of interest defined as a 2-element list [start_month, end_month]. Defaults to None.
+    warn : bool, optional
+        If False, suppresses warnings. Defaults to False.
+    pfilter : float, optional
+        Precipitation filter parameter. Defaults to 0.
+    lr_temp : float, optional
+        Lapse rate for temperature scaling in degrees Celsius per meter. Defaults to -0.006.
+    lr_prec : float, optional
+        Lapse rate for precipitation scaling. Defaults to 0.
+    hydro_year : int, optional
+        Starting month of the hydrological year (1–12). Defaults to 10.
+    TT_snow : float, optional
+        Threshold temperature for snow precipitation in degrees Celsius. Defaults to 0.
+    TT_diff : float, optional
+        Temperature difference between rain and snow thresholds in degrees Celsius. Defaults to 2.
+    CFMAX_snow : float, optional
+        Degree-day factor for snowmelt. Defaults to 2.5.
+    CFMAX_rel : float, optional
+        Relative ice melt factor compared to snow. Defaults to 2.
+    BETA : float, optional
+        Parameter controlling soil moisture storage. Defaults to 1.0.
+    CET : float, optional
+        Correction factor for evapotranspiration. Defaults to 0.15.
+    FC : float, optional
+        Field capacity of the soil in millimeters. Defaults to 250.
+    K0 : float, optional
+        Recession coefficient for quick runoff. Defaults to 0.055.
+    K1 : float, optional
+        Recession coefficient for intermediate runoff. Defaults to 0.055.
+    K2 : float, optional
+        Recession coefficient for baseflow. Defaults to 0.04.
+    LP : float, optional
+        Soil moisture threshold for potential evapotranspiration. Defaults to 0.7.
+    MAXBAS : float, optional
+        Baseflow routing parameter. Defaults to 3.0.
+    PERC : float, optional
+        Percolation coefficient. Defaults to 1.5.
+    UZL : float, optional
+        Upper zone limit for quick runoff. Defaults to 120.
+    PCORR : float, optional
+        Precipitation correction factor. Defaults to 1.0.
+    SFCF : float, optional
+        Snowfall correction factor. Defaults to 0.7.
+    CWH : float, optional
+        Water holding capacity of snowpack as a fraction of snow water equivalent. Defaults to 0.1.
+    AG : float, optional
+        Fraction of meltwater refreezing. Defaults to 0.7.
+    CFR : float, optional
+        Refreezing factor for snowmelt. Defaults to 0.15.
+    CFR_ice : float, optional
+        Refreezing factor for ice melt. Defaults to 0.01.
+    **kwargs
+        Additional parameters for customization.
+
+    Returns
+    -------
+    pandas.Series
+        Series containing the parameter set for MATILDA simulation.
+    """
 
     # Filter warnings:
     if not warn:
@@ -167,7 +317,7 @@ def matilda_parameter(
     if area_glac is not None or area_glac > 0:
         if ele_glac is None and ele_dat is not None:
             print("WARNING: Glacier reference elevation is missing")
-    if hydro_year > 12 and hydro_year < 1:
+    if 12 < hydro_year < 1:
         print("WARNING: Beginning of hydrological year out of bounds [1, 12]")
 
     if set_up_end is not None and sim_start is not None:
@@ -331,8 +481,31 @@ def matilda_parameter(
 
 
 def matilda_preproc(input_df, parameter, obs=None):
-    """MATILDA preprocessing: transforms dataframes into the required format, converts observation units, and applies
-    precipitation correction factor."""
+    """
+    Processes and prepares input climate data and optional observation data for MATILDA simulations.
+    Includes format transformations, unit conversions, and application of precipitation correction factors.
+
+    Parameters
+    ----------
+    input_df : pandas.DataFrame or xarray.Dataset
+        Input dataset containing climate variables such as temperature (`T2`) in Celsius or Kelvin
+        and precipitation (`RRR`) in mm.
+    parameter : pandas.Series
+        Series of MATILDA parameters, including setup and simulation periods, precipitation correction factor,
+        and additional configuration details.
+    obs : pandas.DataFrame or None, optional
+        Observation data for discharge, with columns 'Date' and 'Qobs' in m³/s. If provided, it will be
+        resampled, converted to mm/day, and optionally filtered by season of interest (if specified). Defaults to None.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Preprocessed input dataset with climate variables adjusted for the specified simulation period,
+        including temperature conversion and precipitation correction.
+    tuple of pandas.DataFrame, optional
+        If `obs` is provided, returns a tuple of the preprocessed input dataset and the preprocessed
+        observation dataset, with discharge values converted to mm/day and resampled to the simulation period.
+    """
 
     print("*-------------------*")
     print("Reading data")
@@ -407,7 +580,24 @@ def matilda_preproc(input_df, parameter, obs=None):
 
 
 def phase_separation(df_preproc, parameter):
-    """Separates precipitation in liquid and solid fractions with linear transition between threshold temperatures."""
+    """
+    Separates precipitation into liquid and solid fractions based on temperature thresholds using a linear transition.
+
+    Parameters
+    ----------
+    df_preproc : pandas.DataFrame
+        Preprocessed input dataset containing temperature (`T2`) in degrees Celsius and precipitation (`RRR`) in mm.
+    parameter : pandas.Series
+        Series of MATILDA parameters, including `TT_snow` (threshold temperature for snow),
+        `TT_rain` (threshold temperature for rain), and other configuration details.
+
+    Returns
+    -------
+    tuple of pandas.Series
+        - `rain`: Liquid precipitation fraction (in mm).
+        - `snow`: Solid precipitation fraction (in mm).
+    """
+
     reduced_temp = (parameter.TT_rain - df_preproc["T2"]) / (
         parameter.TT_rain - parameter.TT_snow
     )
@@ -419,8 +609,30 @@ def phase_separation(df_preproc, parameter):
 
 
 def input_scaling(df_preproc, parameter):
-    """Scales the input data to respective mean elevations. Separates precipitation in phases and
-    applies the snow fall correction factor."""
+    """
+    Scales input climate data to mean elevations for glacierized and non-glacierized areas, separates precipitation
+    into phases (rain and snow), and applies the snowfall correction factor.
+
+    Parameters
+    ----------
+    df_preproc : pandas.DataFrame
+        Preprocessed input dataset containing temperature (`T2`) in degrees Celsius and precipitation (`RRR`) in mm.
+    parameter : pandas.Series
+        Series of MATILDA parameters, including:
+            - `ele_glac`: Mean elevation of the glacierized area (in meters).
+            - `ele_non_glac`: Mean elevation of the non-glacierized area (in meters).
+            - `ele_dat`: Reference elevation of the input data (in meters).
+            - `lr_temp`: Temperature lapse rate (°C/m).
+            - `lr_prec`: Precipitation lapse rate (mm/m).
+            - `pfilter`: Threshold for filtering small precipitation values (mm).
+            - `SFCF`: Snowfall correction factor.
+
+    Returns
+    -------
+    tuple of pandas.DataFrame
+        - `input_df_glacier`: Scaled dataset for the glacierized area, including separated rain and snow fractions.
+        - `input_df_catchment`: Scaled dataset for the non-glacierized catchment, including separated rain and snow fractions.
+    """
 
     if parameter.ele_glac is not None:
         elev_diff_glacier = parameter.ele_glac - parameter.ele_dat
@@ -481,7 +693,30 @@ def input_scaling(df_preproc, parameter):
 
 
 def calculate_PDD(ds, parameter, prints=True):
-    """Calculation of positive degree days in the provided timeseries."""
+    """
+    Calculates positive degree days (PDD) from a provided time series dataset, along with daily means of temperature and
+    precipitation components (rain and snow).
+
+    Parameters
+    ----------
+    ds : xarray.Dataset or pandas.DataFrame
+        Input dataset containing temperature (`T2`), total precipitation (`RRR`), and optionally rain and snow variables.
+        For xarray datasets, a glacier mask (`MASK`) is applied if present.
+    parameter : pandas.Series
+        Series of MATILDA parameters (not directly used in this function but required for compatibility).
+    prints : bool, optional
+        If True, prints status messages during the calculation. Defaults to True.
+
+    Returns
+    -------
+    xarray.Dataset
+        A dataset containing:
+            - `temp_mean`: Daily mean temperature in °C.
+            - `RRR`: Daily total precipitation in mm.
+            - `rain`: Daily rainfall in mm.
+            - `snow`: Daily snowfall in mm.
+            - `pdd`: Positive degree days (sum of daily mean temperatures above 0°C).
+    """
 
     if prints:
         print("*-------------------*")
@@ -525,15 +760,30 @@ def calculate_PDD(ds, parameter, prints=True):
 
 
 def melt_rates(snow, pdd, parameter):
-    """pypdd.py line 331
-    Compute melt rates from snow precipitation and pdd sum.
-    Snow melt is computed from the number of positive degree days (*pdd*)
-    and the `pdd_factor_snow` model attribute. If all snow is melted and
-    some energy (PDD) remains, ice melt is computed using `pdd_factor_ice`.
-    *snow*: array_like
-        Snow precipitation rate.
-    *pdd*: array_like
-        Number of positive degree days."""
+    """
+    Computes melt rates from snow precipitation and positive degree day (PDD) sums.
+    Snow melt is calculated using the `CFMAX_snow` parameter, and excess energy after snow melt contributes to ice melt,
+    calculated using the `CFMAX_ice` parameter.
+
+    This function is adapted from `pypdd.py`, line 331. Original source is referenced at the beginning of the script.
+
+    Parameters
+    ----------
+    snow : array_like
+        Snow precipitation rate (mm/day).
+    pdd : array_like
+        Positive degree day values (°C·days).
+    parameter : pandas.Series
+        Series of MATILDA parameters containing:
+            - `CFMAX_snow`: Degree-day factor for snowmelt.
+            - `CFMAX_ice`: Degree-day factor for ice melt.
+
+    Returns
+    -------
+    tuple of array_like
+        - `snow_melt`: Effective snow melt rates (mm/day), limited by the available snow.
+        - `ice_melt`: Ice melt rates (mm/day), proportional to excess PDD energy beyond snow melt.
+    """
 
     # compute a potential snow melt
     pot_snow_melt = parameter.CFMAX_snow * pdd
@@ -546,9 +796,58 @@ def melt_rates(snow, pdd, parameter):
 
 
 def calculate_glaciermelt(ds, parameter, prints=True):
-    """Degree Day Model to calculate the accumulation, snow and ice melt and runoff rate from the glaciers.
-    Roughly based on PYPDD (github.com/juseg/pypdd)
-    - # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)"""
+    """
+    Calculates accumulation, snow and ice melt, and runoff rates from glaciers using a Degree Day Model (DDM).
+    This method is inspired by PYPDD (github.com/juseg/pypdd) and includes glacier storage-release dynamics.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Input dataset containing daily climate variables:
+            - `temp_mean`: Daily mean temperature in °C.
+            - `RRR`: Total precipitation in mm.
+            - `snow`: Daily snowfall in mm.
+            - `rain`: Daily rainfall in mm.
+            - `pdd`: Positive degree day values (°C·days).
+    parameter : pandas.Series
+        Series of MATILDA parameters containing:
+            - `CFMAX_snow`: Degree-day factor for snowmelt.
+            - `CFMAX_ice`: Degree-day factor for ice melt.
+            - `CFR`: Refreezing factor for snowmelt.
+            - `CFR_ice`: Refreezing factor for ice melt.
+            - `AG`: Glacier outflow adjustment parameter.
+    prints : bool, optional
+        If True, prints status updates during the calculation. Defaults to True.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing daily values for various outputs of the Degree Day Model:
+            - `DDM_smb`: Surface mass balance (mm w.e.).
+            - `pdd`: Positive degree days (°C·days).
+            - `DDM_temp`: Daily mean temperature (°C).
+            - `DDM_prec`: Total precipitation (mm).
+            - `DDM_rain`: Rainfall (mm).
+            - `DDM_snow`: Snowfall (mm).
+            - `DDM_accumulation_rate`: Snow accumulation rate (mm).
+            - `DDM_ice_melt`: Ice melt (mm).
+            - `DDM_snow_melt`: Snow melt (mm).
+            - `DDM_total_melt`: Total melt (mm).
+            - `DDM_refreezing`: Total refreezing (mm).
+            - `DDM_glacier_reservoir`: Water stored in the glacier reservoir (mm).
+            - `Q_DDM`: Actual runoff from the glacier (mm).
+
+    References
+    ----------
+    - PYPDD (github.com/juseg/pypdd)
+    - Stahl, K., Moore, R. D., & McKendry, I. G. (2008). The role of synoptic-scale circulation in the linkage between large-scale ocean-atmosphere indices and winter surface climate in British Columbia, Canada. *Water Resources Research*, 44(7). https://doi.org/10.1029/2007WR005956
+    - Toum, J., et al. (2021). Understanding glacier mass-balance variability using climate teleconnections. *The R Journal*, 13(1). https://doi.org/10.32614/RJ-2021-059
+
+    Notes
+    -----
+    This implementation uses a storage-release scheme for glacier outflow that adjusts based on snow depth
+    and drainage system conditions.
+    """
 
     if prints:
         print("Calculating glacial melt")
@@ -639,9 +938,44 @@ def calculate_glaciermelt(ds, parameter, prints=True):
 
 
 def create_lookup_table(glacier_profile, parameter):
-    """Part 1 of the glacier scaling routine based on the deltaH approach outlined in Seibert et al. (2018) and
-    Huss and al.(2010). Creates a look-up table of glacier area and water equivalent from the initial state (100%)
-    to an ice-free catchment (0%) in steps of 1%."""
+    """
+    Generates a lookup table of glacier area and water equivalent changes from the initial state (100% glacier coverage)
+    to an ice-free state (0% coverage) using the deltaH scaling approach. This method is based on the routines outlined
+    in Seibert et al. (2018) and Huss et al. (2010).
+
+    Parameters
+    ----------
+    glacier_profile : pandas.DataFrame
+        DataFrame containing the glacier's initial state, including:
+            - `Area`: Area of each elevation band (in km²).
+            - `WE`: Initial water equivalent of each elevation band (in mm w.e.).
+            - `Elevation`: Elevation of each band (in meters).
+    parameter : pandas.Series
+        Series of MATILDA parameters, including:
+            - `area_glac`: Total glacier area (in km²).
+
+    Returns
+    -------
+    pandas.DataFrame
+        Lookup table showing scaled glacier area for each elevation band over 101 mass states (from 100% to 0% in 1% steps).
+        Each column corresponds to an elevation band (`EleZone`), and each row represents a scaled mass state.
+
+    References
+    ----------
+    - Huss, M., Jouvet, G., Farinotti, D., & Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
+      of glacier retreat. *Hydrology and Earth System Sciences, 14*(5), 815–829.
+      https://doi.org/10.5194/hess-14-815-2010
+    - Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., & Stahl, K. (2018). Technical note: Representing glacier geometry
+      changes in a semi-distributed hydrological model. *Hydrology and Earth System Sciences, 22*(4), 2211–2224.
+      https://doi.org/10.5194/hess-22-2211-2018
+
+    Notes
+    -----
+    1. The deltaH parameterization involves a scaling factor (`fs`) based on the total glacier mass change and the
+       normalized elevation profile of the glacier.
+    2. Three different parameter sets (`a`, `b`, `c`, `y`) are applied based on glacier size as outlined in Huss et al. (2010).
+    3. Elevation bands with negative water equivalent are excluded iteratively during the scaling process.
+    """
 
     initial_area = glacier_profile["Area"]  # per elevation band
     hi_initial = glacier_profile[
@@ -750,8 +1084,48 @@ def create_lookup_table(glacier_profile, parameter):
 
 
 def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
-    """Part 2 of the glacier scaling routine based on the deltaH approach outlined in Seibert et al. (2018) and
-    Huss and al.(2010). Calculates the new glacier area for each hydrological year."""
+    """
+    Calculates the new glacier area for each hydrological year and scales glacier variables using the deltaH scaling
+    approach. This is the second part of the glacier scaling routine, based on Seibert et al. (2018) and Huss et al. (2010).
+
+    Parameters
+    ----------
+    output_DDM : pandas.DataFrame
+        Degree Day Model (DDM) output containing surface mass balance (`DDM_smb`) and other glacier-related variables.
+    lookup_table : pandas.DataFrame
+        Lookup table created in part 1 of the scaling routine, mapping glacier area changes to mass loss percentages.
+    glacier_profile : pandas.DataFrame
+        DataFrame containing glacier initial states:
+            - `Area`: Area of each elevation band (in km²).
+            - `WE`: Initial water equivalent of each elevation band (in mm w.e.).
+    parameter : pandas.Series
+        Series of MATILDA parameters, including:
+            - `area_glac`: Total glacier area (in km²).
+            - `area_cat`: Catchment area (in km²).
+            - `hydro_year`: Starting month of the hydrological year (1–12).
+
+    Returns
+    -------
+    tuple
+        - `output_DDM` (pandas.DataFrame): Updated DDM output with scaled glacier variables for each hydrological year.
+        - `glacier_change_area` (pandas.DataFrame): Time series of annual glacier area changes and cumulative scaled SMB.
+
+    References
+    ----------
+    - Huss, M., Jouvet, G., Farinotti, D., & Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
+      of glacier retreat. *Hydrology and Earth System Sciences, 14*(5), 815–829.
+      https://doi.org/10.5194/hess-14-815-2010
+    - Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., & Stahl, K. (2018). Technical note: Representing glacier geometry
+      changes in a semi-distributed hydrological model. *Hydrology and Earth System Sciences, 22*(4), 2211–2224.
+      https://doi.org/10.5194/hess-22-2211-2018
+
+    Notes
+    -----
+    1. The glacier area change is calculated annually based on the cumulative surface mass balance (SMB).
+    2. SMB is scaled to the current glacier area to reflect its dynamic changes.
+    3. If the cumulative SMB indicates a mass loss beyond 99% of the initial mass, the glacier area is set to zero.
+    4. Variables in `output_DDM` are updated to reflect the new glacierized area fraction each year.
+    """
 
     # select output columns to update
     up_cols = output_DDM.columns.drop(["DDM_smb", "DDM_temp", "pdd"])
@@ -832,9 +1206,47 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
 def updated_glacier_melt(
     data, lookup_table, glacier_profile, parameter, drop_surplus=False
 ):
-    """Function to account for the elevation change due to retreating or advancing glaciers. Runs scaling and melt
-    routines on single hydrological years continuously updating the glacierized catchment fraction and mean glacier
-    elevation altered by the deltaH routine. Slightly increases processing time due to the use of standard loops.
+    """
+    Calculates the new glacier area for each hydrological year and scales glacier variables using the deltaH scaling
+    approach. This is the second part of the glacier scaling routine, based on Seibert et al. (2018) and Huss et al. (2010).
+
+    Parameters
+    ----------
+    output_DDM : pandas.DataFrame
+        Degree Day Model (DDM) output containing surface mass balance (`DDM_smb`) and other glacier-related variables.
+    lookup_table : pandas.DataFrame
+        Lookup table created in part 1 of the scaling routine, mapping glacier area changes to mass loss percentages.
+    glacier_profile : pandas.DataFrame
+        DataFrame containing glacier initial states:
+            - `Area`: Area of each elevation band (in km²).
+            - `WE`: Initial water equivalent of each elevation band (in mm w.e.).
+    parameter : pandas.Series
+        Series of MATILDA parameters, including:
+            - `area_glac`: Total glacier area (in km²).
+            - `area_cat`: Catchment area (in km²).
+            - `hydro_year`: Starting month of the hydrological year (1–12).
+
+    Returns
+    -------
+    tuple
+        - `output_DDM` (pandas.DataFrame): Updated DDM output with scaled glacier variables for each hydrological year.
+        - `glacier_change_area` (pandas.DataFrame): Time series of annual glacier area changes and cumulative scaled SMB.
+
+    References
+    ----------
+    - Huss, M., Jouvet, G., Farinotti, D., & Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
+      of glacier retreat. *Hydrology and Earth System Sciences, 14*(5), 815–829.
+      https://doi.org/10.5194/hess-14-815-2010
+    - Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., & Stahl, K. (2018). Technical note: Representing glacier geometry
+      changes in a semi-distributed hydrological model. *Hydrology and Earth System Sciences, 22*(4), 2211–2224.
+      https://doi.org/10.5194/hess-22-2211-2018
+
+    Notes
+    -----
+    1. The glacier area change is calculated annually based on the cumulative surface mass balance (SMB).
+    2. SMB is scaled to the current glacier area to reflect its dynamic changes.
+    3. If the cumulative SMB indicates a mass loss beyond 99% of the initial mass, the glacier area is set to zero.
+    4. Variables in `output_DDM` are updated to reflect the new glacierized area fraction each year.
     """
 
     # determine hydrological years
@@ -1173,11 +1585,79 @@ def updated_glacier_melt(
 
 
 def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
-    """Compute the runoff from the catchment with the HBV model
-    Python Code based on the LHMP (github.com/hydrogo/LHMP -
-    Ayzel Georgy. (2016). LHMP: lumped hydrological modelling playground. Zenodo. doi: 10.5281/zenodo.59501)
-    For the HBV model, evapotranspiration values are needed. If none provided these are calculated as suggested by Oudin et al. (2005)
-    in mm/day."""
+    """
+    Simulates runoff from a catchment using the HBV model. Calculates key hydrological processes, including snowmelt,
+    evaporation, soil moisture, and groundwater flow, based on input climate data and parameters.
+
+    The Python code is adapted from the LHMP hydrological modeling playground
+    (github.com/hydrogo/LHMP, Ayzel Georgy. (2016). doi:10.5281/zenodo.59501).
+    Evapotranspiration values are calculated using the method outlined in Oudin et al. (2005) if not provided in the input data.
+
+    Parameters
+    ----------
+    input_df_catchment : pandas.DataFrame
+        Input climate dataset with daily resolution, including:
+            - `T2`: Temperature (°C).
+            - `RRR`: Total precipitation (mm).
+            - `rain`: Rainfall (mm).
+            - `snow`: Snowfall (mm).
+            - `PE` (optional): Potential evapotranspiration (mm).
+    parameter : pandas.Series
+        Series of HBV model parameters, including:
+            - `CFMAX_snow`: Degree-day factor for snowmelt.
+            - `CFR`: Refreezing factor for snowmelt.
+            - `TT_snow`: Threshold temperature for snowmelt.
+            - `CWH`: Water holding capacity of snowpack.
+            - `FC`: Field capacity of the soil.
+            - `LP`: Soil moisture threshold for potential evapotranspiration.
+            - `BETA`: Shape parameter for soil moisture recharge.
+            - `PERC`: Percolation rate from upper to lower groundwater box.
+            - `K0`, `K1`, `K2`: Recession coefficients for runoff components.
+            - `UZL`: Threshold for upper groundwater runoff.
+            - `CET`: Correction factor for evapotranspiration.
+            - `MAXBAS`: Parameter for hydrograph smoothing.
+            - `area_cat`: Total catchment area (km²).
+            - `area_glac`: Glacierized area within the catchment (km²).
+            - `lat`: Latitude of the catchment for radiation calculations.
+            - `sim_start`, `sim_end`: Simulation period (YYYY-MM-DD).
+            - `set_up_start`, `set_up_end`: Setup period (YYYY-MM-DD).
+    glacier_area : pandas.DataFrame, optional
+        Time series of annual glacier areas for dynamically scaling snow and rain fractions. Defaults to None.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing simulated hydrological variables and runoff, including:
+            - `HBV_temp`: Input temperature (°C).
+            - `HBV_prec`: Input precipitation (mm).
+            - `HBV_rain`: Rainfall off-glacier (mm).
+            - `HBV_snow`: Snowfall off-glacier (mm).
+            - `HBV_pe`: Potential evapotranspiration (mm).
+            - `HBV_snowpack`: Snowpack water equivalent (mm).
+            - `HBV_soil_moisture`: Soil moisture content (mm).
+            - `HBV_AET`: Actual evapotranspiration (mm).
+            - `HBV_refreezing`: Refreezing within the snowpack (mm).
+            - `HBV_upper_gw`: Water in the upper groundwater box (mm).
+            - `HBV_lower_gw`: Water in the lower groundwater box (mm).
+            - `HBV_melt_off_glacier`: Meltwater runoff from snow and refreezing off-glacier (mm).
+            - `Q_HBV`: Simulated catchment runoff (mm).
+
+    References
+    ----------
+    - Ayzel, G. (2016). LHMP: Lumped hydrological modeling playground.
+      Zenodo. https://doi.org/10.5281/zenodo.59501
+    - Oudin, L., Hervé, A., Perrin, C., Michel, C., Andréassian, V., Anctil, F., & Loumagne, C. (2005).
+      Which potential evapotranspiration input for a lumped rainfall–runoff model?: Part 2—Towards a simple and efficient
+      potential evapotranspiration model for rainfall–runoff modelling. *Journal of Hydrology, 303*(1), 290–306.
+      https://doi.org/10.1016/j.jhydrol.2004.08.026
+
+    Notes
+    -----
+    1. Calculates potential evapotranspiration using Oudin et al. (2005) if not provided.
+    2. Simulates snowmelt, soil moisture recharge, evaporation, and groundwater flow iteratively over the setup and simulation periods.
+    3. Supports optional scaling of snow and rain fractions based on dynamically changing glacier areas.
+    """
+
     print("*-------------------*")
     print("Running HBV routine")
     # 1. new temporary dataframe from input with daily values
@@ -1579,6 +2059,26 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
 
 def create_statistics(output_MATILDA):
+    """
+    Generates descriptive statistics for a given MATILDA output DataFrame.
+
+    Parameters
+    ----------
+    output_MATILDA : pandas.DataFrame
+        Input DataFrame containing MATILDA model output variables.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing descriptive statistics (e.g., mean, standard deviation, min, max)
+        for each column in `output_MATILDA`, along with the sum of all columns appended as an additional row.
+
+    Notes
+    -----
+    1. The sum row is labeled as "sum" and included at the bottom of the statistics DataFrame.
+    2. All values are rounded to three decimal places for consistency.
+    """
+
     stats = output_MATILDA.describe()
     sum = pd.DataFrame(output_MATILDA.sum())
     sum.columns = ["sum"]
@@ -1597,8 +2097,52 @@ def matilda_submodules(
     elev_rescaling=False,
     drop_surplus=False,
 ):
-    """The main MATILDA simulation. It applies a linear scaling of the data (if elevations
-    are provided) and executes the DDM and HBV modules subsequently."""
+    """
+    Executes the main MATILDA simulation, which integrates data preprocessing, Degree Day Model (DDM), HBV hydrological model,
+    and optional glacier elevation rescaling to produce comprehensive runoff and hydrological outputs.
+
+    Parameters
+    ----------
+    df_preproc : pandas.DataFrame
+        Preprocessed input dataset containing climate variables such as temperature, precipitation, snow, and rain.
+    parameter : pandas.Series
+        Series of MATILDA parameters including:
+            - Simulation settings (`sim_start`, `sim_end`, `set_up_start`, `set_up_end`, `freq`, `freq_long`).
+            - Glacier parameters (`area_glac`, `area_cat`, `ele_glac`, `ele_cat`, `warn`).
+            - HBV and DDM model parameters.
+    obs : pandas.DataFrame, optional
+        Observed runoff data for model evaluation. Defaults to None.
+    glacier_profile : pandas.DataFrame, optional
+        Initial glacier profile with columns such as `Area`, `WE` (water equivalent), and `Elevation`. Required if `elev_rescaling=True`.
+    elev_rescaling : bool, optional
+        If True, enables glacier elevation rescaling based on the deltaH scaling routine. Defaults to False.
+    drop_surplus : bool, optional
+        If True, drops runs where the cumulative surface mass balance (SMB) is positive. Defaults to False.
+
+    Returns
+    -------
+    list
+        A list containing the following elements:
+            - `output_MATILDA_compact` (pandas.DataFrame): Compact output with key variables for quick assessment.
+            - `output_MATILDA` (pandas.DataFrame): Full simulation results including all variables.
+            - `kge` (str or float): Kling-Gupta Efficiency coefficient for model performance evaluation.
+            - `stats` (pandas.DataFrame): Statistical summary of the simulation results.
+            - `lookup_table` (str or pandas.DataFrame): Lookup table for glacier area changes (if applicable).
+            - `glacier_change` (str or pandas.DataFrame): Time series of glacier changes (if applicable).
+
+    Notes
+    -----
+    1. If `elev_rescaling=True` and `glacier_profile` is provided, glacier elevation and area are dynamically updated annually.
+    2. When glacier elevation scaling is turned off, average glacier elevation is treated as constant, which may introduce biases for longer simulations.
+    3. Observed runoff (`obs`) is required for model efficiency metrics such as KGE, NSE, RMSE, and MARE.
+    4. The function calculates and outputs both compact and detailed results for downstream analyses.
+
+    Warnings
+    --------
+    - If no glacier profile is provided while `elev_rescaling=True`, an error is raised.
+    - Glacier melt calculations are skipped if the glacier area is zero (`area_glac = 0`).
+    - Model efficiency metrics are not calculated if observed data (`obs`) is not provided.
+    """
 
     # Filter warnings:
     if not parameter.warn:
@@ -1909,7 +2453,58 @@ def matilda_submodules(
 
 
 def matilda_plots(output_MATILDA, parameter, plot_type="print"):
-    """MATILDA plotting function to plot input data, runoff output, and HBV parameters."""
+    """
+    Generates visualizations for MATILDA simulation results, including meteorological inputs, runoff outputs, and HBV subdomain variables.
+    Supports multiple plotting styles (static, interactive, and combined).
+
+    Parameters
+    ----------
+    output_MATILDA : list
+        MATILDA simulation output containing the following elements:
+            - Compact output (pandas.DataFrame): Key simulation variables (e.g., runoff, precipitation, temperature).
+            - Full simulation results (pandas.DataFrame).
+            - Model efficiency metric (e.g., Kling-Gupta Efficiency coefficient).
+            - Statistics (pandas.DataFrame).
+            - Glacier lookup table (if applicable).
+            - Glacier change data (if applicable).
+    parameter : pandas.Series
+        Series of MATILDA parameters, including:
+            - `freq`: Frequency for resampling (e.g., "D" for daily, "M" for monthly, "Y" for yearly).
+            - `freq_long`: Long-form frequency description (e.g., "Daily", "Monthly").
+            - `sim_start`: Start date of the simulation period (YYYY-MM-DD).
+            - `sim_end`: End date of the simulation period (YYYY-MM-DD).
+    plot_type : str, optional
+        Specifies the type of plots to generate:
+            - `"print"`: Static plots using Matplotlib.
+            - `"interactive"`: Interactive plots using Plotly.
+            - `"all"`: Both static and interactive plots.
+            Defaults to `"print"`.
+
+    Returns
+    -------
+    list
+        The updated `output_MATILDA` list with added visualizations. The plots are appended as follows:
+            - Static Matplotlib plots: `[fig1, fig2, fig3]` for meteorological inputs, runoff, and HBV subdomains, respectively.
+            - Interactive Plotly plots: `[fig1, fig2]` for full results and annual mean results, respectively.
+
+    Notes
+    -----
+    1. **Static Plots**:
+        - Plots meteorological inputs (temperature, precipitation, evaporation).
+        - Visualizes runoff contributions and comparisons with observed data (if available).
+        - Displays HBV subdomain outputs (soil moisture, snowpack, groundwater).
+    2. **Interactive Plots**:
+        - Provides detailed and zoomable visualizations for meteorological inputs, runoff, and contributions using Plotly.
+        - Includes annotations for model efficiency metrics like KGE.
+    3. Data is resampled to the specified frequency (`freq`) for consistent visualization across time steps.
+    4. Observed runoff data (`observed_runoff`) is included if available in the input.
+
+    Warnings
+    --------
+    - Ensure that `output_MATILDA` contains valid simulation results before calling this function.
+    - Interactive plots require Plotly; ensure it is installed for `"interactive"` or `"all"` options.
+    - Large datasets may cause performance issues with interactive plotting.
+    """
 
     # resampling the output to the specified frequency
     def plot_data(output_MATILDA, parameter):
@@ -2632,7 +3227,64 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
 
 def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print"):
-    """Function to save the MATILDA output to local disk."""
+    """
+    Saves MATILDA simulation outputs, statistics, parameters, glacier area changes, and plots to the local disk.
+
+    Parameters
+    ----------
+    output_MATILDA : list
+        List containing the outputs from the MATILDA simulation. Includes:
+            - Full model output (pandas.DataFrame).
+            - Model statistics (pandas.DataFrame).
+            - Model parameters (pandas.Series).
+            - Glacier area data (optional, pandas.DataFrame).
+            - Plots (Matplotlib or Plotly objects, depending on the plot type).
+    parameter : pandas.Series
+        Series containing the simulation parameters, including:
+            - `sim_start`: Start date of the simulation period (YYYY-MM-DD).
+            - `sim_end`: End date of the simulation period (YYYY-MM-DD).
+    output_path : str
+        Directory path where the output files will be saved. A subfolder with the simulation date and time will be created.
+    plot_type : str, optional
+        Specifies the type of plots to save:
+            - `"print"`: Saves Matplotlib plots as PNG files.
+            - `"interactive"`: Saves Plotly plots as HTML files.
+            - `"all"`: Saves both Matplotlib and Plotly plots in their respective formats.
+        Defaults to `"print"`.
+
+    Returns
+    -------
+    None
+        Saves the outputs and plots to the specified directory.
+
+    Notes
+    -----
+    1. A subdirectory is created under `output_path` with a timestamped name for organizing the outputs.
+    2. The outputs saved include:
+        - Full simulation results as CSV (`model_output_<date_range>.csv`).
+        - Statistics as CSV (`model_stats_<date_range>.csv`).
+        - Parameters as CSV (`model_parameter.csv`).
+        - Glacier area changes as CSV (`glacier_area_<date_range>.csv`) if applicable.
+    3. Plots are saved in the specified format (`PNG` or `HTML`).
+    4. The function automatically handles the appending of date ranges and timestamps to filenames.
+
+    Warnings
+    --------
+    - Ensure the specified `output_path` exists and has write permissions.
+    - When using `"interactive"` or `"all"`, ensure Plotly is installed for saving HTML plots.
+
+    Examples
+    --------
+    Save MATILDA outputs and plots (Matplotlib only):
+    >>> matilda_save_output(output_MATILDA, parameter, "/path/to/output", plot_type="print")
+
+    Save MATILDA outputs and interactive plots (Plotly):
+    >>> matilda_save_output(output_MATILDA, parameter, "/path/to/output", plot_type="interactive")
+
+    Save MATILDA outputs with both static and interactive plots:
+    >>> matilda_save_output(output_MATILDA, parameter, "/path/to/output", plot_type="all")
+    """
+
     if output_path[-1] == "/":
         output_path = (
             output_path
@@ -2769,7 +3421,115 @@ def matilda_simulation(
     AG=0.7,
     CFR=0.15,
 ):
-    """Function to run the whole MATILDA simulation at once."""
+    """
+    Run the complete MATILDA simulation framework, including preprocessing, simulation, and optional output saving.
+
+    Parameters
+    ----------
+    input_df : pandas.DataFrame
+        Input meteorological data for the simulation. Must include timestamp and relevant fields (e.g., temperature, precipitation).
+    obs : pandas.DataFrame, optional
+        Observed runoff data for model calibration or comparison. If provided, it will be included in outputs.
+    glacier_profile : pandas.DataFrame, optional
+        Glacier profile data for elevation-based glacier rescaling routines. If not provided, glacier rescaling is disabled.
+    output : str, optional
+        Directory path to save outputs (CSV files, statistics, plots). If not specified, outputs are not saved.
+    warn : bool, optional
+        Whether to show warnings during execution. Default is `False`.
+    set_up_start : str, optional
+        Start date for the model spin-up period (YYYY-MM-DD). Default is `None`.
+    set_up_end : str, optional
+        End date for the model spin-up period (YYYY-MM-DD). Default is `None`.
+    sim_start : str, optional
+        Start date for the simulation period (YYYY-MM-DD). Default is `None`.
+    sim_end : str, optional
+        End date for the simulation period (YYYY-MM-DD). Default is `None`.
+    freq : str, optional
+        Simulation time step frequency (`"D"` for daily, `"M"` for monthly). Default is `"D"`.
+    lat : float, optional
+        Latitude of the catchment area for potential evapotranspiration calculation. Required for HBV simulations.
+    soi : list, optional
+        Season of interest as a list of two integers: [start_month, end_month]. Default is `None`.
+    area_cat : float, optional
+        Total catchment area in km². Required for runoff scaling.
+    area_glac : float, optional
+        Glacierized area of the catchment in km². Default is `None`.
+    ele_dat : float, optional
+        Elevation of the meteorological station used for input data in meters. Default is `None`.
+    ele_glac : float, optional
+        Average elevation of the glacierized area in meters. Default is `None`.
+    ele_cat : float, optional
+        Average elevation of the entire catchment in meters. Default is `None`.
+    plots : bool, optional
+        Whether to generate plots. Default is `True`.
+    plot_type : str, optional
+        Type of plots to generate. Options are `"print"`, `"interactive"`, or `"all"`. Default is `"print"`.
+    hydro_year : int, optional
+        Start month of the hydrological year. Default is `10` (October).
+    elev_rescaling : bool, optional
+        Whether to perform annual elevation rescaling for glaciers. Default is `False`.
+    pfilter : float, optional
+        Precipitation filter for data preprocessing. Default is `0`.
+    drop_surplus : bool, optional
+        Whether to drop surplus glacial mass balance during simulation. Default is `False`.
+    parameter_set : dict or pandas.DataFrame, optional
+        Predefined parameter set for the model. Overrides individual parameter inputs if provided. Default is `None`.
+    lr_temp : float, optional
+        Temperature lapse rate in °C/m. Default is `-0.006`.
+    lr_prec : float, optional
+        Precipitation lapse rate in mm/m. Default is `0`.
+    TT_snow : float, optional
+        Threshold temperature for snowfall in °C. Default is `0`.
+    TT_diff : float, optional
+        Temperature difference for rain/snow transition in °C. Default is `2`.
+    CFMAX_snow : float, optional
+        Degree-day factor for snowmelt in mm/(°C day). Default is `2.5`.
+    CFMAX_rel : float, optional
+        Ratio of ice melt factor to snow melt factor. Default is `2`.
+    BETA : float, optional
+        Soil moisture recharge coefficient. Default is `1.0`.
+    CET : float, optional
+        Temperature sensitivity factor for evapotranspiration. Default is `0.15`.
+    FC : float, optional
+        Maximum soil moisture storage capacity in mm. Default is `250`.
+    K0, K1, K2 : float, optional
+        Runoff coefficients for groundwater and upper zones. Defaults are `0.055`, `0.055`, and `0.04`, respectively.
+    LP : float, optional
+        Fraction of field capacity above which evapotranspiration occurs. Default is `0.7`.
+    MAXBAS : float, optional
+        Routing parameter for runoff smoothing. Default is `3.0`.
+    PERC : float, optional
+        Maximum percolation rate from upper to lower groundwater zone in mm/day. Default is `1.5`.
+    UZL : float, optional
+        Threshold for surface runoff generation in mm. Default is `120`.
+    PCORR : float, optional
+        Precipitation correction factor. Default is `1.0`.
+    SFCF : float, optional
+        Snowfall correction factor. Default is `0.7`.
+    CWH : float, optional
+        Retention capacity of snowpack for meltwater as a fraction of total snowpack. Default is `0.1`.
+    AG : float, optional
+        Parameter for the glacier storage-release scheme. Default is `0.7`.
+    CFR : float, optional
+        Refreezing factor for snowmelt. Default is `0.15`.
+
+    Returns
+    -------
+    list
+        A list containing:
+            - Compact MATILDA output (pandas.DataFrame).
+            - Full MATILDA output (pandas.DataFrame).
+            - Efficiency coefficient (str or float).
+            - Model statistics (pandas.DataFrame).
+            - Glacier lookup table (optional, str or pandas.DataFrame).
+            - Glacier changes (optional, str or pandas.DataFrame).
+
+    Notes
+    -----
+    1. Outputs are saved to disk if `output` is specified.
+    2. Observed runoff data, if provided, is included in the efficiency calculations and final outputs.
+    3. Plots can be suppressed by setting `plots=False`.
+    """
 
     print("---")
     print("MATILDA framework")
