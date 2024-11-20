@@ -235,3 +235,19 @@ def main():
 if __name__ == "__main__":
     main()
 
+## Run manually
+
+# with open(f'{home}/parameters.yml', 'r') as f:
+#     parameters = yaml.safe_load(f)
+#
+# with open(f'{home}/settings.yml', 'r') as f:
+#     settings = yaml.safe_load(f)
+#
+# data = pd.read_csv(f'{home}/era5.csv')
+# obs = pd.read_csv(f'{home}/obs_runoff_example.csv')
+# swe = pd.read_csv(f'{home}/swe.csv')
+# glacier_profile = pd.read_csv(f'{home}/glacier_profile.csv')
+#
+# new_output = matilda_simulation(input_df=data, obs=obs, **settings, **parameters, glacier_profile=glacier_profile)
+#
+# new_output[9].show()

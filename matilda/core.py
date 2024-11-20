@@ -5,7 +5,6 @@ This file may use the input files created by the COSIPY-utility "aws2cosipy" as 
 """
 # Import all necessary python packages
 import sys
-
 import numpy
 import xarray as xr
 import numpy as np
@@ -15,16 +14,15 @@ import copy
 import hydroeval
 import HydroErr as he
 import warnings
-
-warnings.filterwarnings(action='ignore', module='HydroErr')
-from datetime import date, datetime, timedelta
 import os
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.offsetbox import AnchoredText
-
-from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from datetime import date, datetime, timedelta
+from matplotlib.offsetbox import AnchoredText
+from plotly.subplots import make_subplots
+
+warnings.filterwarnings(action='ignore', module='HydroErr')
 
 
 # Setting the parameter for the MATILDA simulation
@@ -35,7 +33,7 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
                       lr_temp=-0.006, lr_prec=0, \
                       hydro_year=10, TT_snow=0, TT_diff=2, CFMAX_snow=2.5, CFMAX_rel=2, \
                       BETA=1.0, CET=0.15, FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0, \
-                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RFS=0.15,
+                      PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, CFR=0.15,
                       # Constants
                       CFR_ice=0.01,  # fraction of ice melt refreezing in moulins
                       **kwargs):
@@ -97,8 +95,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
             CWH = parameter_set.loc["CWH"].values.item()
         if "AG" in parameter_set.index:
             AG = parameter_set.loc["AG"].values.item()
-        if "RFS" in parameter_set.index:
-            RFS = parameter_set.loc["RFS"].values.item()
+        if "CFR" in parameter_set.index:
+            CFR = parameter_set.loc["CFR"].values.item()
 
     print("Reading parameters for MATILDA simulation")
     # Checking the parameters to set the catchment properties and simulation
@@ -218,8 +216,8 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
         print("WARNING: Parameter CWH exceeds boundaries [0, 0.2].")
     if 0 > AG or AG > 1:
         print("WARNING: Parameter AG exceeds boundaries [0, 1].")
-    if 0.05 > RFS or RFS > 0.25:
-        print("WARNING: Parameter RFS exceeds boundaries [0.05, 0.25].")
+    if 0.05 > CFR or CFR > 0.25:
+        print("WARNING: Parameter CFR exceeds boundaries [0.05, 0.25].")
 
     # calculate threshold temperature for rain
     TT_rain = TT_diff + TT_snow
@@ -236,7 +234,7 @@ def matilda_parameter(input_df, set_up_start=None, set_up_end=None, sim_start=No
          "TT_rain": TT_rain, "TT_diff": TT_diff, "CFMAX_snow": CFMAX_snow, "CFMAX_ice": CFMAX_ice,
          "CFMAX_rel": CFMAX_rel, "BETA": BETA, "CET": CET, "FC": FC, "K0": K0, "K1": K1, "K2": K2, "LP": LP,
          "MAXBAS": MAXBAS, "PERC": PERC, "UZL": UZL, "PCORR": PCORR, "SFCF": SFCF, "CWH": CWH, "AG": AG,
-         "CFR_ice": CFR_ice, "RFS": RFS})
+         "CFR_ice": CFR_ice, "CFR": CFR})
     print("Parameter set:")
     print(str(parameter))
     return parameter
@@ -451,8 +449,9 @@ def calculate_glaciermelt(ds, parameter, prints=True):
     # calculate refreezing, runoff and surface mass balance
     total_melt = snow_melt + ice_melt
     refr_ice = parameter.CFR_ice * ice_melt
-    refr_snow = parameter.RFS * snow_melt
-    runoff_rate = total_melt - refr_snow - refr_ice
+    refr_snow = parameter.CFR * snow_melt
+    refr_tot = refr_snow + refr_ice
+    runoff_rate = total_melt - refr_tot
     inst_smb = accu_rate - runoff_rate
     runoff_rate_rain = runoff_rate + rain
 
@@ -480,8 +479,7 @@ def calculate_glaciermelt(ds, parameter, prints=True):
          xr.DataArray(ice_melt, name="DDM_ice_melt"),
          xr.DataArray(snow_melt, name="DDM_snow_melt"),
          xr.DataArray(total_melt, name="DDM_total_melt"),
-         xr.DataArray(refr_ice, name="DDM_refreezing_ice"),
-         xr.DataArray(refr_snow, name="DDM_refreezing_snow"),
+         xr.DataArray(refr_tot, name="DDM_refreezing"),
          xr.DataArray(glacier_reservoir, name="DDM_glacier_reservoir"),
          xr.DataArray(actual_runoff, name='Q_DDM')
          ])
@@ -647,7 +645,6 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
         glacier_change_area['time'] = glacier_change_area['time'].dt.strftime('%Y')
         glacier_change = glacier_change.rename_axis('TIMESTAMP')
 
-
     return output_DDM, glacier_change_area
 
 
@@ -714,7 +711,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
         input_df_catchment = input_df_catchment[parameter.sim_start:parameter.sim_end]
 
         print('**********\n'
-            "WARNING!\n"
+              "WARNING!\n"
               "The provided setup period does not cover the full hydrological year the simulation period \n"
               "starts in. The initial surface mass balance (SMB) of the first hydrological year in the glacier \n"
               "rescaling routine therefore possibly misses a significant part of the accumulation period (e.g. Oct-Dec).\n"
@@ -777,13 +774,13 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
 
                     if i == 0 and smb_unscaled > 0:
                         print('**********\n'
-                            "ERROR:\n"
-                            "The cumulative surface mass balance in the first year of the simulation period is \n"
-                            "positive. You may want to shift the starting year or set drop_surplus=False.\n"
-                            '**********\n')
+                              "ERROR:\n"
+                              "The cumulative surface mass balance in the first year of the simulation period is \n"
+                              "positive. You may want to shift the starting year or set drop_surplus=False.\n"
+                              '**********\n')
                     # scale the smb to the (updated) glacierized fraction of the catchment
                     smb = smb_unscaled * (
-                                new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
+                            new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
                     # add the smb from the previous year(s) to the new year
                     smb_cum = smb_cum + smb
                     if smb_cum > 0:
@@ -807,7 +804,7 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                 else:
                     # scale the smb to the (updated) glacierized fraction of the catchment
                     smb = smb_unscaled * (
-                                new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
+                            new_area / parameter.area_cat)  # SMB is area (re-)scaled because m is area scaled as well
                     smb_scaled = smb.copy()
 
                     # If the cumulative SMB has been positive in previous years the surplus is added here
@@ -822,12 +819,12 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                     if smb_cum > 0:
                         if warn:
                             print('**********\n'
-                                "WARNING:\n"
-                                "At some point of the simulation period the cumulative surface mass balance is\n"
-                                " positive. The glacier rescaling routine cannot model glacier extent exceeding the initial\n"
-                                " status of the provided glacier profile. The surplus is stored and added in subsequent years\n"
-                                " with negative mass balance(s) to maintain the long-term average balance.\n"
-                                '**********\n')
+                                  "WARNING:\n"
+                                  "At some point of the simulation period the cumulative surface mass balance is\n"
+                                  " positive. The glacier rescaling routine cannot model glacier extent exceeding the initial\n"
+                                  " status of the provided glacier profile. The surplus is stored and added in subsequent years\n"
+                                  " with negative mass balance(s) to maintain the long-term average balance.\n"
+                                  '**********\n')
                             warn = False
                         surplus += max(smb_cum, 0)
                         smb_cum = 0
@@ -848,12 +845,11 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                     new_distribution = int(np.nansum(new_distribution))
                 else:
                     new_area = 0
-                    
+
                 glacier_mass_abs = (1 - smb_percentage * 0.01) * m
-                glacier_vol_init = (m / 1000) * parameter.area_glac * 1e6 / 0.908		# mass in mmwe, area in km^2
+                glacier_vol_init = (m / 1000) * parameter.area_glac * 1e6 / 0.908  # mass in mmwe, area in km^2
                 glacier_vol = (glacier_mass_abs / 1000) * new_area * 1e6 / 0.908
                 glacier_vol_perc = glacier_vol / glacier_vol_init
-
 
                 # Append to glacier change dataframe for subsequent functions (skip last incomplete year)
                 if drop_surplus:
@@ -866,16 +862,17 @@ def updated_glacier_melt(data, lookup_table, glacier_profile, parameter, drop_su
                         'time': year, "glacier_area": new_area, "glacier_elev": new_distribution,
                         'smb_water_year': smb_unscaled, 'smb_scaled': smb_scaled, "smb_scaled_capped": smb,
                         "smb_scaled_capped_cum": smb_cum, "surplus": surplus
-                        
-                        , "glacier_melt_perc": smb_percentage, "glacier_mass_mmwe": glacier_mass_abs, "glacier_vol_m3":  glacier_vol, "glacier_vol_perc": glacier_vol_perc
-                        
+
+                        , "glacier_melt_perc": smb_percentage, "glacier_mass_mmwe": glacier_mass_abs,
+                        "glacier_vol_m3": glacier_vol, "glacier_vol_perc": glacier_vol_perc
+
                     }, index=[i])], ignore_index=True)
 
             # Scale DDM output to new glacierized fraction
             for col in up_cols:
                 output_DDM_year[col + "_updated_scaled"] = np.where(output_DDM_year["water_year"] == year,
                                                                     output_DDM_year[col] * (
-                                                                                new_area / parameter.area_cat),
+                                                                            new_area / parameter.area_cat),
                                                                     output_DDM_year[col + "_updated_scaled"])
             # Append year to full dataset
             output_DDM = pd.concat([output_DDM, output_DDM_year])
@@ -1022,7 +1019,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         # snowpack after melting
         SNOWPACK_cal[t] = SNOWPACK_cal[t] - melt
         # refreezing accounting
-        refreezing = parameter.RFS * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
+        refreezing = parameter.CFR * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
         # control refreezing
         if refreezing < 0: refreezing = 0
         refreezing = min(refreezing, SNOWMELT_cal[t])
@@ -1108,9 +1105,12 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     # meltwater box
     SNOWMELT = np.zeros(len(Prec))
     SNOWMELT[0] = 0.0001
-    # total melt off-glacier
+    # total melt off-glacier --> added to write daily output
     off_glac = np.zeros(len(Prec))
     off_glac[0] = 0.0001
+    # refreezing  --> added to write daily output
+    refreezing_off_glacier = np.zeros(len(Prec))
+    refreezing_off_glacier[0] = 0.0001
     # soil moisture box
     SM = np.zeros(len(Prec))
     SM[0] = SM_cal[-1]
@@ -1143,18 +1143,19 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         # snowpack after melting
         SNOWPACK[t] = SNOWPACK[t] - melt
         # refreezing accounting
-        refreezing = parameter.RFS * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
+        refreezing = parameter.CFR * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
         # control refreezing
         if refreezing < 0: refreezing = 0
         refreezing = min(refreezing, SNOWMELT[t])
+        # write refreezing to output
+        refreezing_off_glacier[t] = refreezing
         # snowpack after refreezing
         SNOWPACK[t] = SNOWPACK[t] + refreezing
         # meltwater after refreezing
         SNOWMELT[t] = SNOWMELT[t] - refreezing
-        
-        # Total melt off-glacier
-        off_glac[t] = melt - refreezing
-        
+        # write total melt off-glacier to output
+        off_glac[t] = max(melt - refreezing, 0)
+
         # recharge to soil
         tosoil = SNOWMELT[t] - (parameter.CWH * SNOWPACK[t])
         # control recharge to soil
@@ -1233,7 +1234,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     Qsim = Qsim_smoothed
     hbv_results = pd.DataFrame(
         {"HBV_temp": Temp, "HBV_prec": Prec, "HBV_rain": RAIN, "HBV_snow": SNOW, "HBV_pe": Evap,
-         "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, "HBV_refreezing": refreezing,
+         "HBV_snowpack": SNOWPACK, "HBV_soil_moisture": SM, "HBV_AET": ETact, "HBV_refreezing": refreezing_off_glacier,
          "HBV_upper_gw": SUZ, "HBV_lower_gw": SLZ, "HBV_melt_off_glacier": off_glac, "Q_HBV": Qsim},
         index=input_df_hbv[parameter.sim_start: parameter.sim_end].index)
     print("Finished HBV routine")
@@ -1249,8 +1250,6 @@ def create_statistics(output_MATILDA):
     stats = pd.concat([stats, sum])
     stats = stats.round(3)
     return stats
-
-
 
 
 def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, elev_rescaling=False, drop_surplus=False):
@@ -1377,10 +1376,8 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                  'melt_on_glaciers': output_MATILDA['DDM_total_melt_updated_scaled'],
                  'ice_melt_on_glaciers': output_MATILDA['DDM_ice_melt_updated_scaled'],
                  'snow_melt_on_glaciers': output_MATILDA['DDM_snow_melt_updated_scaled'],
-                 'refreezing_ice': output_MATILDA['DDM_refreezing_ice_updated_scaled'],
-                 'refreezing_snow': output_MATILDA['DDM_refreezing_snow_updated_scaled'],
-                 'total_refreezing': output_MATILDA['DDM_refreezing_ice_updated_scaled'] + output_MATILDA[
-                     'DDM_refreezing_snow_updated_scaled'] + output_MATILDA['HBV_refreezing'],
+                 'refreezing_glacier': output_MATILDA['DDM_refreezing_updated_scaled'],
+                 'total_refreezing': output_MATILDA['DDM_refreezing_updated_scaled'] + output_MATILDA['HBV_refreezing'],
                  'SMB': output_MATILDA['DDM_smb'],
                  'actual_evaporation': output_MATILDA['HBV_AET'],
                  'total_precipitation': output_MATILDA['Prec_total'],
@@ -1412,10 +1409,8 @@ def matilda_submodules(df_preproc, parameter, obs=None, glacier_profile=None, el
                  'melt_on_glaciers': output_MATILDA['DDM_total_melt_scaled'],
                  'ice_melt_on_glaciers': output_MATILDA['DDM_ice_melt_scaled'],
                  'snow_melt_on_glaciers': output_MATILDA['DDM_snow_melt_scaled'],
-                 'refreezing_ice': output_MATILDA['DDM_refreezing_ice_scaled'],
-                 'refreezing_snow': output_MATILDA['DDM_refreezing_snow_scaled'],
-                 'total_refreezing': output_MATILDA['DDM_refreezing_ice_scaled'] + output_MATILDA[
-                     'DDM_refreezing_snow_scaled'] + output_MATILDA['HBV_refreezing'],
+                 'refreezing_glacier': output_MATILDA['DDM_refreezing_scaled'],
+                 'total_refreezing': output_MATILDA['DDM_refreezing_scaled'] + output_MATILDA['HBV_refreezing'],
                  'SMB': output_MATILDA['DDM_smb'],
                  'actual_evaporation': output_MATILDA['HBV_AET'],
                  'total_precipitation': output_MATILDA['Prec_total'],
@@ -1528,8 +1523,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                  "total_runoff": "sum",
                  "actual_evaporation": "sum",
                  "snowpack_off_glaciers": "mean",
-                 "refreezing_snow": "sum",
-                 "refreezing_ice": "sum",
+                 "refreezing_glacier": "sum",
                  "total_refreezing": "sum",
                  "soil_moisture": "mean",
                  "upper_groundwater": "mean",
@@ -1744,20 +1738,6 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                            legendgroup="runoff"),
                 row=row, col=1)
 
-        # two new series for refreezing
-        if 'refreezing_snow' in plot_data.columns:
-            fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["refreezing_snow"], name="MATILDA snow refreezing",
-                           fillcolor="#adb5bd", legendgroup="refreeze", legendgrouptitle_text="Refreezing",
-                           mode='none', fill='tozeroy'),
-                row=row, col=1)
-        if 'refreezing_ice' in plot_data.columns:
-            fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["refreezing_ice"], name="MATILDA ice refreezing",
-                           fillcolor="#6c757d", legendgroup="refreeze",
-                           mode='none', fill='tozeroy'),
-                row=row, col=1)
-
         # add coefficient to plot
         if not isinstance(output_MATILDA[2], str):
             fig.add_annotation(xref='x domain', yref='y domain', x=0.99, y=0.95, xanchor="right", showarrow=False,
@@ -1809,6 +1789,13 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(x=x_vals, y=plot_data["prec_on_glaciers"], name="Precipitation on glacier", fillcolor='#d72f41',
                        legendgroup="runoff2", stackgroup='one', mode='none'),
             row=row, col=1)
+        # new series for refreezing
+        if 'total_refreezing' in plot_data.columns:
+            fig.add_trace(
+                go.Scatter(x=x_vals, y=plot_data["total_refreezing"] * -1, name="Refreezing",
+                           fillcolor="#adb5bd", legendgroup="runoff2",
+                           mode='none', fill='tozeroy'),
+                row=row, col=1)
 
     def plot_plotly(plot_data, plot_annual_data, parameter):
         # construct date range for chart titles
@@ -2042,7 +2029,7 @@ def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                        parameter_set=None, lr_temp=-0.006, lr_prec=0, TT_snow=0,
                        TT_diff=2, CFMAX_snow=2.5, CFMAX_rel=2, BETA=1.0, CET=0.15,
                        FC=250, K0=0.055, K1=0.055, K2=0.04, LP=0.7, MAXBAS=3.0,
-                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, RFS=0.15):
+                       PERC=1.5, UZL=120, PCORR=1.0, SFCF=0.7, CWH=0.1, AG=0.7, CFR=0.15):
     """Function to run the whole MATILDA simulation at once."""
 
     print('---')
@@ -2055,7 +2042,7 @@ def matilda_simulation(input_df, obs=None, glacier_profile=None, output=None, wa
                                   lr_prec=lr_prec, TT_snow=TT_snow, soi=soi, warn=warn, pfilter=pfilter, \
                                   TT_diff=TT_diff, CFMAX_snow=CFMAX_snow, CFMAX_rel=CFMAX_rel, \
                                   BETA=BETA, CET=CET, FC=FC, K0=K0, K1=K1, K2=K2, LP=LP, \
-                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG, RFS=RFS)
+                                  MAXBAS=MAXBAS, PERC=PERC, UZL=UZL, PCORR=PCORR, SFCF=SFCF, CWH=CWH, AG=AG, CFR=CFR)
 
     if parameter is None:
         return
