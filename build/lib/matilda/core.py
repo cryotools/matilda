@@ -1789,10 +1789,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(x=x_vals, y=plot_data["prec_on_glaciers"], name="Precipitation on glacier", fillcolor='#d72f41',
                        legendgroup="runoff2", stackgroup='one', mode='none'),
             row=row, col=1)
-        # two new series for refreezing
-        if 'refreezing_glacier' in plot_data.columns:
+        # new series for refreezing
+        if 'total_refreezing' in plot_data.columns:
             fig.add_trace(
-                go.Scatter(x=x_vals, y=plot_data["refreezing_glacier"] * -1, name="Refreezing",
+                go.Scatter(x=x_vals, y=plot_data["total_refreezing"] * -1, name="Refreezing",
                            fillcolor="#adb5bd", legendgroup="runoff2",
                            mode='none', fill='tozeroy'),
                 row=row, col=1)
