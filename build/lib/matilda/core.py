@@ -100,7 +100,6 @@ def matilda_parameter(
     ele_glac=None,
     ele_cat=None,
     parameter_set=None,
-    soi=None,
     warn=False,
     pfilter=0,
     lr_temp=-0.006,
@@ -160,8 +159,6 @@ def matilda_parameter(
         Reference elevation of the entire catchment. Defaults to None.
     parameter_set : dict or pandas.DataFrame, optional
         Input parameter set to override default values. Can be provided as a dictionary or DataFrame. Defaults to None.
-    soi : list of int or None, optional
-        Season of interest defined as a 2-element list [start_month, end_month]. Defaults to None.
     warn : bool, optional
         If False, suppresses warnings. Defaults to False.
     pfilter : float, optional
@@ -361,20 +358,6 @@ def matilda_parameter(
             + freq
             + " is not supported. Choose either 'D' (daily), 'W' (weekly), 'M' (monthly) or 'Y' (yearly)."
         )
-
-    # Check if season of interest is specified
-    if soi is not None:
-        if type(soi) is not list:
-            print(
-                "Error: The season of interest (soi) needs to be specified as 2-element list: [first_calendar_month, last_calendar_month]"
-            )
-            sys.exit()
-        elif len(soi) != 2:
-            print(
-                "Error: The season of interest (soi) needs to be specified as 2-element list: [first_calendar_month, last_calendar_month]"
-            )
-            sys.exit()
-
     # Check model parameters
     if 0 > pfilter or lr_temp > 0.5:
         print("WARNING: Parameter pfilter exceeds the recommended threshold [0, 0.5].")
@@ -446,7 +429,6 @@ def matilda_parameter(
             "ele_glac": ele_glac,
             "ele_non_glac": ele_non_glac,
             "hydro_year": hydro_year,
-            "soi": soi,
             "warn": warn,
             "pfilter": pfilter,
             "lr_temp": lr_temp,
@@ -552,13 +534,6 @@ def matilda_preproc(input_df, parameter, obs=None):
             obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
         )
         obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
-        # Omit everything outside the specified season of interest (soi)
-        if parameter.soi is not None:
-            obs_preproc = obs_preproc[
-                obs_preproc.index.month.isin(
-                    range(parameter.soi[0], parameter.soi[1] + 1)
-                )
-            ]
         # Expanding the observation period to full years filling up with NAs
         idx_first = obs_preproc.index.year[1]
         idx_last = obs_preproc.index.year[-1]
@@ -3386,7 +3361,6 @@ def matilda_simulation(
     sim_end=None,
     freq="D",
     lat=None,
-    soi=None,
     area_cat=None,
     area_glac=None,
     ele_dat=None,
@@ -3448,8 +3422,6 @@ def matilda_simulation(
         Simulation time step frequency (`"D"` for daily, `"M"` for monthly). Default is `"D"`.
     lat : float, optional
         Latitude of the catchment area for potential evapotranspiration calculation. Required for HBV simulations.
-    soi : list, optional
-        Season of interest as a list of two integers: [start_month, end_month]. Default is `None`.
     area_cat : float, optional
         Total catchment area in km². Required for runoff scaling.
     area_glac : float, optional
@@ -3551,7 +3523,6 @@ def matilda_simulation(
         lr_temp=lr_temp,
         lr_prec=lr_prec,
         TT_snow=TT_snow,
-        soi=soi,
         warn=warn,
         pfilter=pfilter,
         TT_diff=TT_diff,

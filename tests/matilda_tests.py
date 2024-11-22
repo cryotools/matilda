@@ -65,26 +65,28 @@ try:
 except NameError:
     # Case 2: Interactive environment (e.g., Jupyter, IDE)
     cwd = os.getcwd()
-    if os.path.basename(cwd) == 'tests':
+    if os.path.basename(cwd) == "tests":
         home = cwd
-    elif os.path.basename(cwd) == 'matilda':
-        home = os.path.join(cwd, 'tests')
+    elif os.path.basename(cwd) == "matilda":
+        home = os.path.join(cwd, "tests")
     else:
-        raise ValueError("Unknown working directory. Please specify the directory manually.")
+        raise ValueError(
+            "Unknown working directory. Please specify the directory manually."
+        )
 
 print(f"The home directory is set to: {home}")
 
 
 def load_baseline(file_path):
     """Load the baseline output from a pickle file."""
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         baseline = pickle.load(f)
         return baseline
 
 
 def save_baseline(output, file_path):
     """Save the model output as a baseline to a pickle file."""
-    with open(file_path, 'wb') as f:
+    with open(file_path, "wb") as f:
         pickle.dump(output, f)
 
 
@@ -108,7 +110,7 @@ def compare_dataframes(df1, df2, tolerance=1e-3):
                 summary[col] = {
                     "mean_diff": round(diff.mean(), 3),
                     "sum_diff": round(diff.sum(), 3),
-                    "max_diff": round(diff.max(), 3)
+                    "max_diff": round(diff.max(), 3),
                 }
     return summary
 
@@ -132,14 +134,14 @@ def compare_output(new_output, baseline_output, tolerance=1e-3):
     baseline_df = pd.DataFrame(baseline_output[0])
     df_differences = compare_dataframes(new_df, baseline_df, tolerance)
     if df_differences:
-        differences['DataFrame'] = df_differences
+        differences["DataFrame"] = df_differences
 
     # Compare the third element: KGE metric (float64)
     if not np.isclose(new_output[2], baseline_output[2], atol=tolerance):
-        differences['KGE'] = {
+        differences["KGE"] = {
             "new_value": round(new_output[2], 3),
             "baseline_value": round(baseline_output[2], 3),
-            "absolute_diff": round(abs(new_output[2] - baseline_output[2]), 3)
+            "absolute_diff": round(abs(new_output[2] - baseline_output[2]), 3),
         }
 
     return differences
@@ -150,44 +152,56 @@ def plot_comparison(new_plot, baseline_plot):
     fig, axs = plt.subplots(2, 1, figsize=(10, 8))
 
     # Render the new plot in the first subplot
-    axs[0].set_title('New Plot', fontsize=16)  # Increased font size
+    axs[0].set_title("New Plot", fontsize=16)  # Increased font size
     new_plot_canvas = new_plot.canvas
     new_plot_canvas.draw()
-    new_plot_image = np.frombuffer(new_plot_canvas.tostring_rgb(), dtype='uint8')
-    new_plot_image = new_plot_image.reshape(new_plot_canvas.get_width_height()[::-1] + (3,))
+    new_plot_image = np.frombuffer(new_plot_canvas.tostring_rgb(), dtype="uint8")
+    new_plot_image = new_plot_image.reshape(
+        new_plot_canvas.get_width_height()[::-1] + (3,)
+    )
     axs[0].imshow(new_plot_image)
-    axs[0].axis('off')
+    axs[0].axis("off")
 
     # Render the baseline plot in the second subplot
-    axs[1].set_title('Baseline Plot', fontsize=16)  # Increased font size
+    axs[1].set_title("Baseline Plot", fontsize=16)  # Increased font size
     baseline_plot_canvas = baseline_plot.canvas
     baseline_plot_canvas.draw()
-    baseline_plot_image = np.frombuffer(baseline_plot_canvas.tostring_rgb(), dtype='uint8')
-    baseline_plot_image = baseline_plot_image.reshape(baseline_plot_canvas.get_width_height()[::-1] + (3,))
+    baseline_plot_image = np.frombuffer(
+        baseline_plot_canvas.tostring_rgb(), dtype="uint8"
+    )
+    baseline_plot_image = baseline_plot_image.reshape(
+        baseline_plot_canvas.get_width_height()[::-1] + (3,)
+    )
     axs[1].imshow(baseline_plot_image)
-    axs[1].axis('off')
+    axs[1].axis("off")
 
     plt.tight_layout()
 
 
 def main():
     # Load inputs for testing
-    with open(f'{home}/parameters.yml', 'r') as f:
+    with open(f"{home}/parameters.yml", "r") as f:
         parameters = yaml.safe_load(f)
 
-    with open(f'{home}/settings.yml', 'r') as f:
+    with open(f"{home}/settings.yml", "r") as f:
         settings = yaml.safe_load(f)
 
-    data = pd.read_csv(f'{home}/era5.csv')
-    obs = pd.read_csv(f'{home}/obs_runoff_example.csv')
-    swe = pd.read_csv(f'{home}/swe.csv')
-    glacier_profile = pd.read_csv(f'{home}/glacier_profile.csv')
+    data = pd.read_csv(f"{home}/era5.csv")
+    obs = pd.read_csv(f"{home}/obs_runoff_example.csv")
+    swe = pd.read_csv(f"{home}/swe.csv")
+    glacier_profile = pd.read_csv(f"{home}/glacier_profile.csv")
 
     # Point to baseline results if available
-    baseline_file = f'{home}/baseline_output.pickle'
+    baseline_file = f"{home}/baseline_output.pickle"
 
     with HiddenPrints():
-        new_output = matilda_simulation(input_df=data, obs=obs, **settings, **parameters, glacier_profile=glacier_profile)
+        new_output = matilda_simulation(
+            input_df=data,
+            obs=obs,
+            **settings,
+            **parameters,
+            glacier_profile=glacier_profile,
+        )
 
     # Load baseline
     try:
@@ -203,7 +217,7 @@ def main():
     if differences:
         print("Differences detected:")
         for key, value in differences.items():
-            if key == 'DataFrame':
+            if key == "DataFrame":
                 print("\nDataFrame Differences (summary):")
                 # Convert differences to DataFrame
                 df_differences = pd.DataFrame(value).T
@@ -237,17 +251,17 @@ if __name__ == "__main__":
 
 ## Run manually
 
-with open(f'{home}/parameters.yml', 'r') as f:
-    parameters = yaml.safe_load(f)
-
-with open(f'{home}/settings.yml', 'r') as f:
-    settings = yaml.safe_load(f)
-
-data = pd.read_csv(f'{home}/era5.csv')
-obs = pd.read_csv(f'{home}/obs_runoff_example.csv')
-swe = pd.read_csv(f'{home}/swe.csv')
-glacier_profile = pd.read_csv(f'{home}/glacier_profile.csv')
-
-new_output = matilda_simulation(input_df=data, obs=obs, **settings, **parameters, glacier_profile=glacier_profile)
-
-print(new_output[5])
+# with open(f'{home}/parameters.yml', 'r') as f:
+#     parameters = yaml.safe_load(f)
+#
+# with open(f'{home}/settings.yml', 'r') as f:
+#     settings = yaml.safe_load(f)
+#
+# data = pd.read_csv(f'{home}/era5.csv')
+# obs = pd.read_csv(f'{home}/obs_runoff_example.csv')
+# swe = pd.read_csv(f'{home}/swe.csv')
+# glacier_profile = pd.read_csv(f'{home}/glacier_profile.csv')
+#
+# new_output = matilda_simulation(input_df=data, obs=obs, **settings, **parameters, glacier_profile=glacier_profile)
+#
+# print(new_output[5])
