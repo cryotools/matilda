@@ -427,7 +427,6 @@ def spot_setup(
     ele_dat=None,
     ele_glac=None,
     ele_cat=None,
-    soi=None,
     glacier_profile=None,
     elev_rescaling=True,
     target_mb=None,
@@ -503,8 +502,6 @@ def spot_setup(
         Catchment and glacierized areas in km².
     - ele_dat, ele_glac, ele_cat : float
         Mean elevations (m a.s.l.) of the data, glacier, and catchment.
-    - soi : list, optional
-        Season of interest as [start_month, end_month].
     - glacier_profile : DataFrame, optional
         Glacier profile for scaling and elevation rescaling.
     - elev_rescaling : bool, optional
@@ -684,7 +681,6 @@ def spot_setup(
                     sim_end=sim_end,
                     freq=freq,
                     lat=lat,
-                    soi=soi,
                     area_cat=area_cat,
                     area_glac=area_glac,
                     ele_dat=ele_dat,
@@ -729,11 +725,6 @@ def spot_setup(
             )
             # To daily resolution
             obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
-            # Omit everything outside the specified season of interest (soi)
-            if soi is not None:
-                obs_preproc = obs_preproc[
-                    obs_preproc.index.month.isin(range(soi[0], soi[1] + 1))
-                ]
             # Expanding the observation period full years filling up with NAs
             idx_first = obs_preproc.index.year[1]
             idx_last = obs_preproc.index.year[-1]
@@ -831,7 +822,6 @@ def spot_setup_glacier(
     ele_dat=None,
     ele_glac=None,
     ele_cat=None,
-    soi=None,
     glacier_profile=None,
     obs_type="annual",
     obj_func=None,
@@ -880,8 +870,6 @@ def spot_setup_glacier(
         Catchment and glacierized areas in km².
     - ele_dat, ele_glac, ele_cat : float
         Mean elevations (m a.s.l.) of the data, glacier, and catchment.
-    - soi : list, optional
-        Season of interest as [start_month, end_month].
     - glacier_profile : DataFrame
         Glacier profile used for elevation rescaling and look-up table generation.
     - obs_type : str, optional
@@ -983,7 +971,6 @@ def spot_setup_glacier(
                     sim_end=sim_end,
                     freq=freq,
                     lat=lat,
-                    soi=soi,
                     area_cat=area_cat,
                     area_glac=area_glac,
                     ele_dat=ele_dat,
@@ -1296,7 +1283,6 @@ def psample(
     ele_dat=None,
     ele_glac=None,
     ele_cat=None,
-    soi=None,
     glacier_profile=None,
     interf=4,
     freqst=2,
@@ -1356,8 +1342,6 @@ def psample(
         Glacierized area in km².
     ele_dat, ele_glac, ele_cat : float, optional
         Elevations (mean, glacier, and catchment).
-    soi : list of int, optional
-        Start and end months of the season of interest (e.g., [5, 10] for May to October).
     glacier_profile : pandas.DataFrame, optional
         Glacier profile data for rescaling and optimization routines.
     interf : int, optional
@@ -1448,7 +1432,6 @@ def psample(
             ele_glac=ele_glac,
             ele_cat=ele_cat,
             lat=lat,
-            soi=soi,
             interf=interf,
             freqst=freqst,
             glacier_profile=glacier_profile,
@@ -1471,7 +1454,6 @@ def psample(
             ele_glac=ele_glac,
             ele_cat=ele_cat,
             lat=lat,
-            soi=soi,
             interf=interf,
             freqst=freqst,
             glacier_profile=glacier_profile,

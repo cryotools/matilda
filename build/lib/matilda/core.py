@@ -66,20 +66,21 @@ For questions or contributions, please contact:
 - Institution: Humboldt-Universität zu Berlin
 """
 
-import sys
-import xarray as xr
-import numpy as np
-import pandas as pd
-import scipy.signal as ss
+import os
+from datetime import date, datetime
+import warnings
 import copy
+import importlib.resources
+import json
+import pandas as pd
+import numpy as np
+import xarray as xr
+import scipy.signal as ss
 import hydroeval
 import HydroErr as he
-import warnings
-import os
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import plotly.graph_objects as go
-from datetime import date, datetime, timedelta
 from matplotlib.offsetbox import AnchoredText
 from plotly.subplots import make_subplots
 
@@ -99,204 +100,93 @@ def matilda_parameter(
     ele_dat=None,
     ele_glac=None,
     ele_cat=None,
-    parameter_set=None,
     warn=False,
-    pfilter=0,
-    lr_temp=-0.006,
-    lr_prec=0,
-    hydro_year=10,
-    TT_snow=0,
-    TT_diff=2,
-    CFMAX_snow=2.5,
-    CFMAX_rel=2,
-    BETA=1.0,
-    CET=0.15,
-    FC=250,
-    K0=0.055,
-    K1=0.055,
-    K2=0.04,
-    LP=0.7,
-    MAXBAS=3.0,
-    PERC=1.5,
-    UZL=120,
-    PCORR=1.0,
-    SFCF=0.7,
-    CWH=0.1,
-    AG=0.7,
-    CFR=0.15,
-    # Constants
-    CFR_ice=0.01,  # fraction of ice melt refreezing in moulins
-    **kwargs
+    **matilda_param,
 ):
     """
-    Creates a series from the provided and/or default parameters to be supplied to all subsequent MATILDA modules.
+    Initialize parameters for the MATILDA simulation.
 
-    Parameters
-    ----------
+    This function processes user-defined and default parameters for the MATILDA model,
+    validates parameter ranges, calculates derived parameters, and prepares the final
+    parameter set for the simulation.
+
+    Parameters:
+    -----------
     input_df : pandas.DataFrame
-        Input DataFrame containing the time series data required for simulation.
+        Input data containing meteorological and optional discharge data.
     set_up_start : str or None, optional
-        Start date of the setup period in "YYYY-MM-DD" format. Defaults to None.
+        Start date for the model setup period (default: inferred from input data).
     set_up_end : str or None, optional
-        End date of the setup period in "YYYY-MM-DD" format. Defaults to None.
+        End date for the model setup period (default: one year after `set_up_start`).
     sim_start : str or None, optional
-        Start date of the simulation period in "YYYY-MM-DD" format. Defaults to None.
+        Start date for the simulation period (default: inferred from input data).
     sim_end : str or None, optional
-        End date of the simulation period in "YYYY-MM-DD" format. Defaults to None.
+        End date for the simulation period (default: inferred from input data).
     freq : str, optional
-        Temporal frequency for simulation outputs, e.g., 'D' (daily), 'W' (weekly), 'M' (monthly), or 'Y' (yearly). Defaults to 'D'.
-    lat : float or None, optional
-        Latitude of the catchment for potential evapotranspiration calculations. Defaults to None.
-    area_cat : float or None, optional
-        Catchment area in square kilometers. Defaults to None.
+        Resampling frequency for output data. Options: 'D' (daily), 'W' (weekly),
+        'M' (monthly), 'Y' (yearly). Default is 'D'.
+    lat : float, required
+        Latitude of the study area in degrees, required for potential evapotranspiration calculations.
+    area_cat : float, required
+        Total catchment area in square kilometers.
     area_glac : float or None, optional
-        Glacierized area within the catchment in square kilometers. Defaults to None.
+        Glacierized area within the catchment in square kilometers (default: 0).
     ele_dat : float or None, optional
-        Elevation of the dataset used in the simulation. Defaults to None.
+        Reference elevation for input meteorological data (default: None).
     ele_glac : float or None, optional
-        Reference elevation of the glacierized area. Defaults to None.
+        Mean elevation of the glacierized area (default: None).
     ele_cat : float or None, optional
-        Reference elevation of the entire catchment. Defaults to None.
-    parameter_set : dict or pandas.DataFrame, optional
-        Input parameter set to override default values. Can be provided as a dictionary or DataFrame. Defaults to None.
+        Mean elevation of the entire catchment (default: None).
     warn : bool, optional
-        If False, suppresses warnings. Defaults to False.
-    pfilter : float, optional
-        Precipitation filter parameter. Defaults to 0.
-    lr_temp : float, optional
-        Lapse rate for temperature scaling in degrees Celsius per meter. Defaults to -0.006.
-    lr_prec : float, optional
-        Lapse rate for precipitation scaling. Defaults to 0.
-    hydro_year : int, optional
-        Starting month of the hydrological year (1–12). Defaults to 10.
-    TT_snow : float, optional
-        Threshold temperature for snow precipitation in degrees Celsius. Defaults to 0.
-    TT_diff : float, optional
-        Temperature difference between rain and snow thresholds in degrees Celsius. Defaults to 2.
-    CFMAX_snow : float, optional
-        Degree-day factor for snowmelt. Defaults to 2.5.
-    CFMAX_rel : float, optional
-        Relative ice melt factor compared to snow. Defaults to 2.
-    BETA : float, optional
-        Parameter controlling soil moisture storage. Defaults to 1.0.
-    CET : float, optional
-        Correction factor for evapotranspiration. Defaults to 0.15.
-    FC : float, optional
-        Field capacity of the soil in millimeters. Defaults to 250.
-    K0 : float, optional
-        Recession coefficient for quick runoff. Defaults to 0.055.
-    K1 : float, optional
-        Recession coefficient for intermediate runoff. Defaults to 0.055.
-    K2 : float, optional
-        Recession coefficient for baseflow. Defaults to 0.04.
-    LP : float, optional
-        Soil moisture threshold for potential evapotranspiration. Defaults to 0.7.
-    MAXBAS : float, optional
-        Baseflow routing parameter. Defaults to 3.0.
-    PERC : float, optional
-        Percolation coefficient. Defaults to 1.5.
-    UZL : float, optional
-        Upper zone limit for quick runoff. Defaults to 120.
-    PCORR : float, optional
-        Precipitation correction factor. Defaults to 1.0.
-    SFCF : float, optional
-        Snowfall correction factor. Defaults to 0.7.
-    CWH : float, optional
-        Water holding capacity of snowpack as a fraction of snow water equivalent. Defaults to 0.1.
-    AG : float, optional
-        Fraction of meltwater refreezing. Defaults to 0.7.
-    CFR : float, optional
-        Refreezing factor for snowmelt. Defaults to 0.15.
-    CFR_ice : float, optional
-        Refreezing factor for ice melt. Defaults to 0.01.
-    **kwargs
-        Additional parameters for customization.
+        Whether to display warnings for potential configuration issues (default: False).
+    **matilda_param : dict, optional
+        Additional model parameters, passed as key-value pairs. If a parameter is not
+        provided, default values from the parameter JSON file are used.
 
-    Returns
-    -------
+    Returns:
+    --------
     pandas.Series
-        Series containing the parameter set for MATILDA simulation.
+        A series containing all configured parameters for the MATILDA simulation.
+
+    Raises:
+    -------
+    ValueError
+        If required parameters (`lat` or `area_cat`) are not provided or if parameter
+        values are outside acceptable bounds.
+
+    Notes:
+    ------
+    - Derived parameters such as `TT_rain` (threshold temperature for rain) and
+      `CFMAX_ice` (melt factor for ice) are computed automatically.
+    - Reference elevations (`ele_cat`, `ele_glac`) are used to scale meteorological input data.
+    - The parameter set is validated against predefined bounds from a JSON configuration file.
+    - Default values are stored in the `parameters.json` file.
     """
 
     # Filter warnings:
     if not warn:
         warnings.filterwarnings(action="ignore")
 
-    # takes parameters directly from a dataframe, e.g. the output from SPOTPY
-    if parameter_set is not None:
-        if isinstance(parameter_set, dict):
-            parameter_set = pd.DataFrame(parameter_set, index=[0]).transpose()
-        elif isinstance(parameter_set, pd.DataFrame):
-            parameter_set = parameter_set.set_index(parameter_set.columns[0])
-        else:
-            print(
-                "ERROR: parameter_set can either be passed as dict and or pd.DataFrame!"
-            )
-            return
-
-        if "lr_temp" in parameter_set.index:
-            lr_temp = parameter_set.loc["lr_temp"].values.item()
-        if "lr_prec" in parameter_set.index:
-            lr_prec = parameter_set.loc["lr_prec"].values.item()
-        if "BETA" in parameter_set.index:
-            BETA = parameter_set.loc["BETA"].values.item()
-        if "CET" in parameter_set.index:
-            CET = parameter_set.loc["CET"].values.item()
-        if "FC" in parameter_set.index:
-            FC = parameter_set.loc["FC"].values.item()
-        if "K0" in parameter_set.index:
-            K0 = parameter_set.loc["K0"].values.item()
-        if "K1" in parameter_set.index:
-            K1 = parameter_set.loc["K1"].values.item()
-        if "K2" in parameter_set.index:
-            K2 = parameter_set.loc["K2"].values.item()
-        if "LP" in parameter_set.index:
-            LP = parameter_set.loc["LP"].values.item()
-        if "MAXBAS" in parameter_set.index:
-            MAXBAS = parameter_set.loc["MAXBAS"].values.item()
-        if "PERC" in parameter_set.index:
-            PERC = parameter_set.loc["PERC"].values.item()
-        if "UZL" in parameter_set.index:
-            UZL = parameter_set.loc["UZL"].values.item()
-        if "PCORR" in parameter_set.index:
-            PCORR = parameter_set.loc["PCORR"].values.item()
-        if "TT_snow" in parameter_set.index:
-            TT_snow = parameter_set.loc["TT_snow"].values.item()
-        if "TT_diff" in parameter_set.index:
-            TT_diff = parameter_set.loc["TT_diff"].values.item()
-        if "CFMAX_snow" in parameter_set.index:
-            CFMAX_snow = parameter_set.loc["CFMAX_snow"].values.item()
-        if "CFMAX_rel" in parameter_set.index:
-            CFMAX_rel = parameter_set.loc["CFMAX_rel"].values.item()
-        if "SFCF" in parameter_set.index:
-            SFCF = parameter_set.loc["SFCF"].values.item()
-        if "CFR_ice" in parameter_set.index:
-            CFR_ice = parameter_set.loc["CFR_ice"].values.item()
-        if "CWH" in parameter_set.index:
-            CWH = parameter_set.loc["CWH"].values.item()
-        if "AG" in parameter_set.index:
-            AG = parameter_set.loc["AG"].values.item()
-        if "CFR" in parameter_set.index:
-            CFR = parameter_set.loc["CFR"].values.item()
-
     print("Reading parameters for MATILDA simulation")
-    # Checking the parameters to set the catchment properties and simulation
+
+    # Parameter checks
     if lat is None:
-        print("WARNING: No latitude specified. Please provide to calculate PE")
-        return
-    if area_cat is None:
-        print(
-            "WARNING: No catchment area specified. Please provide catchment area in km2"
+        raise ValueError(
+            "No latitude specified. Please provide 'lat' to calculate potential evapotranspiration (PE)."
         )
-        return
+    if area_cat is None:
+        raise ValueError(
+            "No catchment area specified. Please provide 'area_cat' in km²."
+        )
     if area_glac is None:
         area_glac = 0
     if area_glac > area_cat:
-        print("ERROR: Glacier area exceeds overall catchment area")
-        return
+        raise ValueError(
+            "Glacier area ('area_glac') exceeds overall catchment area ('area_cat')."
+        )
     if ele_dat is not None and ele_cat is None:
         print(
-            "WARNING: Catchment reference elevation is missing. The data can not be elevation scaled."
+            "WARNING: Catchment reference elevation is missing. The data cannot be elevation scaled."
         )
     if ele_cat is None or ele_glac is None:
         print(
@@ -314,9 +204,6 @@ def matilda_parameter(
     if area_glac is not None or area_glac > 0:
         if ele_glac is None and ele_dat is not None:
             print("WARNING: Glacier reference elevation is missing")
-    if 12 < hydro_year < 1:
-        print("WARNING: Beginning of hydrological year out of bounds [1, 12]")
-
     if set_up_end is not None and sim_start is not None:
         if set_up_end > sim_start:
             print("WARNING: Set up period overlaps start of simulation period")
@@ -353,113 +240,64 @@ def matilda_parameter(
     elif freq == "Y":
         freq_long = "Annual"
     else:
-        print(
+        raise ValueError(
             "WARNING: Resampling rate "
             + freq
             + " is not supported. Choose either 'D' (daily), 'W' (weekly), 'M' (monthly) or 'Y' (yearly)."
         )
-    # Check model parameters
-    if 0 > pfilter or lr_temp > 0.5:
-        print("WARNING: Parameter pfilter exceeds the recommended threshold [0, 0.5].")
-    if -0.0065 > lr_temp or lr_temp > -0.0055:
-        print("WARNING: Parameter lr_temp exceeds boundaries [-0.0065, -0.0055].")
-    if 0 > lr_prec or lr_prec > 0.002:
-        print("WARNING: Parameter lr_prec exceeds boundaries [0, 0.002].")
-    if 1 > BETA or BETA > 6:
-        print("WARNING: Parameter BETA exceeds boundaries [1, 6].")
-    if 0 > CET or CET > 0.3:
-        print("WARNING: Parameter CET exceeds boundaries [0, 0.3].")
-    if 50 > FC or FC > 500:
-        print("WARNING: Parameter FC exceeds boundaries [50, 500].")
-    if 0.01 > K0 or K0 > 0.4:
-        print("WARNING: Parameter K0 exceeds boundaries [0.01, 0.4].")
-    if 0.01 > K1 or K1 > 0.4:
-        print("WARNING: Parameter K1 exceeds boundaries [0.01, 0.4].")
-    if 0.001 > K2 or K2 > 0.15:
-        print("WARNING: Parameter K2 exceeds boundaries [0.001, 0.15].")
-    if 0.3 > LP or LP > 1:
-        print("WARNING: Parameter LP exceeds boundaries [0.3, 1].")
-    if 1 >= MAXBAS or MAXBAS > 7:
-        print(
-            "ERROR: Parameter MAXBAS exceeds boundaries [2, 7]. Please choose a suitable value."
-        )
-        return
-    if 0 > PERC or PERC > 3:
-        print("WARNING: Parameter PERC exceeds boundaries [0, 3].")
-    if 0 > UZL or UZL > 500:
-        print("WARNING: Parameter UZL exceeds boundaries [0, 500].")
-    if 0.5 > PCORR or PCORR > 2:
-        print("WARNING: Parameter PCORR exceeds boundaries [0.5, 2].")
-    if -1.5 > TT_snow or TT_snow > 1.5:
-        print("WARNING: Parameter TT_snow exceeds boundaries [-1.5, 2.5].")
-    if 0.5 > TT_diff or TT_diff > 2.5:
-        print("WARNING: Parameter TT_diff exceeds boundaries [0.2, 4].")
-    if 1.2 > CFMAX_rel or CFMAX_rel > 2:
-        print("WARNING: Parameter CFMAX_rel exceeds boundaries [1.2, 2].")
-    if 0.5 > CFMAX_snow or CFMAX_snow > 10:
-        print("WARNING: Parameter CFMAX_snow exceeds boundaries [0.5, 10].")
-    if 0.4 > SFCF or SFCF > 1:
-        print("WARNING: Parameter SFCF exceeds boundaries [0.4, 1].")
-    if 0 > CWH or CWH > 0.2:
-        print("WARNING: Parameter CWH exceeds boundaries [0, 0.2].")
-    if 0 > AG or AG > 1:
-        print("WARNING: Parameter AG exceeds boundaries [0, 1].")
-    if 0.05 > CFR or CFR > 0.25:
-        print("WARNING: Parameter CFR exceeds boundaries [0.05, 0.25].")
 
-    # calculate threshold temperature for rain
-    TT_rain = TT_diff + TT_snow
+    # Load parameter JSON
+    parameters_path = importlib.resources.files("matilda") / "parameters.json"
+    with parameters_path.open("r", encoding="utf-8") as file:
+        parameter_data = json.load(file)["parameters"]
 
-    # calculate ice melt factor:
-    CFMAX_ice = CFMAX_snow * CFMAX_rel
+    # Build the parameter dictionary using defaults and passed matilda_param
+    parameters = {}
+    for param, properties in parameter_data.items():
+        # Use explicitly passed value (matilda_param) or default from the JSON
+        parameters[param] = matilda_param.get(param, properties["default"])
 
-    parameter = pd.Series(
-        {
-            "set_up_start": set_up_start,
-            "set_up_end": set_up_end,
-            "sim_start": sim_start,
-            "sim_end": sim_end,
-            "freq": freq,
-            "freq_long": freq_long,
-            "lat": lat,
-            "area_cat": area_cat,
-            "area_glac": area_glac,
-            "ele_dat": ele_dat,
-            "ele_cat": ele_cat,
-            "ele_glac": ele_glac,
-            "ele_non_glac": ele_non_glac,
-            "hydro_year": hydro_year,
-            "warn": warn,
-            "pfilter": pfilter,
-            "lr_temp": lr_temp,
-            "lr_prec": lr_prec,
-            "TT_snow": TT_snow,
-            "TT_rain": TT_rain,
-            "TT_diff": TT_diff,
-            "CFMAX_snow": CFMAX_snow,
-            "CFMAX_ice": CFMAX_ice,
-            "CFMAX_rel": CFMAX_rel,
-            "BETA": BETA,
-            "CET": CET,
-            "FC": FC,
-            "K0": K0,
-            "K1": K1,
-            "K2": K2,
-            "LP": LP,
-            "MAXBAS": MAXBAS,
-            "PERC": PERC,
-            "UZL": UZL,
-            "PCORR": PCORR,
-            "SFCF": SFCF,
-            "CWH": CWH,
-            "AG": AG,
-            "CFR_ice": CFR_ice,
-            "CFR": CFR,
-        }
-    )
+    # Validate parameters against bounds
+    for param, value in parameters.items():
+        bounds = parameter_data[param]
+        min_value = bounds.get("min", float("-inf"))
+        max_value = bounds.get("max", float("inf"))
+
+        if not min_value <= value <= max_value:
+            print(
+                f"WARNING: Parameter {param} with value {value} exceeds "
+                f"boundaries [{min_value}, {max_value}]. Using provided value."
+            )
+
+    # Compute derived parameters
+    parameters["TT_rain"] = parameters.get("TT_snow") + parameters.get("TT_diff")
+    parameters["CFMAX_ice"] = parameters.get("CFMAX_snow") * parameters.get("CFMAX_rel")
+
+    # Create parameter series to pass to subsequent functions
+    misc_param = {
+        "set_up_start": set_up_start,
+        "set_up_end": set_up_end,
+        "sim_start": sim_start,
+        "sim_end": sim_end,
+        "freq": freq,
+        "freq_long": freq_long,
+        "lat": lat,
+        "area_cat": area_cat,
+        "area_glac": area_glac,
+        "ele_dat": ele_dat,
+        "ele_cat": ele_cat,
+        "ele_glac": ele_glac,
+        "ele_non_glac": ele_non_glac,
+        "warn": warn,
+        "CFR_ice": 0.01,  # fraction of ice melt refreezing in moulins
+    }
+
+    all_param = pd.Series({**misc_param, **parameters})
+
     print("Parameter set:")
-    print(str(parameter))
-    return parameter
+    print(str(all_param))
+
+    return all_param
 
 
 def matilda_preproc(input_df, parameter, obs=None):
@@ -546,11 +384,10 @@ def matilda_preproc(input_df, parameter, obs=None):
         obs_preproc = obs_preproc.reindex(idx)
         obs_preproc = obs_preproc.fillna(np.NaN)
 
+    print("Input data preprocessing successful")
     if obs is not None:
-        print("Input data preprocessing successful")
         return df_preproc, obs_preproc
-    if obs is None:
-        print("Input data preprocessing successful")
+    else:
         return df_preproc
 
 
@@ -667,7 +504,7 @@ def input_scaling(df_preproc, parameter):
     return input_df_glacier, input_df_catchment
 
 
-def calculate_PDD(ds, parameter, prints=True):
+def calculate_PDD(ds, prints=True):
     """
     Calculates positive degree days (PDD) from a provided time series dataset, along with daily means of temperature and
     precipitation components (rain and snow).
@@ -1326,8 +1163,11 @@ def updated_glacier_melt(
     )
 
     # Loop through simulation period annually updating catchment fractions and scaling elevations
-    if parameter.ele_dat is not None:
-
+    if parameter.ele_dat is None:
+        raise ValueError(
+            "You need to provide ele_dat in order to apply the glacier-rescaling routine."
+        )
+    else:
         print("Calculating glacier evolution")
         for i in range(len(data_update.water_year.unique())):
             year = data_update.water_year.unique()[i]
@@ -1361,7 +1201,7 @@ def updated_glacier_melt(
 
             # Calculate positive degree days and glacier ablation/accumulation
             degreedays_ds = calculate_PDD(
-                input_df_glacier[mask], parameter, prints=False
+                input_df_glacier[mask], prints=False
             )
             output_DDM_year = calculate_glaciermelt(
                 degreedays_ds, parameter_updated, prints=False
@@ -1551,12 +1391,7 @@ def updated_glacier_melt(
         # Add original spin-up period back to HBV input
         input_df_catchment = pd.concat([input_df_catchment_spinup, input_df_catchment])
 
-        return output_DDM, glacier_change, input_df_catchment
-
-    else:
-        raise ValueError(
-            "You need to provide ele_dat in order to apply the glacier-rescaling routine."
-        )
+    return output_DDM, glacier_change, input_df_catchment
 
 
 def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
@@ -2166,7 +2001,7 @@ def matilda_submodules(
 
         # Execute DDM module
         if parameter.area_glac > 0:
-            degreedays_ds = calculate_PDD(input_df_glacier, parameter)
+            degreedays_ds = calculate_PDD(input_df_glacier)
             output_DDM = calculate_glaciermelt(degreedays_ds, parameter)
 
         # Execute glacier re-scaling module
@@ -3368,35 +3203,16 @@ def matilda_simulation(
     ele_cat=None,
     plots=True,
     plot_type="print",
-    hydro_year=10,
     elev_rescaling=False,
-    pfilter=0,
     drop_surplus=False,
-    parameter_set=None,
-    lr_temp=-0.006,
-    lr_prec=0,
-    TT_snow=0,
-    TT_diff=2,
-    CFMAX_snow=2.5,
-    CFMAX_rel=2,
-    BETA=1.0,
-    CET=0.15,
-    FC=250,
-    K0=0.055,
-    K1=0.055,
-    K2=0.04,
-    LP=0.7,
-    MAXBAS=3.0,
-    PERC=1.5,
-    UZL=120,
-    PCORR=1.0,
-    SFCF=0.7,
-    CWH=0.1,
-    AG=0.7,
-    CFR=0.15,
+    **matilda_param,
 ):
     """
     Run the complete MATILDA simulation framework, including preprocessing, simulation, and optional output saving.
+
+    This function integrates data preprocessing, hydrological and glacial simulations, and optional output handling
+    using the MATILDA framework. It can perform simulations with default or user-defined parameters, handle optional
+    glacier rescaling, and generate visualizations and model statistics.
 
     Parameters
     ----------
@@ -3436,54 +3252,12 @@ def matilda_simulation(
         Whether to generate plots. Default is `True`.
     plot_type : str, optional
         Type of plots to generate. Options are `"print"`, `"interactive"`, or `"all"`. Default is `"print"`.
-    hydro_year : int, optional
-        Start month of the hydrological year. Default is `10` (October).
     elev_rescaling : bool, optional
         Whether to perform annual elevation rescaling for glaciers. Default is `False`.
-    pfilter : float, optional
-        Precipitation filter for data preprocessing. Default is `0`.
     drop_surplus : bool, optional
         Whether to drop surplus glacial mass balance during simulation. Default is `False`.
-    parameter_set : dict or pandas.DataFrame, optional
-        Predefined parameter set for the model. Overrides individual parameter inputs if provided. Default is `None`.
-    lr_temp : float, optional
-        Temperature lapse rate in °C/m. Default is `-0.006`.
-    lr_prec : float, optional
-        Precipitation lapse rate in mm/m. Default is `0`.
-    TT_snow : float, optional
-        Threshold temperature for snowfall in °C. Default is `0`.
-    TT_diff : float, optional
-        Temperature difference for rain/snow transition in °C. Default is `2`.
-    CFMAX_snow : float, optional
-        Degree-day factor for snowmelt in mm/(°C day). Default is `2.5`.
-    CFMAX_rel : float, optional
-        Ratio of ice melt factor to snow melt factor. Default is `2`.
-    BETA : float, optional
-        Soil moisture recharge coefficient. Default is `1.0`.
-    CET : float, optional
-        Temperature sensitivity factor for evapotranspiration. Default is `0.15`.
-    FC : float, optional
-        Maximum soil moisture storage capacity in mm. Default is `250`.
-    K0, K1, K2 : float, optional
-        Runoff coefficients for groundwater and upper zones. Defaults are `0.055`, `0.055`, and `0.04`, respectively.
-    LP : float, optional
-        Fraction of field capacity above which evapotranspiration occurs. Default is `0.7`.
-    MAXBAS : float, optional
-        Routing parameter for runoff smoothing. Default is `3.0`.
-    PERC : float, optional
-        Maximum percolation rate from upper to lower groundwater zone in mm/day. Default is `1.5`.
-    UZL : float, optional
-        Threshold for surface runoff generation in mm. Default is `120`.
-    PCORR : float, optional
-        Precipitation correction factor. Default is `1.0`.
-    SFCF : float, optional
-        Snowfall correction factor. Default is `0.7`.
-    CWH : float, optional
-        Retention capacity of snowpack for meltwater as a fraction of total snowpack. Default is `0.1`.
-    AG : float, optional
-        Parameter for the glacier storage-release scheme. Default is `0.7`.
-    CFR : float, optional
-        Refreezing factor for snowmelt. Default is `0.15`.
+    **matilda_param : dict, optional
+        Additional model parameters passed as key-value pairs. These override the default parameter values.
 
     Returns
     -------
@@ -3518,35 +3292,9 @@ def matilda_simulation(
         ele_dat=ele_dat,
         ele_glac=ele_glac,
         ele_cat=ele_cat,
-        hydro_year=hydro_year,
-        parameter_set=parameter_set,
-        lr_temp=lr_temp,
-        lr_prec=lr_prec,
-        TT_snow=TT_snow,
         warn=warn,
-        pfilter=pfilter,
-        TT_diff=TT_diff,
-        CFMAX_snow=CFMAX_snow,
-        CFMAX_rel=CFMAX_rel,
-        BETA=BETA,
-        CET=CET,
-        FC=FC,
-        K0=K0,
-        K1=K1,
-        K2=K2,
-        LP=LP,
-        MAXBAS=MAXBAS,
-        PERC=PERC,
-        UZL=UZL,
-        PCORR=PCORR,
-        SFCF=SFCF,
-        CWH=CWH,
-        AG=AG,
-        CFR=CFR,
+        **matilda_param,
     )
-
-    if parameter is None:
-        return
 
     # Data preprocessing with the MATILDA preparation script
     if obs is None:
@@ -3580,11 +3328,7 @@ def matilda_simulation(
     # Option to suppress plots.
     if plots:
         output_MATILDA = matilda_plots(output_MATILDA, parameter, plot_type)
-    else:
-        return output_MATILDA
-    # Creating plot for the input (meteorological) data (fig1), MATILDA runoff simulation (fig2) and HBV variables (fig3) and
-    # adding them to the output
-    # saving the data on disc of output path is given
+
     if output is not None:
         matilda_save_output(output_MATILDA, parameter, output, plot_type)
 
