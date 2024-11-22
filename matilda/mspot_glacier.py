@@ -62,20 +62,17 @@ For questions or contributions, please contact:
 - Institution: Humboldt-Universität zu Berlin
 """
 
-import pandas as pd
 import sys
 import os
+from datetime import date
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import spotpy
 import HydroErr as he
-from datetime import date
-from pathlib import Path
 from scipy.stats import gamma
 from spotpy.parameter import Uniform
 from spotpy.objectivefunctions import mae
-
-home = str(Path.home())
 from matilda.core import (
     matilda_simulation,
     matilda_parameter,
@@ -106,12 +103,17 @@ class HiddenPrints:
         Restores the original standard output.
     """
 
+    def __init__(self):
+        # Initialize the attribute in the constructor
+        self._original_stdout = None
+
     def __enter__(self):
         self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, "w")
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()
+        if sys.stdout:
+            sys.stdout.close()
         sys.stdout = self._original_stdout
 
 
@@ -143,7 +145,7 @@ def yesno(question):
     return False
 
 
-def dict2bounds(p_dict, drop=[]):
+def dict2bounds(p_dict, drop=None):
     """
     Convert a parameter dictionary to a bounds dictionary to be passed to spot_setup().
 
@@ -164,9 +166,12 @@ def dict2bounds(p_dict, drop=[]):
         A dictionary containing both lower (`_lo`) and upper (`_up`) bounds for the remaining
         parameters in `p_dict`.
     """
+    if drop is None:
+        drop = []
 
     for i in drop:
-        del p_dict[i]
+        p_dict.pop(i, None)  # Use pop to avoid KeyError if key doesn't exist
+
     p = {
         **dict(zip([i + "_lo" for i in p_dict.keys()], p_dict.values())),
         **dict(zip([i + "_up" for i in p_dict.keys()], p_dict.values())),
@@ -255,8 +260,8 @@ def winter(year, data):
     """
 
     data = data[data.index == year]
-    winter = slice(data.BEGIN_PERIOD.squeeze(), data.END_WINTER.squeeze())
-    return winter
+    winter_slice = slice(data.BEGIN_PERIOD.squeeze(), data.END_WINTER.squeeze())
+    return winter_slice
 
 
 def summer(year, data):
@@ -293,8 +298,8 @@ def summer(year, data):
     """
 
     data = data[data.index == year]
-    summer = slice(data.END_WINTER.squeeze(), data.END_PERIOD.squeeze())
-    return summer
+    summer_slice = slice(data.END_WINTER.squeeze(), data.END_PERIOD.squeeze())
+    return summer_slice
 
 
 def annual(year, data):
@@ -331,8 +336,8 @@ def annual(year, data):
     """
 
     data = data[data.index == year]
-    annual = slice(data.BEGIN_PERIOD.squeeze(), data.END_PERIOD.squeeze())
-    return annual
+    annual_slice = slice(data.BEGIN_PERIOD.squeeze(), data.END_PERIOD.squeeze())
+    return annual_slice
 
 
 def scaled_pdd(data, elev, lr):
@@ -536,7 +541,7 @@ def spot_setup(
 
     Returns
     -------
-    spot_setup : class
+    spot_setup_class : class
         Configured SPOTPY setup class for MATILDA parameter optimization and calibration.
 
     References
@@ -553,7 +558,65 @@ def spot_setup(
         climate change scenarios." Journal of Hydrology, 424-425, 264-277. https://doi.org/10.1016/j.jhydrol.2012.01.011
     """
 
-    class spot_setup:
+    class spot_setup_class:
+        """
+        spot_setup_class: A SPOTPY setup class for MATILDA model parameter calibration.
+
+        This class is designed to facilitate the optimization and calibration of the MATILDA model parameters
+        using SPOTPY, a statistical parameter optimization library. It defines the parameter space, simulation
+        methods, evaluation functions, and the objective function to assess the model's performance.
+
+        Attributes
+        ----------
+        param : list
+            List of SPOTPY parameter distributions for calibration.
+        param_names : list
+            List of names corresponding to the parameters being calibrated.
+        par_iter : int
+            Number of parameter iterations needed for sensitivity analysis and parameter inference.
+
+        Methods
+        -------
+        __init__(df, obs, swe, obj_func=None)
+            Initializes the setup class with input data, observations, and an optional objective function.
+
+        simulation(x, param_names=param_names, fix_param=fix_param, fix_val=fix_val, swe_scaling=swe_scaling)
+            Runs the MATILDA simulation with sampled parameters and any fixed parameters specified.
+
+        evaluation()
+            Prepares the observed data (e.g., streamflow, snow water equivalent, surface mass balance) for
+            comparison with simulation results.
+
+        objectivefunction(simulation, evaluation, params=None)
+            Calculates the objective function to evaluate model performance. Supports metrics such as
+            the Kling-Gupta Efficiency (KGE) and custom metrics defined by the user.
+
+        Usage
+        -----
+        The `spot_setup_class` is instantiated with observed data (`obs`) and optionally with snow water equivalent
+        (SWE) data and a custom objective function. Once instantiated, it can be passed to SPOTPY's optimization
+        and sensitivity analysis tools to calibrate the MATILDA model.
+
+        Example
+        -------
+        from spotpy.algorithms import sceua
+        spot_setup_instance = spot_setup(df, obs, swe, obj_func)
+        sampler = sceua(spot_setup_instance)
+        sampler.sample(1000)
+
+        References
+        ----------
+        - SPOTPY library:
+          - Houska, T., et al. (2015). "SPOTting Model Parameters Using a Ready-Made Python Package." PLOS ONE.
+          - GitHub: https://github.com/thouska/spotpy
+
+        - Kling-Gupta Efficiency (KGE):
+          - Gupta, H. V., & Kling, H. (2011). "On typical range, sensitivity, and normalization of Mean Squared Error
+            and Nash-Sutcliffe Efficiency type metrics." Water Resources Research.
+          - Kling, H., et al. (2012). "Runoff conditions in the upper Danube basin under an ensemble of climate
+            change scenarios." Journal of Hydrology.
+        """
+
         # defining all parameters and the distribution
         lr_temp = Uniform(low=lr_temp_lo, high=lr_temp_up)
         lr_prec = Uniform(low=lr_prec_lo, high=lr_prec_up)
@@ -644,32 +707,37 @@ def spot_setup(
 
         par_iter = (1 + 4 * M**2 * (1 + (k - 2) * d)) * k
 
-        def __init__(self, df, obs, swe, obj_func=obj_func):
+        def __init__(
+            self,
+            df,
+            obs,
+            swe,
+            swe_scaling=swe_scaling,
+            fix_param=fix_param,
+            fix_val=fix_val,
+            obj_func=obj_func,
+        ):
             self.obj_func = obj_func
             self.Input = df
             self.obs = obs
             self.swe = swe
+            self.swe_scaling = swe_scaling
+            self.fix_param = fix_param
+            self.fix_val = fix_val
 
-        def simulation(
-            self,
-            x,
-            param_names=param_names,
-            fix_param=fix_param,
-            fix_val=fix_val,
-            swe_scaling=swe_scaling,
-        ):
+        def simulation(self, x, param_names=None):
+            if param_names is None:
+                param_names = self.param_names
+
             with HiddenPrints():
                 # Setup all parameters for sampling
-                args = {}
-                for par_name in param_names:
-                    args[par_name] = x[par_name]
+                args = {par_name: x[par_name] for par_name in param_names}
 
-                # Fix parameters on desired values if defined (otherwise use default values)
-                if fix_param is not None:
-                    for p in fix_param:
-                        if fix_val is not None:
-                            if p in fix_val:
-                                args[p] = fix_val[p]
+                # Fix parameters on desired values if defined
+                if self.fix_param is not None and self.fix_val is not None:
+                    for p in self.fix_param:
+                        if p in self.fix_val:
+                            args[p] = self.fix_val[p]
 
                 sim = matilda_simulation(
                     self.Input,
@@ -697,22 +765,21 @@ def spot_setup(
                     .snowpack_off_glaciers["2000-01-01":"2017-09-30"]
                     .to_frame(name="SWE_sim")
                 )
-                if swe_scaling is not None:
-                    swe_sim = swe_sim * swe_scaling
+                if self.swe_scaling is not None:
+                    swe_sim = swe_sim * self.swe_scaling
+
             if target_mb is None:
                 if target_swe is None:
                     return sim[0].total_runoff
-                else:
-                    return [sim[0].total_runoff, swe_sim.SWE_sim]
-            else:
-                if target_swe is None:
-                    return [sim[0].total_runoff, sim[5].smb_water_year.mean()]
-                else:
-                    return [
-                        sim[0].total_runoff,
-                        sim[5].smb_water_year.mean(),
-                        swe_sim.SWE_sim,
-                    ]
+                return [sim[0].total_runoff, swe_sim.SWE_sim]
+
+            if target_swe is None:
+                return [sim[0].total_runoff, sim[5].smb_water_year.mean()]
+            return [
+                sim[0].total_runoff,
+                sim[5].smb_water_year.mean(),
+                swe_sim.SWE_sim,
+            ]
 
         def evaluation(self):
             obs_preproc = self.obs.copy()
@@ -748,15 +815,13 @@ def spot_setup(
             if target_mb is None:
                 if target_swe is None:
                     return obs_preproc.Qobs
-                else:
-                    return [obs_preproc.Qobs, swe_obs.SWE_Mean]
-            else:
-                if target_swe is None:
-                    return [obs_preproc.Qobs, target_mb]
-                else:
-                    return [obs_preproc.Qobs, target_mb, swe_obs.SWE_Mean]
+                return [obs_preproc.Qobs, swe_obs.SWE_Mean]
 
-        def objectivefunction(self, simulation, evaluation, params=None):
+            if target_swe is None:
+                return [obs_preproc.Qobs, target_mb]
+            return [obs_preproc.Qobs, target_mb, swe_obs.SWE_Mean]
+
+        def objectivefunction(self, simulation, evaluation):
             # SPOTPY expects to get one or multiple values back,
             # that define the performance of the model run
             if target_mb is not None:
@@ -799,15 +864,14 @@ def spot_setup(
             if target_mb is None:
                 if target_swe is None:
                     return obj1
-                else:
-                    return [obj1, obj3]
-            else:
-                if target_swe is None:
-                    return [obj1, obj2]
-                else:
-                    return [obj1, obj2, obj3]
+                return [obj1, obj3]
 
-    return spot_setup
+            if target_swe is None:
+                return [obj1, obj2]
+
+            return [obj1, obj2, obj3]
+
+    return spot_setup_class
 
 
 def spot_setup_glacier(
@@ -821,7 +885,6 @@ def spot_setup_glacier(
     area_glac=None,
     ele_dat=None,
     ele_glac=None,
-    ele_cat=None,
     glacier_profile=None,
     obs_type="annual",
     obj_func=None,
@@ -914,7 +977,7 @@ def spot_setup_glacier(
 
     Returns
     -------
-    spot_setup : class
+    spot_setup_class : class
         Configured SPOTPY setup class for glacier mass balance parameter optimization.
 
     References
@@ -925,7 +988,111 @@ def spot_setup_glacier(
       - GitHub repository: https://github.com/thouska/spotpy
     """
 
-    class spot_setup:
+    class spot_setup_class:
+        """
+        spot_setup_class: A SPOTPY setup class for MATILDA model glacier mass balance parameter calibration.
+
+        This class facilitates the calibration and optimization of the MATILDA model parameters for glacier mass balance
+        modeling. It uses SPOTPY, a statistical parameter optimization library, to define the parameter space, simulate
+        mass balance, and evaluate the model's performance against observed data.
+
+        Attributes
+        ----------
+        param : list
+            List of SPOTPY parameter distributions for calibration, including lapse rates, temperature thresholds, and
+            degree-day factors.
+        par_iter : int
+            Number of parameter iterations needed for sensitivity analysis and parameter inference.
+
+        Methods
+        -------
+        __init__(df, obs, obj_func=None)
+            Initializes the class with input data (`df`), observed data (`obs`), and an optional custom objective function.
+
+        simulation(x)
+            Simulates glacier mass balance using the MATILDA model with the specified parameters.
+
+        evaluation()
+            Processes the observed mass balance data into a format compatible with the simulated outputs.
+
+        objectivefunction(simulation, evaluation, params=None)
+            Defines the objective function to evaluate the model's performance. By default, it uses the Mean Absolute
+            Error (MAE) or a custom user-defined function.
+
+        Usage
+        -----
+        The `spot_setup_class` is instantiated with observed data and passed to SPOTPY for parameter optimization and
+        sensitivity analysis.
+
+        Example
+        -------
+        from spotpy.algorithms import sceua
+
+        spot_setup_instance = spot_setup_glacier(df, obs, obj_func)
+        sampler = sceua(spot_setup_instance)
+        sampler.sample(1000)
+
+        Parameters
+        ----------
+        General Inputs:
+        - set_up_start, set_up_end : str
+            Start and end dates of the setup period.
+        - sim_start, sim_end : str
+            Start and end dates of the simulation period.
+        - freq : str, optional
+            Frequency of the data, default is daily ("D").
+        - lat : float, optional
+            Latitude of the catchment for extraterrestrial radiation calculation.
+        - area_cat, area_glac : float
+            Catchment and glacierized areas in km².
+        - ele_dat, ele_glac, ele_cat : float
+            Mean elevations (m a.s.l.) of the data, glacier, and catchment.
+        - glacier_profile : DataFrame
+            Glacier profile used for elevation rescaling and look-up table generation.
+        - obs_type : str, optional
+            Type of observed mass balance data ("annual", "winter", or "summer"). Default is "annual".
+        - obj_func : callable, optional
+            Custom objective function to compare simulation and observation. Defaults to Mean Absolute Error (MAE).
+
+        Parameter Bounds for Calibration:
+        - lr_temp_lo, lr_temp_up : float
+            Bounds for the temperature lapse rate (°C/m).
+        - lr_prec_lo, lr_prec_up : float
+            Bounds for the precipitation correction factor.
+        - PCORR_lo, PCORR_up : float
+            Bounds for the precipitation correction factor.
+        - TT_snow_lo, TT_snow_up : float
+            Bounds for the snow temperature threshold (°C).
+        - TT_diff_lo, TT_diff_up : float
+            Bounds for the difference between rain and snow temperature thresholds (°C).
+        - CFMAX_snow_lo, CFMAX_snow_up : float
+            Bounds for the degree-day factor for snow melt (mm/°C/day).
+        - CFMAX_rel_lo, CFMAX_rel_up : float
+            Bounds for the degree-day factor for relative snow and ice melt.
+        - SFCF_lo, SFCF_up : float
+            Bounds for the snow correction factor.
+        - CFR_lo, CFR_up : float
+            Bounds for the refreezing factor.
+
+        SPOTPY Settings:
+        - interf : int, optional
+            Inference factor for parameter iterations. Default is 4.
+        - freqst : int, optional
+            Frequency step for sensitivity analysis. Default is 2.
+
+        Returns
+        -------
+        spot_setup_class : class
+            Configured SPOTPY setup class for glacier mass balance parameter optimization.
+
+        References
+        ----------
+        - SPOTPY library:
+          - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
+            Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
+          - GitHub repository: https://github.com/thouska/spotpy
+        """
+
         # defining all parameters and the distribution
         param = (
             lr_temp,
@@ -1003,7 +1170,7 @@ def spot_setup_glacier(
 
             return obs_preproc
 
-        def objectivefunction(self, simulation, evaluation, params=None):
+        def objectivefunction(self, simulation, evaluation):
             # Aggregate MBs to fit the calibration data
             sim = []
             obs = []
@@ -1047,7 +1214,7 @@ def spot_setup_glacier(
                 like = self.obj_func(evaluation_clean, simulation_clean)
             return like
 
-    return spot_setup
+    return spot_setup_class
 
 
 def analyze_results(
@@ -1153,14 +1320,14 @@ def analyze_results(
         elif obj_dir == "minimize":
             best_param = spotpy.analyser.get_best_parameterset(results, maximize=False)
         else:
-            print("Invalid argument for obj_dir. Choose 'minimize' or 'maximize'.")
-            return
+            raise ValueError(
+                "Invalid argument for obj_dir. Choose 'minimize' or 'maximize'."
+            )
     else:
-        print(
+        raise ValueError(
             "Invalid argument for algorithm. Available algorithms: ['abc', 'dds', 'demcz', 'dream', 'rope', 'sa',"
             "'fscabc', 'mcmc', 'mle', 'nsgaii', 'padds', 'sceua', 'fast', 'lhs', 'mc']"
         )
-        return
 
     par_names = spotpy.analyser.get_parameternames(best_param)
     param_zip = zip(par_names, best_param[0])
@@ -1218,7 +1385,7 @@ def analyze_results(
 
         fig3 = plt.figure(figsize=(16, 9))
         ax = plt.subplot(1, 1, 1)
-        q5, q25, q75, q95 = [], [], [], []
+        q5, q95 = [], []
         for field in fields:
             q5.append(np.percentile(results[field][-100:-1], 2.5))
             q95.append(np.percentile(results[field][-100:-1], 97.5))
@@ -1253,13 +1420,12 @@ def analyze_results(
             "par_uncertain_plot": fig3,
         }
 
-    else:
-        return {
-            "best_param": best_param,
-            "best_index": bestindex,
-            "best_model_run": best_model_run,
-            "best_objf": bestobjf,
-        }
+    return {
+        "best_param": best_param,
+        "best_index": bestindex,
+        "best_model_run": best_model_run,
+        "best_objf": bestobjf,
+    }
 
 
 def psample(
@@ -1430,14 +1596,11 @@ def psample(
             area_glac=area_glac,
             ele_dat=ele_dat,
             ele_glac=ele_glac,
-            ele_cat=ele_cat,
             lat=lat,
             interf=interf,
             freqst=freqst,
             glacier_profile=glacier_profile,
             obs_type=obs_type,
-            fix_param=fix_param,
-            fix_val=fix_val,
             **kwargs,
         )
 
@@ -1499,23 +1662,17 @@ def psample(
             optimization_direction=obj_dir,
             save_sim=save_sim,
         )
-        if (
-            algorithm == "mc"
-            or algorithm == "lhs"
-            or algorithm == "fast"
-            or algorithm == "rope"
-        ):
+        if algorithm in ("mc", "lhs", "fast", "rope"):
             sampler.sample(rep)
         elif algorithm == "sceua":
             sampler.sample(rep, ngs=cores)
         elif algorithm == "demcz":
             sampler.sample(rep, nChains=cores, **demcz_args)
         else:
-            print(
-                "ERROR: The selected algorithm is ineligible for parallel computing."
+            raise ValueError(
+                "The selected algorithm is ineligible for parallel computing."
                 'Either select a different algorithm (mc, lhs, fast, rope, sceua or demcz) or set "parallel = False".'
             )
-            return
     else:
         sampler = alg_selector[algorithm](
             psample_setup,
@@ -1526,16 +1683,15 @@ def psample(
         )
         if opt_iter:
             if yesno(
-                "\n******** WARNING! Your optimum # of iterations is {0}. "
-                "This may take a long time.\n******** Do you wish to proceed".format(
-                    psample_setup.par_iter
-                )
+                f"\n******** WARNING! Your optimum # of iterations is {psample_setup.par_iter}. "
+                "This may take a long time.\n******** Do you wish to proceed"
             ):
                 sampler.sample(
                     psample_setup.par_iter
                 )  # ideal number of reps = psample_setup.par_iter
             else:
-                return
+                print(f"Proceeding with {rep} iterations.")
+                sampler.sample(rep)
         else:
             sampler.sample(rep)
 
@@ -1656,7 +1812,7 @@ def load_parameters(path, algorithm, obj_dir="maximize", glacier_only=False):
     return results["best_param"]
 
 
-def get_par_bounds(path, threshold=10, percentage=True, drop=[]):
+def get_par_bounds(path, threshold=10, percentage=True, drop=None):
     """
     Generate parameter bounds from SPOTPY sampling results.
 
@@ -1676,7 +1832,7 @@ def get_par_bounds(path, threshold=10, percentage=True, drop=[]):
         Determines whether to interpret `threshold` as a percentage (True) or a numerical threshold (False).
         Default is True.
     drop : list of str, optional
-        A list of parameter names to exclude from the resulting bounds. Default is an empty list.
+        A list of parameter names to exclude from the resulting bounds. Default is None.
 
     Returns
     -------
@@ -1698,6 +1854,8 @@ def get_par_bounds(path, threshold=10, percentage=True, drop=[]):
         Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
       - GitHub repository: https://github.com/thouska/spotpy
     """
+    if drop is None:
+        drop = []  # Initialize to an empty list if not provided
 
     result_path = path
     results = spotpy.analyser.load_csv_results(result_path)
