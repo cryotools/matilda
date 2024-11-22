@@ -384,11 +384,11 @@ def matilda_preproc(input_df, parameter, obs=None):
         obs_preproc = obs_preproc.reindex(idx)
         obs_preproc = obs_preproc.fillna(np.NaN)
 
-    print("Input data preprocessing successful")
-    if obs is not None:
+        print("Input data preprocessing successful")
         return df_preproc, obs_preproc
-    else:
-        return df_preproc
+
+    print("Input data preprocessing successful")
+    return df_preproc
 
 
 def phase_separation(df_preproc, parameter):
@@ -1167,229 +1167,211 @@ def updated_glacier_melt(
         raise ValueError(
             "You need to provide ele_dat in order to apply the glacier-rescaling routine."
         )
-    else:
-        print("Calculating glacier evolution")
-        for i in range(len(data_update.water_year.unique())):
-            year = data_update.water_year.unique()[i]
-            mask = data_update.water_year == year
+    print("Calculating glacier evolution")
+    for i in range(len(data_update.water_year.unique())):
+        year = data_update.water_year.unique()[i]
+        mask = data_update.water_year == year
 
-            # Use updated glacier area of the previous year
-            parameter_updated.area_glac = new_area
-            # Use updated glacier elevation of the previous year
-            if i != 0:
-                parameter_updated.ele_glac = new_distribution
+        # Use updated glacier area of the previous year
+        parameter_updated.area_glac = new_area
+        # Use updated glacier elevation of the previous year
+        if i != 0:
+            parameter_updated.ele_glac = new_distribution
 
-            # Calculate the updated mean elevation of the non-glacierized catchment area
-            if parameter_updated.ele_cat is None:
-                parameter_updated.ele_non_glac = None
-            else:
-                parameter_updated.ele_non_glac = (
-                    (
-                        parameter_updated.ele_cat
-                        - parameter_updated.area_glac
-                        / parameter_updated.area_cat
-                        * parameter_updated.ele_glac
+        # Calculate the updated mean elevation of the non-glacierized catchment area
+        if parameter_updated.ele_cat is None:
+            parameter_updated.ele_non_glac = None
+        else:
+            parameter_updated.ele_non_glac = (
+                (
+                    parameter_updated.ele_cat
+                    - parameter_updated.area_glac
+                    / parameter_updated.area_cat
+                    * parameter_updated.ele_glac
+                )
+                * parameter_updated.area_cat
+                / (parameter_updated.area_cat - parameter_updated.area_glac)
+            )
+
+        # Scale glacier and hbv routine inputs in selected year with updated parameters
+        input_df_glacier[mask], input_df_catchment[mask] = input_scaling(
+            data_update[mask], parameter_updated
+        )
+
+        # Calculate positive degree days and glacier ablation/accumulation
+        degreedays_ds = calculate_PDD(input_df_glacier[mask], prints=False)
+        output_DDM_year = calculate_glaciermelt(
+            degreedays_ds, parameter_updated, prints=False
+        )
+        output_DDM_year["water_year"] = data_update.water_year[mask]
+
+        # deselect output columns not to update
+        up_cols = output_DDM_year.columns.drop(
+            ["DDM_smb", "DDM_temp", "pdd", "water_year"]
+        )
+
+        # create columns for updated DDM output
+        for col in up_cols:
+            output_DDM_year[col + "_updated_scaled"] = copy.deepcopy(
+                output_DDM_year[col]
+            )
+
+        # Rescale glacier geometry and update glacier parameters in all but the last (incomplete) water year
+        if i < len(data_update.water_year.unique()) - 1:
+
+            smb_unscaled = output_DDM_year["DDM_smb"].sum()
+
+            # if True: model runs with positive MB_cum at any time are 'dropped' (runoff = 0.01, SMB 9999)
+            if drop_surplus:
+
+                if i == 0 and smb_unscaled > 0:
+                    print(
+                        "**********\n"
+                        "WARNING:\n"
+                        "The cumulative surface mass balance in the first year of the simulation period is \n"
+                        "positive. You may want to shift the starting year or set drop_surplus=False.\n"
+                        "**********\n"
                     )
-                    * parameter_updated.area_cat
-                    / (parameter_updated.area_cat - parameter_updated.area_glac)
-                )
-
-            # Scale glacier and hbv routine inputs in selected year with updated parameters
-            input_df_glacier[mask], input_df_catchment[mask] = input_scaling(
-                data_update[mask], parameter_updated
-            )
-
-            # Calculate positive degree days and glacier ablation/accumulation
-            degreedays_ds = calculate_PDD(
-                input_df_glacier[mask], prints=False
-            )
-            output_DDM_year = calculate_glaciermelt(
-                degreedays_ds, parameter_updated, prints=False
-            )
-            output_DDM_year["water_year"] = data_update.water_year[mask]
-
-            # deselect output columns not to update
-            up_cols = output_DDM_year.columns.drop(
-                ["DDM_smb", "DDM_temp", "pdd", "water_year"]
-            )
-
-            # create columns for updated DDM output
-            for col in up_cols:
-                output_DDM_year[col + "_updated_scaled"] = copy.deepcopy(
-                    output_DDM_year[col]
-                )
-
-            # Rescale glacier geometry and update glacier parameters in all but the last (incomplete) water year
-            if i < len(data_update.water_year.unique()) - 1:
-
-                smb_unscaled = output_DDM_year["DDM_smb"].sum()
-
-                # if True: model runs with positive MB_cum at any time are 'dropped' (runoff = 0.01, SMB 9999)
-                if drop_surplus:
-
-                    if i == 0 and smb_unscaled > 0:
+                # scale the smb to the (updated) glacierized fraction of the catchment
+                smb = smb_unscaled * (
+                    new_area / parameter.area_cat
+                )  # SMB is area (re-)scaled because m is area scaled as well
+                # add the smb from the previous year(s) to the new year
+                smb_cum = smb_cum + smb
+                if smb_cum > 0:
+                    if warn:
                         print(
                             "**********\n"
-                            "ERROR:\n"
-                            "The cumulative surface mass balance in the first year of the simulation period is \n"
-                            "positive. You may want to shift the starting year or set drop_surplus=False.\n"
+                            "WARNING:\n"
+                            "The cumulative surface mass balance in the simulation period is positive. \n"
+                            "The glacier rescaling routine cannot model glacier extent exceeding the initial status of \n"
+                            "the provided glacier profile. In order to exclude this run from parameter optimization \n"
+                            "routines, a flag is passed, simulated runoff is set to 0.01, and SMB to 9999. \n"
+                            "If you want to maintain the average mass balance set drop_surplus=False.\n"
                             "**********\n"
                         )
-                    # scale the smb to the (updated) glacierized fraction of the catchment
-                    smb = smb_unscaled * (
-                        new_area / parameter.area_cat
-                    )  # SMB is area (re-)scaled because m is area scaled as well
-                    # add the smb from the previous year(s) to the new year
-                    smb_cum = smb_cum + smb
-                    if smb_cum > 0:
-                        if warn:
-                            print(
-                                "**********\n"
-                                "ERROR:\n"
-                                "The cumulative surface mass balance in the simulation period is positive. \n"
-                                "The glacier rescaling routine cannot model glacier extent exceeding the initial status of \n"
-                                "the provided glacier profile. In order to exclude this run from parameter optimization \n"
-                                "routines, a flag is passed, simulated runoff is set to 0.01, and SMB to 9999. \n"
-                                "If you want to maintain the average mass balance set drop_surplus=False.\n"
-                                "**********\n"
-                            )
-                            warn = False
-                        smb_cum = m
-                        new_distribution = parameter.ele_glac
-                        smb_flag = True
-                    else:
-                        smb_flag = False
-
-                # if drop_surplus = False the surplus from years with positive MB_cum is added in later years
+                        warn = False
+                    smb_cum = m
+                    new_distribution = parameter.ele_glac
+                    smb_flag = True
                 else:
-                    # scale the smb to the (updated) glacierized fraction of the catchment
-                    smb = smb_unscaled * (
-                        new_area / parameter.area_cat
-                    )  # SMB is area (re-)scaled because m is area scaled as well
-                    smb_scaled = smb.copy()
-
-                    # If the cumulative SMB has been positive in previous years the surplus is added here
-                    if surplus > 0:
-                        if smb < 0:
-                            diff = surplus + smb
-                            surplus = max(diff, 0)
-                            smb = min(diff, 0)
-                    # add the smb from the previous year(s) to the new year
-                    smb_cum = smb_cum + smb
-                    # Check whether glacier extent exceeds the initial state (smb_cum > 0). Shift surplus to next year(s).
-                    if smb_cum > 0:
-                        if warn:
-                            print(
-                                "**********\n"
-                                "WARNING:\n"
-                                "At some point of the simulation period the cumulative surface mass balance is\n"
-                                " positive. The glacier rescaling routine cannot model glacier extent exceeding the initial\n"
-                                " status of the provided glacier profile. The surplus is stored and added in subsequent years\n"
-                                " with negative mass balance(s) to maintain the long-term average balance.\n"
-                                "**********\n"
-                            )
-                            warn = False
-                        surplus += max(smb_cum, 0)
-                        smb_cum = 0
-
                     smb_flag = False
 
-                # calculate the percentage of melt in comparison to the initial mass
-                smb_percentage = round((-smb_cum / m) * 100)
-                if (smb_percentage < 99) & (smb_percentage >= 0):
-                    # select the correct row from the lookup table depending on the smb
-                    area_melt = lookup_table.iloc[smb_percentage]
-                    # derive the new glacier area by multiplying the initial area with the area changes
-                    new_area = (
-                        np.nansum((area_melt.values * initial_area.values))
-                        * parameter.area_cat
-                    )
-                    # derive new spatial distribution of glacierized area (relative fraction in every elevation zone)
-                    new_distribution = (
-                        (area_melt.values * initial_area.values) * parameter.area_cat
-                    ) / new_area
-                    # multiply relative portions with mean zone elevations to get rough estimate for new mean elevation
-                    new_distribution = (
-                        new_distribution * lookup_table.columns.values
-                    )  # column headers contain elevations
-                    new_distribution = int(np.nansum(new_distribution))
-                else:
-                    new_area = 0
+            # if drop_surplus = False the surplus from years with positive MB_cum is added in later years
+            else:
+                # scale the smb to the (updated) glacierized fraction of the catchment
+                smb = smb_unscaled * (
+                    new_area / parameter.area_cat
+                )  # SMB is area (re-)scaled because m is area scaled as well
+                smb_scaled = smb.copy()
 
-                glacier_mass_abs = (1 - smb_percentage * 0.01) * m
-                glacier_vol_init = (
-                    (m / 1000) * parameter.area_glac * 1e6 / 0.908
-                )  # mass in mmwe, area in km^2
-                glacier_vol = (glacier_mass_abs / 1000) * new_area * 1e6 / 0.908
-                glacier_vol_perc = glacier_vol / glacier_vol_init
+                # If the cumulative SMB has been positive in previous years the surplus is added here
+                if surplus > 0:
+                    if smb < 0:
+                        diff = surplus + smb
+                        surplus = max(diff, 0)
+                        smb = min(diff, 0)
+                # add the smb from the previous year(s) to the new year
+                smb_cum = smb_cum + smb
+                # Check whether glacier extent exceeds the initial state (smb_cum > 0). Shift surplus to next year(s).
+                if smb_cum > 0:
+                    if warn:
+                        print(
+                            "**********\n"
+                            "WARNING:\n"
+                            "At some point of the simulation period the cumulative surface mass balance is\n"
+                            " positive. The glacier rescaling routine cannot model glacier extent exceeding the initial\n"
+                            " status of the provided glacier profile. The surplus is stored and added in subsequent years\n"
+                            " with negative mass balance(s) to maintain the long-term average balance.\n"
+                            "**********\n"
+                        )
+                        warn = False
+                    surplus += max(smb_cum, 0)
+                    smb_cum = 0
 
-                # Append to glacier change dataframe for subsequent functions (skip last incomplete year)
-                if drop_surplus:
-                    glacier_change = pd.concat(
-                        [
-                            glacier_change,
-                            pd.DataFrame(
-                                {
-                                    "time": year,
-                                    "glacier_area": new_area,
-                                    "glacier_elev": new_distribution,
-                                    "smb_water_year": smb_unscaled,
-                                    "smb_scaled_cum": smb_cum,
-                                },
-                                index=[i],
-                            ),
-                        ],
-                        ignore_index=True,
-                    )
-                else:
-                    glacier_change = pd.concat(
-                        [
-                            glacier_change,
-                            pd.DataFrame(
-                                {
-                                    "time": year,
-                                    "glacier_area": new_area,
-                                    "glacier_elev": new_distribution,
-                                    "smb_water_year": smb_unscaled,
-                                    "smb_scaled": smb_scaled,
-                                    "smb_scaled_capped": smb,
-                                    "smb_scaled_capped_cum": smb_cum,
-                                    "surplus": surplus,
-                                    "glacier_melt_perc": smb_percentage,
-                                    "glacier_mass_mmwe": glacier_mass_abs,
-                                    "glacier_vol_m3": glacier_vol,
-                                    "glacier_vol_perc": glacier_vol_perc,
-                                },
-                                index=[i],
-                            ),
-                        ],
-                        ignore_index=True,
-                    )
+                smb_flag = False
 
-            # Scale DDM output to new glacierized fraction
-            for col in up_cols:
-                output_DDM_year[col + "_updated_scaled"] = np.where(
-                    output_DDM_year["water_year"] == year,
-                    output_DDM_year[col] * (new_area / parameter.area_cat),
-                    output_DDM_year[col + "_updated_scaled"],
+            # calculate the percentage of melt in comparison to the initial mass
+            smb_percentage = round((-smb_cum / m) * 100)
+            if (smb_percentage < 99) & (smb_percentage >= 0):
+                # select the correct row from the lookup table depending on the smb
+                area_melt = lookup_table.iloc[smb_percentage]
+                # derive the new glacier area by multiplying the initial area with the area changes
+                new_area = (
+                    np.nansum((area_melt.values * initial_area.values))
+                    * parameter.area_cat
                 )
-            # Append year to full dataset
-            output_DDM = pd.concat([output_DDM, output_DDM_year])
+                # derive new spatial distribution of glacierized area (relative fraction in every elevation zone)
+                new_distribution = (
+                    (area_melt.values * initial_area.values) * parameter.area_cat
+                ) / new_area
+                # multiply relative portions with mean zone elevations to get rough estimate for new mean elevation
+                new_distribution = (
+                    new_distribution * lookup_table.columns.values
+                )  # column headers contain elevations
+                new_distribution = int(np.nansum(new_distribution))
+            else:
+                new_area = 0
 
-            if smb_flag:
-                output_DDM["smb_flag"] = 1
-                output_DDM["DDM_smb"] = (
-                    9999  # To exclude run from parameter optimization of glacial parameters
+            glacier_mass_abs = (1 - smb_percentage * 0.01) * m
+            glacier_vol_init = (
+                (m / 1000) * parameter.area_glac * 1e6 / 0.908
+            )  # mass in mmwe, area in km^2
+            glacier_vol = (glacier_mass_abs / 1000) * new_area * 1e6 / 0.908
+            glacier_vol_perc = glacier_vol / glacier_vol_init
+
+            # Append to glacier change dataframe for subsequent functions (skip last incomplete year)
+            data = {
+                "time": year,
+                "glacier_area": new_area,
+                "glacier_elev": new_distribution,
+                "smb_water_year": smb_unscaled,
+            }
+
+            if drop_surplus:
+                data["smb_scaled_cum"] = smb_cum
+            else:
+                data.update(
+                    {
+                        "smb_scaled": smb_scaled,
+                        "smb_scaled_capped": smb,
+                        "smb_scaled_capped_cum": smb_cum,
+                        "surplus": surplus,
+                        "glacier_melt_perc": smb_percentage,
+                        "glacier_mass_mmwe": glacier_mass_abs,
+                        "glacier_vol_m3": glacier_vol,
+                        "glacier_vol_perc": glacier_vol_perc,
+                    }
                 )
 
-        glacier_change["time"] = pd.to_datetime(glacier_change["time"], format="%Y")
-        glacier_change.set_index("time", inplace=True, drop=False)
-        glacier_change["time"] = glacier_change["time"].dt.strftime("%Y")
-        glacier_change = glacier_change.rename_axis("TIMESTAMP")
+            # Create the DataFrame and concatenate
+            new_row = pd.DataFrame(data, index=[i])
+            glacier_change = pd.concat([glacier_change, new_row], ignore_index=True)
 
-        output_DDM = output_DDM[parameter.sim_start : parameter.sim_end]
-        # Add original spin-up period back to HBV input
-        input_df_catchment = pd.concat([input_df_catchment_spinup, input_df_catchment])
+        # Scale DDM output to new glacierized fraction
+        for col in up_cols:
+            output_DDM_year[col + "_updated_scaled"] = np.where(
+                output_DDM_year["water_year"] == year,
+                output_DDM_year[col] * (new_area / parameter.area_cat),
+                output_DDM_year[col + "_updated_scaled"],
+            )
+        # Append year to full dataset
+        output_DDM = pd.concat([output_DDM, output_DDM_year])
+
+        if smb_flag:
+            output_DDM["smb_flag"] = 1
+            output_DDM["DDM_smb"] = (
+                9999  # To exclude run from parameter optimization of glacial parameters
+            )
+
+    glacier_change["time"] = pd.to_datetime(glacier_change["time"], format="%Y")
+    glacier_change.set_index("time", inplace=True, drop=False)
+    glacier_change["time"] = glacier_change["time"].dt.strftime("%Y")
+    glacier_change = glacier_change.rename_axis("TIMESTAMP")
+
+    output_DDM = output_DDM[parameter.sim_start : parameter.sim_end]
+    # Add original spin-up period back to HBV input
+    input_df_catchment = pd.concat([input_df_catchment_spinup, input_df_catchment])
 
     return output_DDM, glacier_change, input_df_catchment
 
@@ -1501,8 +1483,6 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         dt = 0.409 * np.sin(2 * np.pi / 365 * doy - 1.39)
         # calculate sunset hour angle (in radians)
         ws = np.arccos(-np.tan(lat) * np.tan(dt))
-        # Calculate sunshine duration N (in hours)
-        N = 24 / np.pi * ws
         # Calculate day angle j (in radians)
         j = 2 * np.pi / 365.25 * doy
         # Calculate relative distance to sun
@@ -1586,75 +1566,70 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
     # 2.3 Running model for set-up period
     for t in range(1, len(Prec_cal)):
-
         # 2.3.1 Snow routine
         # how snowpack forms
         SNOWPACK_cal[t] = SNOWPACK_cal[t - 1] + SNOW_cal[t]
+
         # how snowpack melts
-        # day-degree simple melting
-        melt = parameter.CFMAX_snow * Temp_cal[t]
-        # control melting
-        if melt < 0:
-            melt = 0
-        melt = min(melt, SNOWPACK_cal[t])
+        melt = max(0, parameter.CFMAX_snow * Temp_cal[t])  # control melting
+        melt = min(melt, SNOWPACK_cal[t])  # limit by snowpack
+
         # how meltwater box forms
         SNOWMELT_cal[t] = SNOWMELT_cal[t - 1] + melt
+
         # snowpack after melting
-        SNOWPACK_cal[t] = SNOWPACK_cal[t] - melt
+        SNOWPACK_cal[t] -= melt
+
         # refreezing accounting
         refreezing = (
             parameter.CFR * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
         )
-        # control refreezing
-        if refreezing < 0:
-            refreezing = 0
-        refreezing = min(refreezing, SNOWMELT_cal[t])
+        refreezing = max(0, refreezing)  # control refreezing
+        refreezing = min(refreezing, SNOWMELT_cal[t])  # limit by meltwater
+
         # snowpack after refreezing
-        SNOWPACK_cal[t] = SNOWPACK_cal[t] + refreezing
+        SNOWPACK_cal[t] += refreezing
+
         # meltwater after refreezing
-        SNOWMELT_cal[t] = SNOWMELT_cal[t] - refreezing
+        SNOWMELT_cal[t] -= refreezing
+
         # recharge to soil
-        tosoil = SNOWMELT_cal[t] - (parameter.CWH * SNOWPACK_cal[t])
-        # control recharge to soil
-        if tosoil < 0:
-            tosoil = 0
+        tosoil = max(
+            0, SNOWMELT_cal[t] - (parameter.CWH * SNOWPACK_cal[t])
+        )  # control recharge
+
         # meltwater after recharge to soil
-        SNOWMELT_cal[t] = SNOWMELT_cal[t] - tosoil
+        SNOWMELT_cal[t] -= tosoil
 
         # 2.3.1 Soil and evaporation routine
         # soil wetness calculation
         soil_wetness = (SM_cal[t - 1] / parameter.FC) ** parameter.BETA
-        # control soil wetness (should be in [0, 1])
-        if soil_wetness < 0:
-            soil_wetness = 0
-        if soil_wetness > 1:
-            soil_wetness = 1
+        soil_wetness = max(0, min(1, soil_wetness))  # control soil wetness
+
         # soil recharge
         recharge = (RAIN_cal[t] + tosoil) * soil_wetness
+
         # soil moisture update
         SM_cal[t] = SM_cal[t - 1] + RAIN_cal[t] + tosoil - recharge
+
         # excess of water calculation
-        excess = SM_cal[t] - parameter.FC
-        # control excess
-        if excess < 0:
-            excess = 0
+        excess = max(0, SM_cal[t] - parameter.FC)  # control excess
+
         # soil moisture update
-        SM_cal[t] = SM_cal[t] - excess
+        SM_cal[t] -= excess
 
         # evaporation accounting
         evapfactor = SM_cal[t] / (parameter.LP * parameter.FC)
-        # control evapfactor in range [0, 1]
-        if evapfactor < 0:
-            evapfactor = 0
-        if evapfactor > 1:
-            evapfactor = 1
+        evapfactor = max(0, min(1, evapfactor))  # control evapfactor in range [0, 1]
+
         # calculate actual evaporation
-        ETact_cal[t] = Evap_cal[t] * evapfactor
-        # control actual evaporation
-        ETact_cal[t] = min(SM_cal[t], ETact_cal[t])
+        ETact_cal[t] = min(
+            SM_cal[t], Evap_cal[t] * evapfactor
+        )  # control actual evaporation
 
         # last soil moisture updating
-        SM_cal[t] = SM_cal[t] - ETact_cal[t]
+        SM_cal[t] -= ETact_cal[t]
+
     print("Finished spin up for initial HBV parameters")
 
     # 3. meteorological forcing preprocessing for simulation
@@ -1736,99 +1711,101 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         # 5.1 Snow routine
         # how snowpack forms
         SNOWPACK[t] = SNOWPACK[t - 1] + SNOW[t]
+
         # how snowpack melts
-        # temperature index melting (PDD)
-        melt = parameter.CFMAX_snow * Temp[t]
-        # control melting
-        if melt < 0:
-            melt = 0
-        melt = min(melt, SNOWPACK[t])
+        melt = max(0, parameter.CFMAX_snow * Temp[t])  # control melting
+        melt = min(melt, SNOWPACK[t])  # limit by snowpack
+
         # how meltwater box forms
         SNOWMELT[t] = SNOWMELT[t - 1] + melt
+
         # snowpack after melting
-        SNOWPACK[t] = SNOWPACK[t] - melt
+        SNOWPACK[t] -= melt
+
         # refreezing accounting
         refreezing = (
             parameter.CFR * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
         )
-        # control refreezing
-        if refreezing < 0:
-            refreezing = 0
-        refreezing = min(refreezing, SNOWMELT[t])
+        refreezing = max(0, refreezing)  # control refreezing
+        refreezing = min(refreezing, SNOWMELT[t])  # limit by meltwater
+
         # write refreezing to output
         refreezing_off_glacier[t] = refreezing
+
         # snowpack after refreezing
-        SNOWPACK[t] = SNOWPACK[t] + refreezing
+        SNOWPACK[t] += refreezing
+
         # meltwater after refreezing
-        SNOWMELT[t] = SNOWMELT[t] - refreezing
+        SNOWMELT[t] -= refreezing
+
         # write total melt off-glacier to output
         off_glac[t] = max(melt - refreezing, 0)
 
         # recharge to soil
-        tosoil = SNOWMELT[t] - (parameter.CWH * SNOWPACK[t])
-        # control recharge to soil
-        if tosoil < 0:
-            tosoil = 0
+        tosoil = max(0, SNOWMELT[t] - (parameter.CWH * SNOWPACK[t]))  # control recharge
+
         # meltwater after recharge to soil
-        SNOWMELT[t] = SNOWMELT[t] - tosoil
+        SNOWMELT[t] -= tosoil
 
         # 5.2 Soil and evaporation routine
         # soil wetness calculation
         soil_wetness = (SM[t - 1] / parameter.FC) ** parameter.BETA
-        # control soil wetness (should be in [0, 1])
-        if soil_wetness < 0:
-            soil_wetness = 0
-        if soil_wetness > 1:
-            soil_wetness = 1
+        soil_wetness = max(
+            0, min(1, soil_wetness)
+        )  # control soil wetness in range [0, 1]
+
         # soil recharge
         recharge = (RAIN[t] + tosoil) * soil_wetness
 
         # soil moisture update
         SM[t] = SM[t - 1] + RAIN[t] + tosoil - recharge
+
         # excess of water calculation
-        excess = SM[t] - parameter.FC
-        # control excess
-        if excess < 0:
-            excess = 0
+        excess = max(0, SM[t] - parameter.FC)  # control excess
+
         # soil moisture update
-        SM[t] = SM[t] - excess
+        SM[t] -= excess
 
         # evaporation accounting
         evapfactor = SM[t] / (parameter.LP * parameter.FC)
-        # control evapfactor in range [0, 1]
-        if evapfactor < 0:
-            evapfactor = 0
-        if evapfactor > 1:
-            evapfactor = 1
+        evapfactor = max(0, min(1, evapfactor))  # control evapfactor in range [0, 1]
+
         # calculate actual evaporation
-        ETact[t] = Evap[t] * evapfactor
-        # control actual evaporation
-        ETact[t] = min(SM[t], ETact[t])
+        ETact[t] = min(SM[t], Evap[t] * evapfactor)  # control actual evaporation
 
         # last soil moisture updating
-        SM[t] = SM[t] - ETact[t]
+        SM[t] -= ETact[t]
 
         # 5.3 Groundwater routine
         # upper groundwater box
         SUZ[t] = SUZ[t - 1] + recharge + excess
+
         # percolation control
         perc = min(SUZ[t], parameter.PERC)
+
         # update upper groundwater box
-        SUZ[t] = SUZ[t] - perc
+        SUZ[t] -= perc
+
         # runoff from the highest part of upper groundwater box (surface runoff)
         Q0 = parameter.K0 * max(SUZ[t] - parameter.UZL, 0)
+
         # update upper groundwater box
-        SUZ[t] = SUZ[t] - Q0
+        SUZ[t] -= Q0
+
         # runoff from the middle part of upper groundwater box
         Q1 = parameter.K1 * SUZ[t]
+
         # update upper groundwater box
-        SUZ[t] = SUZ[t] - Q1
+        SUZ[t] -= Q1
+
         # calculate lower groundwater box
         SLZ[t] = SLZ[t - 1] + perc
+
         # runoff from lower groundwater box
         Q2 = parameter.K2 * SLZ[t]
+
         # update lower groundwater box
-        SLZ[t] = SLZ[t] - Q2
+        SLZ[t] -= Q2
 
         # Total runoff calculation
         Qsim[t] = Q0 + Q1 + Q2
@@ -1890,11 +1867,12 @@ def create_statistics(output_MATILDA):
     """
 
     stats = output_MATILDA.describe()
-    sum = pd.DataFrame(output_MATILDA.sum())
-    sum.columns = ["sum"]
-    sum = sum.transpose()
-    # stats = stats.append(sum)
-    stats = pd.concat([stats, sum])
+    column_sums = pd.DataFrame(
+        output_MATILDA.sum()
+    )  # Renamed from `sum` to `column_sums`
+    column_sums.columns = ["sum"]
+    column_sums = column_sums.transpose()
+    stats = pd.concat([stats, column_sums])
     stats = stats.round(3)
     return stats
 
@@ -1975,11 +1953,10 @@ def matilda_submodules(
                     drop_surplus=drop_surplus,
                 )
             else:
-                print(
+                raise ValueError(
                     "ERROR: No glacier profile passed for glacier elevation rescaling! Provide a glacier profile or"
                     " set elev_rescaling=False"
                 )
-                return
         else:
             lookup_table = str("No lookup table generated")
             glacier_change = str("No glacier changes calculated")
