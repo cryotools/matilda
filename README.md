@@ -94,6 +94,7 @@ An example script and 3y of sample data can be found [here](Example/example_work
 
 * **Phillip Schuster** - *Initial work* - (https://github.com/phiscu)
 * **Ana-Lena Tappe** - *Initial work* - (https://github.com/anatappe)
+* **Alexander Georgi** - *Contributor* - (https://github.com/geoalxx)
 
 
 See also the list of [contributors](https://www.geographie.hu-berlin.de/en/professorships/climate_geography/research-2/climate-change-and-cryosphere-research/ebaca) who participated in this project.
