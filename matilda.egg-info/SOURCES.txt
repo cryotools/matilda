@@ -10,3 +10,4 @@ matilda.egg-info/SOURCES.txt
 matilda.egg-info/dependency_links.txt
 matilda.egg-info/requires.txt
 matilda.egg-info/top_level.txt
+tests/test_matilda.py

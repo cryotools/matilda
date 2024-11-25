@@ -73,6 +73,9 @@ import HydroErr as he
 from scipy.stats import gamma
 from spotpy.parameter import Uniform
 from spotpy.objectivefunctions import mae
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="spotpy")
 from matilda.core import (
     matilda_simulation,
     matilda_parameter,
