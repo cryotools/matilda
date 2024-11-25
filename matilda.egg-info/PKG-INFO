@@ -4,7 +4,7 @@ Version: 0.3
 Summary: A package to model water resources in glacierized catchments
 Home-page: https://github.com/cryotools/matilda/matilda_v0.3/matilda
 Author: Phillip Schuster & Ana-Lena Tappe
-Author-email: phillip.schuster@posteo.de
+Author-email: phillip.schuster@geo.hu-berlin.de
 License: MIT
 Requires-Python: >=3.6
 Description-Content-Type: text/markdown

@@ -1,18 +1,37 @@
-# MATILDA - Modeling Water Resources in Glacierized Catchments
+# MATILDA: Modeling wATer resources In gLacierizeD cAtchments
 
-The MATILDA framework combines a simple positive degree-day routine (DDM) to compute glacial melt with the hydrological bucket model HBV (Bergström, 1986). The aim is to provide an easy-access open-source tool to assess the characteristics of small and medium-sized glacierized catchments and enable users to estimate future water resources for different climate change scenarios.
-MATILDA is an ongoing project and therefore a ***work in progress***.
+MATILDA is a Python-based modeling framework for simulating water resources in glacierized catchments. This repository contains the core routines of the comprehensive [MATILDA-Online](https://matilda-online.github.io/jbook/) workflow:
 
-## Overview
+1. The *matilda.core* module combines a **temperature-index melt model** with the **HBV model** for hydrological simulations.
+2. The *matilda.mspot_glacier* module provides a parameter optimization routine using the [*spotpy*](https://github.com/thouska/spotpy/) library.
 
-In the basic setup, MATILDA uses a modified version of the [pypdd](https://github.com/juseg/pypdd.git) tool to calculate glacial melt based on a positive degree-day approach and a modified version of HBV from the Lumped Hydrological Models Playground ([LHMP](https://github.com/hydrogo/LHMP.git)). The output contains the modeled time series for various components of the water balance, basic statistics for these variables, a choice of model effieciency coefficients (e.g. NSE, KGE...), and several plots of in- and output data.
+While MATILDA can be used as a stand-alone model, the [MATILDA-Online](https://matilda-online.github.io/jbook/) workflow provides comprehensive tools for data acquisition, pre- and post-processing with detailed documentation.
 
-![](workflow_detailed-CORRECTED.png)
+![](workflow_matilda_1_0.png)
 
-### Requirements
+---
 
-The tool should run with every Python3 version on most computer operating systems. It was developed on Python 3.6.9 on Ubuntu 20.04.
-It requires the following Python3 libraries:
+## Repository Structure
+
+```
+.
+├── Example
+│   ├── example_workflow.py           # Example script for running MATILDA
+│   ├── forcing_data.csv              # Input data for example workflow
+│   └── runoff_data.csv               # Observed runoff data
+├── matilda
+│   ├── core.py                       # MATILDA core routines
+│   └── mspot_glacier.py              # Parameter optimization routines
+...
+```
+
+---
+
+## Installation
+
+The tool should work with any Python3 version on any computer operating system. It has been developed on Python 3.10.9 on Ubuntu 22.04.
+The following Python3 libraries are required:
+```
 - xarray
 - numpy
 - pandas
@@ -21,20 +40,27 @@ It requires the following Python3 libraries:
 - datetime
 - hydroeval
 - HydroErr
-- Plotly
+- plotly
+- spotpy
+```
 
-The MATILDA package and dependencies can be installed to your local machine by using pip or a comparable package manager. You can either install the package by using the link to this repository:
+The MATILDA package and dependencies can be installed on your local machine using pip or a similar package manager. You can either install the package by using the link to this repository:
 ```
 pip install git+https://github.com/cryotools/matilda.git
 ```
-...or clone this repository to you local machine, navigate to top directory and use:
+...or clone this repository to your local machine, navigate to the top-level directory and use it:
 ```
 pip install .
 ```
+---
 
-### Data
+## Usage
 
-The minimum input is a CSV-file containing timeseries of air temperature (°C), total precipitation (mm) and (if available) evapotranspiration data (mm) in the format shown below. If evapotranspiration is not provided it is estimated from air temperature following [Oudin et.al. 2010](https://doi.org/10.1080/02626660903546118). A series of runoff observations (mm) is used to calibrate/validate the model. All data sets need at least daily resolution.
+A detailed walkthrough of the proposed modeling workflow and calibration strategy can be found at the [MATILDA Online Webpage](https://matilda-online.github.io/jbook/). For a quick start to the stand-alone model, see the [application example](https://github.com/cryotools/matilda/tree/styling/Example) and follow the following guidelines.
+
+### Forcing Data
+
+The minimum input is a CSV file containing time series of air temperature (°C or K), total precipitation (mm), and (if available) evapotranspiration (mm) data in the format shown below. If evapotranspiration is not provided, it is estimated from air temperature according to [Oudin et.al. 2010](https://doi.org/10.1080/02626660903546118). A series of discharge observations (mm) is used to calibrate the model. If no discharge data are provided, the model runs with default parameters. All datasets require daily resolution.
 
 | TIMESTAMP           | T2    | RRR  | PE   |
 |---------------------|-------|------|------|
@@ -50,9 +76,11 @@ The minimum input is a CSV-file containing timeseries of air temperature (°C), 
 | ...        | ...  |
 
 
-The forcing data is scaled to the mean glacier elevation and the mean catchment elevation respectively using linear lapse rates. Reference altitudes for the input data, the whole catchment, and the glacierized fraction need to be provided. Automated routines for catchment delineation and the download of public glacier data will be added to MATILDA in future versions.
+The forcing data are scaled to the mean elevations of the glacierized and ice-free subcatchments, respectively, using linear lapse rates. Reference elevations must be provided for the input data, the entire catchment, and the glacierized fraction. Automated routines for catchment delineation and public data download can be found in the [MATILDA Online](https://matilda-online.github.io/jbook/) workflow.
 
-To include the deltaH parameterization from [Huss and Hock 2015](https://doi.org/10.3389/feart.2015.00054) within the DDM routine to calculate glacier area evolution in the study period, information on the glaciers is necessary. The routine requires an initial glacier profile containing the spatial distribution of ice over elevation bands at the beginning of the study period in form of a dataframe:
+### Glacier Data
+
+To apply the **Δh** parameterization of [Huss and Hock 2015](https://doi.org/10.3389/feart.2015.00054) within the DDM routine to calculate glacier evolution over the study period, you need to provide data on the initial glacier cover. The routine requires an initial glacier profile containing the spatial distribution of ice over elevation bands at the beginning of the study period in the form of a dataframe:
 
 | Elevation | Area  | WE        | EleZone |
 |-----------|-------|-----------|---------|
@@ -63,54 +91,81 @@ To include the deltaH parameterization from [Huss and Hock 2015](https://doi.org
 | ..  	     | ...   | ...       | ... 	   |
 
 * Elevation - elevation of each band (10 m intervals recommended)
-* Area - glacierized area in each band as fraction of the total catchment area (column sum is the glacierized fraction of the whole catchment)
-* WE -  ice thickness in mm w.e.
-* EleZone - combined bands over 100-200 m.
+* Area - glacierized area in each band as a fraction of the total catchment area (column sum is the glacierized fraction of the total catchment)
+* WE - ice thickness in mm w.e.
+* EleZone - combined bands across 100-200 m.
 
-The deltaH parametrization routine is based on the workflow outlined by [Seibert et.al. (2018)](https://doi.org/10.5194/hess-22-2211-2018).
-### Workflow
 
-The MATILDA package consists of four different modules: parameter setup, data preprocessing, core simulation, and postprocessing. All modules can be used individually or via the superior *MATILDA_simulation* function. 
-To use the full workflow the following steps are recommended:
-- Load your data.
-- Define the spin-up and simulation periods. At least one year of spin-up is recommended.
-- Specify your catchment properties (catchment area, glacierized area, average elevation, average glacier elevation).
-- Define the output frequency (daily, weekly, monthly or yearly).
-- Specify parameters as you please using the *MATILDA_parameter* function. If no parameters are specified, default values are applied.
-- Run the data preprocessing with the *MATILDA_preproc* function.
-- Run the actual simulation with the *MATILDA_submodules* function.
-- The simulation will give you a quick overview of your output and (if you provide observations) model efficiency coefficients are calculated.
-- Plot runoff, meteorological parameters, and HBV output variables using *MATILDA_plots* function. 
-- All the output including the plots and parameters can be saved to your local disk with the *MATILDA_save_output* function.
+---
 
-## Application example
-An example script and 3y of sample data can be found [here](Example/example_workflow.py).
+## Parameter List
 
-## Built using
-* [pypdd](https://github.com/juseg/pypdd.git) - Python positive degree day model for glacier surface mass balance
-* [LHMP](https://github.com/hydrogo/LHMP) - Lumped Hydrological Models Playgroud - HBV Model
+MATILDA has 21 non-optional parameters, most of which are HBV standard parameters.
+
+
+| **Parameter**        | **Description**                                                                 | **Unit/Range**        | **Default Value**     |
+|-----------------------|---------------------------------------------------------------------------------|-----------------------|-----------------------|
+| `lr_temp`            | Temperature lapse rate                                                         | °C m⁻¹               | -0.006               |
+| `lr_prec`            | Precipitation lapse rate                                                       | mm m⁻¹               | 0                    |
+| `TT_snow`            | Threshold temperature for snow                                                 | °C                   | 0                    |
+| `TT_diff`            | Temperature range for rain-snow transition                                     | °C                   | 2                    |
+| `CFMAX_snow`         | Melt factor for snow                                                           | mm °C⁻¹ day⁻¹        | 5                    |
+| `CFMAX_rel`          | Melt factor for ice relative to snow                                           | -                    | 2                    |
+| `BETA`               | Shape coefficient for soil moisture routine                                    | -                    | 1.0                  |
+| `CET`                | Correction factor for evapotranspiration                                       | -                    | 0.15                 |
+| `FC`                 | Field capacity of soil                                                         | mm                   | 250                  |
+| `K0`                 | Recession coefficient for surface flow                                         | day⁻¹                | 0.055                |
+| `K1`                 | Recession coefficient for intermediate groundwater flow                       | day⁻¹                | 0.055                |
+| `K2`                 | Recession coefficient for deep groundwater flow                                | day⁻¹                | 0.04                 |
+| `LP`                 | Fraction of field capacity where evapotranspiration is at its maximum          | -                    | 0.7                  |
+| `MAXBAS`             | Length of triangular routing function                                          | day                  | 3.0                  |
+| `PERC`               | Percolation rate from upper to lower groundwater reservoir                     | mm day⁻¹             | 1.5                  |
+| `UZL`                | Threshold for quick flow from upper zone                                       | mm                   | 120                  |
+| `PCORR`              | Precipitation correction factor                                                | -                    | 1.0                  |
+| `SFCF`               | Snowfall correction factor                                                     | -                    | 0.7                  |
+| `CWH`                | Water holding capacity of snowpack                                             | -                    | 0.1                  |
+| `AG`                 | Glacier area correction factor                                                 | -                    | 0.7                  |
+| `CFR`                | Refreezing coefficient                                                         | -                    | 0.15                 |
+
+---
 
 ## Authors
 
-* **Phillip Schuster** - *Initial work* - (https://github.com/phiscu)
+* **Phillip Schuster** - *Lead* - (https://github.com/phiscu)
+* **Alexander Georgi** - *Visualization and Integration with MATILDA-Online* - (https://github.com/geoalxx
 * **Ana-Lena Tappe** - *Initial work* - (https://github.com/anatappe)
 * **Alexander Georgi** - *Contributor* - (https://github.com/geoalxx)
 
 
-See also the list of [contributors](https://www.geographie.hu-berlin.de/en/professorships/climate_geography/research-2/climate-change-and-cryosphere-research/ebaca) who participated in this project.
+See also the list of [contributors](https://www.geographie.hu-berlin.de/en/professorships/climate_geography/research-2/climate-change-and-cryosphere-research/ebaca) who participated in the initial project funded by the [GIZ](https://www.giz.de/de/downloads/giz2019-EN-Enhancing-Livelihoods.pdf).
 
 ## License
 
 This project is licensed under the MIT License.
 
-### References
+---
 
-* For PyPDD:
-  * Seguinot, J. (2019). PyPDD: a positive degree day model for glacier surface mass balance (Version v0.3.1). Zenodo. http://doi.org/10.5281/zenodo.3467639
+## References
 
-* For LHMP and HBV:
-    * Ayzel, G. (2016). Lumped Hydrological Models Playground. [github.com/hydrogo/LHMP](https://github.com/hydrogo/LHMP.git), [doi:10.5281/zenodo.59680](https://doi.org/10.5281/zenodo.59680). 
-    * Ayzel G. (2016). LHMP: lumped hydrological modelling playground. Zenodo. [doi:10.5281/zenodo.59501](https://doi.org/10.5281/zenodo.59501). 
-    * Bergström, S. (1992). The HBV model: Its structure and applications. Swedish Meteorological and Hydrological Institute. [PDF](https://www.smhi.se/polopoly_fs/1.83592!/Menu/general/extGroup/attachmentColHold/mainCol1/file/RH_4.pdf)
-* For the deltaH parametrization:
-  * Seibert et.al. (2018). Representing glacier geometry changes in a semi-distributed hydrological model. [https://doi.org/10.5194/hess-22-2211-2018](https://doi.org/10.5194/hess-22-2211-2018)
+The development of MATILDA integrated several well-established hydrological and glacier modeling tools. References for the primary methods and libraries used in the model are listed below:
+
+**PyPDD (Temperature-Index Model):**
+
+  - Seguinot, J. (2019). PyPDD: a positive degree day model for glacier surface mass balance (Version v0.3.1). Zenodo. [http://doi.org/10.5281/zenodo.3467639](http://doi.org/10.5281/zenodo.3467639)
+
+**LHMP and HBV Models:**
+
+  - Ayzel, G. (2016). Lumped Hydrological Models Playground. [github.com/hydrogo/LHMP](https://github.com/hydrogo/LHMP.git), [doi:10.5281/zenodo.59680](https://doi.org/10.5281/zenodo.59680).
+  - Ayzel G. (2016). LHMP: lumped hydrological modelling playground. Zenodo. [doi:10.5281/zenodo.59501](https://doi.org/10.5281/zenodo.59501).
+  - Bergström, S. (1992). The HBV model: Its structure and applications. Swedish Meteorological and Hydrological Institute. [PDF](https://www.smhi.se/polopoly_fs/1.83592!/Menu/general/extGroup/attachmentColHold/mainCol1/file/RH_4.pdf)
+
+**Δh (delta-h) Parametrization:**
+
+  - Seibert et.al. (2018). Representing glacier geometry changes in a semi-distributed hydrological model. [https://doi.org/10.5194/hess-22-2211-2018](https://doi.org/10.5194/hess-22-2211-2018)
+  
+**SPOTPY (Parameter Optimization):**
+
+  - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). SPOTting Model Parameters Using a Ready-Made Python Package. *PLOS ONE*, 10(12), 1–22. [http://doi.org/10.1371/journal.pone.0145180](http://doi.org/10.1371/journal.pone.0145180)
+
+
+

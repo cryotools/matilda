@@ -1,0 +1,143 @@
+{
+  "parameters": {
+    "lr_temp": {
+      "default": -0.006,
+      "min": -0.0065,
+      "max": -0.0055,
+      "description": "Lapse rate for temperature scaling in °C/m"
+    },
+    "lr_prec": {
+      "default": 0,
+      "min": 0,
+      "max": 0.002,
+      "description": "Lapse rate for precipitation scaling"
+    },
+    "TT_snow": {
+      "default": 0,
+      "min": -1.5,
+      "max": 1.5,
+      "description": "Threshold temperature for snow precipitation in °C"
+    },
+    "TT_diff": {
+      "default": 2,
+      "min": 0.5,
+      "max": 2.5,
+      "description": "Temperature difference between rain and snow thresholds in °C"
+    },
+    "CFMAX_snow": {
+      "default": 2.5,
+      "min": 0.5,
+      "max": 10,
+      "description": "Degree-day factor for snowmelt"
+    },
+    "CFMAX_rel": {
+      "default": 2,
+      "min": 1.2,
+      "max": 2,
+      "description": "Relative ice melt factor compared to snow"
+    },
+    "BETA": {
+      "default": 1.0,
+      "min": 1,
+      "max": 6,
+      "description": "Parameter controlling soil moisture storage"
+    },
+    "CET": {
+      "default": 0.15,
+      "min": 0,
+      "max": 0.3,
+      "description": "Correction factor for evapotranspiration"
+    },
+    "FC": {
+      "default": 250,
+      "min": 50,
+      "max": 500,
+      "description": "Field capacity of the soil in millimeters"
+    },
+    "K0": {
+      "default": 0.055,
+      "min": 0.01,
+      "max": 0.4,
+      "description": "Recession coefficient for quick runoff"
+    },
+    "K1": {
+      "default": 0.055,
+      "min": 0.01,
+      "max": 0.4,
+      "description": "Recession coefficient for intermediate runoff"
+    },
+    "K2": {
+      "default": 0.04,
+      "min": 0.001,
+      "max": 0.15,
+      "description": "Recession coefficient for baseflow"
+    },
+    "LP": {
+      "default": 0.7,
+      "min": 0.3,
+      "max": 1,
+      "description": "Soil moisture threshold for potential evapotranspiration"
+    },
+    "MAXBAS": {
+      "default": 3.0,
+      "min": 2,
+      "max": 7,
+      "description": "Baseflow routing parameter"
+    },
+    "PERC": {
+      "default": 1.5,
+      "min": 0,
+      "max": 3,
+      "description": "Percolation coefficient"
+    },
+    "UZL": {
+      "default": 120,
+      "min": 0,
+      "max": 500,
+      "description": "Upper zone limit for quick runoff"
+    },
+    "PCORR": {
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2,
+      "description": "Precipitation correction factor"
+    },
+    "SFCF": {
+      "default": 0.7,
+      "min": 0.4,
+      "max": 1,
+      "description": "Snowfall correction factor"
+    },
+    "CWH": {
+      "default": 0.1,
+      "min": 0,
+      "max": 0.2,
+      "description": "Water holding capacity of snowpack as a fraction of snow water equivalent"
+    },
+    "AG": {
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "description": "Fraction of meltwater refreezing"
+    },
+    "CFR": {
+      "default": 0.15,
+      "min": 0.05,
+      "max": 0.25,
+      "description": "Refreezing factor for snowmelt"
+    },
+    "hydro_year": {
+      "default": 10,
+      "min": 1,
+      "max": 12,
+      "description": "Starting month of the hydrological year (1–12)"
+    },
+    "pfilter": {
+      "default": 0,
+      "min": 0,
+      "max": 0.5,
+      "description": "Precipitation filter parameter"
+    }
+  }
+}
+
