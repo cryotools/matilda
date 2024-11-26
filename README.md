@@ -29,8 +29,7 @@ While MATILDA can be used as a stand-alone model, the [MATILDA-Online](https://m
 
 ## Installation
 
-The tool should work with any Python3 version on any computer operating system. It has been developed on Python 3.10.9 on Ubuntu 22.04.
-The following Python3 libraries are required:
+The tool's dependencies are set to integrate with [MATILDA-Online](https://matilda-online.github.io/jbook/). It requires Python 3.11 and the following libraries:
 ```
 - xarray
 - numpy
@@ -42,9 +41,10 @@ The following Python3 libraries are required:
 - HydroErr
 - plotly
 - spotpy
+- pyyaml
 ```
 
-The MATILDA package and dependencies can be installed on your local machine using pip or a similar package manager. You can either install the package by using the link to this repository:
+The MATILDA package and it's dependencies can be installed on your local machine using pip or a similar package manager. You can either install the package by using the link to this repository:
 ```
 pip install git+https://github.com/cryotools/matilda.git
 ```
@@ -56,7 +56,7 @@ pip install .
 
 ## Usage
 
-A detailed walkthrough of the proposed modeling workflow and calibration strategy can be found at the [MATILDA Online Webpage](https://matilda-online.github.io/jbook/). For a quick start to the stand-alone model, see the [application example](https://github.com/cryotools/matilda/tree/styling/Example) and follow the following guidelines.
+A detailed walkthrough of the proposed modeling workflow and calibration strategy can be found at the [MATILDA Online Webpage](https://matilda-online.github.io/jbook/). For a quick start to the stand-alone model, see the [application example](https://github.com/cryotools/matilda/tree/styling/Example) and use the following guidelines.
 
 ### Forcing Data
 
