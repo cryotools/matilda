@@ -251,7 +251,6 @@ if __name__ == "__main__":
 
 ## Run manually
 
-<<<<<<< HEAD:tests/matilda_tests_manual.py
 # with open(f"{home}/test_input/parameters.yml", "r") as f:
 #     parameters = yaml.safe_load(f)
 #
@@ -267,20 +266,14 @@ if __name__ == "__main__":
 #     input_df=data, obs=obs, **settings, **parameters, glacier_profile=glacier_profile
 # )
 #
-# new_output[10].show()
-=======
-with open(f'{home}/parameters.yml', 'r') as f:
-    parameters = yaml.safe_load(f)
-
-with open(f'{home}/settings.yml', 'r') as f:
-    settings = yaml.safe_load(f)
-
-data = pd.read_csv(f'{home}/era5.csv')
-obs = pd.read_csv(f'{home}/obs_runoff_example.csv')
-swe = pd.read_csv(f'{home}/swe.csv')
-glacier_profile = pd.read_csv(f'{home}/glacier_profile.csv')
-
-new_output = matilda_simulation(input_df=data, obs=obs, **settings, **parameters, glacier_profile=glacier_profile)
-
-print(new_output[5])
->>>>>>> origin/master:tests/matilda_tests.py
+# # Delete plots from baseline
+# baseline_output = load_baseline(
+#     "/home/phillip/Seafile/Ana-Lena_Phillip/data/matilda/tests/test_input/baseline_output.pickle"
+# )
+# del baseline_output[6:11]
+# save_baseline(
+#     baseline_output,
+#     "/home/phillip/Seafile/Ana-Lena_Phillip/data/matilda/tests/test_input/baseline_output.pickle",
+# )
+#
+# baseline_output[7].show()

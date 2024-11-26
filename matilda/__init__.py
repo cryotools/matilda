@@ -9,16 +9,20 @@ This package combines a positive degree-day model for glacier and snow melt with
 the lumped conceptual catchment model HBV. It further features a glacier area-volume scaling routine to account for
 glacier changes.
 
-:dependencies: - Pandas
-               - Xarray
-               - Matplotlib
-               - Numpy
-               - Scipy
-               - Datetime
-               - Hydroeval
-
-MATILDA is still in an experimental state and a work in progress.
+:dependencies:
+    - HydroErr==1.24
+    - hydroeval==0.1.0
+    - matplotlib==3.9.2
+    - numpy==1.26.4
+    - pandas==2.2.3
+    - plotly==5.24.1
+    - scipy==1.10.1
+    - xarray==2024.10.0
+    - DateTime==5.5
+    - pyyaml==6.0.2
+    - spotpy==1.6.2
 '''
-from . import core, mspot_glacier            # Contains all core functions
+from . import core, mspot_glacier  # Contains all core functions
 
 __version__ = '0.3'
+

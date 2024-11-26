@@ -16,8 +16,9 @@ glacier changes.
                - Scipy
                - Datetime
                - Hydroeval
+               - HydroErr
+               - DateTime
 
-MATILDA is still in an experimental state and a work in progress.
 '''
 from . import core, mspot_glacier            # Contains all core functions
 
