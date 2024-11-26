@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="matilda",
     version="0.3",
-    author="Phillip Schuster & Ana-Lena Tappe",
+    author="Phillip Schuster, Ana-Lena Tappe & Alexander Georgi",
     author_email="phillip.schuster@geo.hu-berlin.de",
     packages=["matilda"],
     description="A package to model water resources in glacierized catchments",
@@ -14,18 +14,23 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/cryotools/matilda/matilda_v0.3/matilda",
     license='MIT',
-    python_requires='>=3.6',
+    python_requires='>=3.11',
     install_requires=[
-        'pandas',
-        'xarray',
-        'matplotlib',
-        'plotly',
-        'numpy',
-        'scipy',
-        'datetime',
-        'hydroeval',
-        'HydroErr'
+	'HydroErr==1.24',
+	'hydroeval==0.1.0',
+	'matplotlib==3.9.2',
+	'numpy==1.26.4',
+	'pandas==2.2.3',
+	'plotly==5.24.1',
+	'scipy==1.10.1',
+	'xarray==2024.10.0',
+	'DateTime==5.5',
+	'pyyaml==6.0.2',
+	'spotpy==1.6.2'
     ],
+    extras_require={
+    'dev': ['pytest>=7.4.4'],
+    },
     include_package_data=True,
     package_data={
         "matilda": ["parameters.json"],
