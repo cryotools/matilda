@@ -83,6 +83,7 @@ import matplotlib.dates as mdates
 import plotly.graph_objects as go
 from matplotlib.offsetbox import AnchoredText
 from plotly.subplots import make_subplots
+import scienceplots
 
 warnings.filterwarnings(action="ignore", module="HydroErr")
 
@@ -2973,7 +2974,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             date_range = range_from + "-" + range_to
         title = [
             " Meteorological forcing data ",
-            " Simulated vs runoff ",
+            " Runoff ",
             " Runoff contributions ",
             " HBV reservoirs ",
         ]
@@ -3292,6 +3293,7 @@ def matilda_simulation(
     ele_cat=None,
     plots=True,
     plot_type="print",
+    science_plot=True,
     elev_rescaling=False,
     drop_surplus=False,
     **matilda_param,
@@ -3416,6 +3418,10 @@ def matilda_simulation(
 
     # Option to suppress plots.
     if plots:
+        if science_plot:
+            plt_style = ['science', 'no-latex']
+            plt.style.use(plt_style)
+
         output_MATILDA = matilda_plots(output_MATILDA, parameter, plot_type)
 
     if output is not None:
