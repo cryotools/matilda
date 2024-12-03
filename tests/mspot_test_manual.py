@@ -37,10 +37,10 @@ cores = args.cores
 rep = args.rep
 
 ## Input data
-df = pd.read_csv(f'{home}/era5.csv')
-obs = pd.read_csv(f'{home}/obs_runoff_example.csv')
-swe = pd.read_csv(f'{home}/swe.csv')
-glacier_profile = pd.read_csv(f'{home}/glacier_profile.csv')
+df = pd.read_csv(f'{home}/test_input/era5.csv')
+obs = pd.read_csv(f'{home}/test_input/obs_runoff_example.csv')
+swe = pd.read_csv(f'{home}/test_input/swe.csv')
+glacier_profile = pd.read_csv(f'{home}/test_input/glacier_profile.csv')
 output_path = f'{home}/mspot_test_output'
 
 ## Setup
