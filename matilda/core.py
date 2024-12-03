@@ -2242,7 +2242,7 @@ def matilda_submodules(
 
 def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     """
-    Generates visualizations for MATILDA simulation results, including meteorological inputs, runoff outputs, and HBV subdomain variables.
+    Generates visualizations for MATILDA simulation results, including meteorological inputs, runoff outputs, and HBV reservoir variables.
     Supports multiple plotting styles (static, interactive, and combined).
 
     Parameters
@@ -2272,7 +2272,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     -------
     list
         The updated `output_MATILDA` list with added visualizations. The plots are appended as follows:
-            - Static Matplotlib plots: `[fig1, fig2, fig3]` for meteorological inputs, runoff, and HBV subdomains, respectively.
+            - Static Matplotlib plots: `[fig1, fig2, fig3]` for meteorological inputs, runoff, and HBV reservoirs, respectively.
             - Interactive Plotly plots: `[fig1, fig2]` for full results and annual mean results, respectively.
 
     Notes
@@ -2280,7 +2280,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     1. **Static Plots**:
         - Plots meteorological inputs (temperature, precipitation, evaporation).
         - Visualizes runoff contributions and comparisons with observed data (if available).
-        - Displays HBV subdomain outputs (soil moisture, snowpack, groundwater).
+        - Displays HBV reservoir outputs (soil moisture, snowpack, groundwater).
     2. **Interactive Plots**:
         - Provides detailed and zoomable visualizations for meteorological inputs, runoff, and contributions using Plotly.
         - Includes annotations for model efficiency metrics like KGE.
@@ -2407,24 +2407,23 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 plot_data["prec_off_glaciers"],
                 width=15,
                 color="#8DC5FF",
-                label="off glaciers",
+                label="Off Glaciers",
             )
             ax2.bar(
                 x_vals,
                 plot_data["prec_on_glaciers"],
                 width=15,
                 color="#2E6EAE",
-                label="on glaciers",
+                label="On Glaciers",
                 bottom=plot_data["prec_off_glaciers"],
             )
             ax2.legend(prop={"size": 6})
         ax3.bar(x_vals, plot_data["evap_off_glaciers"], width=15, color="#008837")
-        plt.xlabel("Date")
         ax1.grid(lw=0.25, ls=":"), ax2.grid(lw=0.25, ls=":"), ax3.grid(lw=0.25, ls=":")
         ax3.sharey(ax2)
-        ax1.set_title("Mean temperature")
+        ax1.set_title("Mean Temperature")
         ax2.set_title("Precipitation")
-        ax3.set_title("Potential evapotranspiration")
+        ax3.set_title("Potential Evapotranspiration")
         ax1.set_ylabel(r"[$\degree$C]")
         ax2.set_ylabel("[mm]")
         ax3.set_ylabel("[mm]")
@@ -2438,7 +2437,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         else:
             fig.suptitle(
                 parameter.freq_long
-                + " meteorological forcing ("
+                + " Meteorological Forcing ("
                 + str(plot_data.index.values[0])[:4]
                 + "-"
                 + str(plot_data.index.values[-1])[:4]
@@ -2491,7 +2490,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 color="#0C5DA5",
                 edgecolor=None,
                 alpha=0.75,
-                label="Simulated runoff from glaciers",
+                label="Simulated Runoff from Glaciers",
             )
         ax1.fill_between(
             x_vals,
@@ -2500,7 +2499,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             color="#00B945",
             edgecolor=None,
             alpha=0.75,
-            label="Simulated runoff off glaciers",
+            label="Simulated Runoff off Glaciers",
         )
         ax1.set_ylabel("Runoff [mm]")
         ax1.legend(loc="upper left", ncol=3, prop={"size": 6}, bbox_to_anchor=(0.01, 1))
@@ -2539,7 +2538,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 color="#0C5DA5",
                 edgecolor=None,
                 alpha=0.75,
-                label="Simulated runoff from glaciers",
+                label="Simulated Runoff from Glaciers",
             )
         ax2.fill_between(
             x_vals,
@@ -2548,7 +2547,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             color="#00B945",
             edgecolor=None,
             alpha=0.75,
-            label="Simulated runoff off glaciers",
+            label="Simulated Runoff off Glaciers",
         )
 
         if parameter.freq == "Y" or parameter.freq == "M":
@@ -2577,7 +2576,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             rain,
             snow_melt,
             glacier_melt,
-            labels=["Rain", "Snow melt", "Glacier melt"],
+            labels=["Rain", "Snow Melt", "Glacier Melt"],
             colors=["#6c1e58", "#a6135a", "#d72f41"],
         )
 
@@ -2585,7 +2584,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             x_vals,
             plot_data["actual_evaporation"] * -1,
             plot_data["total_refreezing"] * -1,
-            labels=["Actual evaporation", "Refreezing"],
+            labels=["Actual Evaporation", "Refreezing"],
             colors=["#cce4ee", "#bababa"],
         )
 
@@ -2609,7 +2608,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             rain,
             snow_melt,
             glacier_melt,
-            labels=["Rain", "Snow melt", "Glacier melt"],
+            labels=["Rain", "Snow Melt", "Glacier Melt"],
             colors=["#6c1e58", "#a6135a", "#d72f41"],
         )
 
@@ -2617,7 +2616,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             x_vals,
             plot_annual_data["actual_evaporation"] * -1,
             plot_annual_data["total_refreezing"] * -1,
-            labels=["Actual evaporation", "Refreezing"],
+            labels=["Actual Evaporation", "Refreezing"],
             colors=["#cce4ee", "#bababa"],
         )
 
@@ -2647,16 +2646,20 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
             ax1.set_title(
                 parameter.freq_long
-                + " MATILDA simulation for the period "
+                + " MATILDA Simulation "
+                + "("
                 + str(plot_data.index.values[-1])[:4]
+                + ")"
             )
         else:
             ax1.set_title(
                 parameter.freq_long
-                + " MATILDA simulation for the period "
+                + " MATILDA Simulation "
+                + "("
                 + str(plot_data.index.values[0])[:4]
                 + "-"
                 + str(plot_data.index.values[-1])[:4]
+                + ")"
             )
         return fig
 
@@ -2670,12 +2673,11 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         ax3.plot(x_vals, plot_data["snowpack_off_glaciers"], "k")
         ax4.plot(x_vals, plot_data["upper_groundwater"], "k")
         ax5.plot(x_vals, plot_data["lower_groundwater"], "k")
-        ax1.set_title("Actual evapotranspiration", fontsize=9)
-        ax2.set_title("Soil moisture", fontsize=9)
-        ax3.set_title("Water in snowpack", fontsize=9)
-        ax4.set_title("Upper groundwater box", fontsize=9)
-        ax5.set_title("Lower groundwater box", fontsize=9)
-        plt.xlabel("Date", fontsize=9)
+        ax1.set_title("Actual Evapotranspiration", fontsize=9)
+        ax2.set_title("Soil Moisture", fontsize=9)
+        ax3.set_title("Water in Snowpack", fontsize=9)
+        ax4.set_title("Upper Groundwater Box", fontsize=9)
+        ax5.set_title("Lower Groundwater Box", fontsize=9)
         ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel(
             "[mm]", fontsize=9
         ), ax3.set_ylabel("[mm]", fontsize=9)
@@ -2690,10 +2692,12 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         else:
             fig.suptitle(
                 parameter.freq_long
-                + " output from the HBV model in the period "
+                + " HBV Output "
+                + "("
                 + str(plot_data.index.values[0])[:4]
                 + "-"
-                + str(plot_data.index.values[-1])[:4],
+                + str(plot_data.index.values[-1])[:4]
+                + ")",
                 size=14,
             )
         plt.tight_layout()
@@ -2707,7 +2711,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["avg_temp_catchment"],
-                name="Mean temperature",
+                name="Mean Temperature",
                 line_color="#d7191c",
                 legendgroup="meteo",
                 legendgrouptitle_text="Meteo",
@@ -2716,15 +2720,12 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             col=1,
             secondary_y=False,
         )
-        # fig.add_trace(
-        #     go.Bar(x=x_vals, y=plot_data["total_precipitation"], name="Precipitation sum", marker_color="#2c7bb6",
-        #                legendgroup="meteo",  offsetgroup=0),
-        #     row=row, col=1, secondary_y=True)
+
         fig.add_trace(
             go.Bar(
                 x=x_vals,
                 y=plot_data["prec_off_glaciers"],
-                name="Precipitation off glacier",
+                name="Precipitation off Glacier",
                 marker_color="#3594dc",
                 legendgroup="meteo",
             ),
@@ -2736,7 +2737,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Bar(
                 x=x_vals,
                 y=plot_data["prec_on_glaciers"],
-                name="Precipitation on glacier",
+                name="Precipitation on Glacier",
                 marker_color="#77bbff",
                 legendgroup="meteo",
             ),
@@ -2748,7 +2749,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Bar(
                 x=x_vals,
                 y=plot_data["evap_off_glaciers"] * -1,
-                name="Pot. evapotranspiration",
+                name="Pot. Evapotranspiration",
                 marker_color="#008837",
                 legendgroup="meteo",
             ),
@@ -2764,10 +2765,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["runoff_without_glaciers"],
-                name="Simulated runoff off glaciers",
+                name="Simulated Runoff off Glaciers",
                 fillcolor="#00B945",
                 legendgroup="runoff",
-                legendgrouptitle_text="Runoff comparison",
+                legendgrouptitle_text="Runoff",
                 stackgroup="one",
                 mode="none",
             ),
@@ -2779,7 +2780,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["runoff_from_glaciers"],
-                name="Simulated runoff from glaciers",
+                name="Simulated Runoff from Glaciers",
                 fillcolor="#0C5DA5",
                 legendgroup="runoff",
                 stackgroup="one",
@@ -2806,7 +2807,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 go.Scatter(
                     x=x_vals,
                     y=plot_data["total_runoff"],
-                    name="MATILDA total runoff",
+                    name="Simulated Total Runoff",
                     line_color="black",
                     legendgroup="runoff",
                 ),
@@ -2835,10 +2836,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["actual_evaporation"],
-                name="Actual evapotranspiration",
+                name="Actual Evapotranspiration",
                 line_color="#16425b",
                 legendgroup="hbv",
-                legendgrouptitle_text="HBV subdomains",
+                legendgrouptitle_text="HBV Reservoirs",
             ),
             row=row,
             col=1,
@@ -2847,7 +2848,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["soil_moisture"],
-                name="Soil moisture",
+                name="Soil Moisture",
                 line_color="#d9dcd6",
                 legendgroup="hbv",
             ),
@@ -2858,7 +2859,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["snowpack_off_glaciers"],
-                name="Water in snowpack",
+                name="Water in Snowpack",
                 line_color="#81c3d7",
                 legendgroup="hbv",
             ),
@@ -2869,7 +2870,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["upper_groundwater"],
-                name="Upper groundwater box",
+                name="Upper Groundwater Box",
                 line_color="#3a7ca5",
                 legendgroup="hbv",
             ),
@@ -2880,7 +2881,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["lower_groundwater"],
-                name="Lower groundwater box",
+                name="Lower Groundwater Box",
                 line_color="#2f6690",
                 legendgroup="hbv",
             ),
@@ -2901,7 +2902,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 name="Rain",
                 fillcolor="#6c1e58",
                 legendgroup="runoff2",
-                legendgrouptitle_text="Runoff contributions",
+                legendgrouptitle_text="Runoff Contributions",
                 stackgroup="one",
                 mode="none",
             ),
@@ -2912,7 +2913,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=snow_melt,
-                name="Snow melt",
+                name="Snow Melt",
                 fillcolor="#a6135a",
                 legendgroup="runoff2",
                 stackgroup="one",
@@ -2925,7 +2926,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=glacier_melt,
-                name="Glacier melt",
+                name="Glacier Melt",
                 fillcolor="#d72f41",
                 legendgroup="runoff2",
                 stackgroup="one",
@@ -2940,7 +2941,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["actual_evaporation"] * -1,
-                name="Actual evaporation",
+                name="Actual Evapotranspiration",
                 fillcolor="#cce4ee",
                 legendgroup="runoff2",
                 stackgroup="two",
@@ -2973,10 +2974,10 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         else:
             date_range = range_from + "-" + range_to
         title = [
-            " Meteorological forcing data ",
+            " Meteorological Forcing Data ",
             " Runoff ",
-            " Runoff contributions ",
-            " HBV reservoirs ",
+            " Runoff Contributions ",
+            " HBV Reservoirs ",
         ]
         title_f = []
         for i in range(len(title)):
@@ -3075,7 +3076,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             xaxis_showticklabels=True,
             hovermode="x",
             title={
-                "text": "Annual mean MATILDA Results (" + date_range + ")",
+                "text": "Mean Annual Cycle (" + date_range + ")",
                 "font_size": 30,
                 "x": 0.5,
                 "xanchor": "center",
@@ -3343,6 +3344,8 @@ def matilda_simulation(
         Whether to generate plots. Default is `True`.
     plot_type : str, optional
         Type of plots to generate. Options are `"print"`, `"interactive"`, or `"all"`. Default is `"print"`.
+    science_plot : bool, optional
+        Whether to apply a scientific plot style using `scienceplot`package. Default is `True`.
     elev_rescaling : bool, optional
         Whether to perform annual elevation rescaling for glaciers. Default is `False`.
     drop_surplus : bool, optional
@@ -3366,6 +3369,7 @@ def matilda_simulation(
     1. Outputs are saved to disk if `output` is specified.
     2. Observed runoff data, if provided, is included in the efficiency calculations and final outputs.
     3. Plots can be suppressed by setting `plots=False`.
+    4. If `science_plot=True`, plots are styled with a scientific layout using the `science` and `no-latex` options.
     """
 
     print("---")
@@ -3419,7 +3423,7 @@ def matilda_simulation(
     # Option to suppress plots.
     if plots:
         if science_plot:
-            plt_style = ['science', 'no-latex']
+            plt_style = ["science", "no-latex"]
             plt.style.use(plt_style)
 
         output_MATILDA = matilda_plots(output_MATILDA, parameter, plot_type)

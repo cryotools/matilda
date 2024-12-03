@@ -266,6 +266,8 @@ if __name__ == "__main__":
 #     input_df=data, obs=obs, **settings, **parameters, glacier_profile=glacier_profile
 # )
 #
+# new_output[7].show()
+#
 # # Delete plots from baseline
 # baseline_output = load_baseline(
 #     "/home/phillip/Seafile/Ana-Lena_Phillip/data/matilda/tests/test_input/baseline_output.pickle"
