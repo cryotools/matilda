@@ -2778,7 +2778,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             go.Scatter(
                 x=x_vals,
                 y=plot_data["runoff_from_glaciers"],
-                name="Simulated runoff from glaciers (stacked)",
+                name="Simulated runoff from glaciers",
                 fillcolor="#0C5DA5",
                 legendgroup="runoff",
                 stackgroup="one",
@@ -2889,14 +2889,9 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
     def plot_plotly_runoff_contrib(plot_data, fig, row):
         x_vals = plot_data.index.to_pydatetime()
-        rain = (
-            plot_annual_data["rain_off_glaciers"] + plot_annual_data["rain_on_glaciers"]
-        )
-        snow_melt = (
-            plot_annual_data["melt_off_glaciers"]
-            + plot_annual_data["snow_melt_on_glaciers"]
-        )
-        glacier_melt = plot_annual_data["ice_melt_on_glaciers"]
+        rain = plot_data["rain_off_glaciers"] + plot_data["rain_on_glaciers"]
+        snow_melt = plot_data["melt_off_glaciers"] + plot_data["snow_melt_on_glaciers"]
+        glacier_melt = plot_data["ice_melt_on_glaciers"]
 
         fig.add_trace(
             go.Scatter(
@@ -2978,9 +2973,9 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
             date_range = range_from + "-" + range_to
         title = [
             " Meteorological forcing data ",
-            " Simulated vs observed runoff ",
+            " Simulated vs runoff ",
             " Runoff contributions ",
-            " HBV subdomains ",
+            " HBV reservoirs ",
         ]
         title_f = []
         for i in range(len(title)):
