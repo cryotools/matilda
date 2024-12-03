@@ -1,8 +1,8 @@
 Metadata-Version: 2.1
 Name: matilda
-Version: 0.3
+Version: 1.0
 Summary: A package to model water resources in glacierized catchments
-Home-page: https://github.com/cryotools/matilda/matilda_v0.3/matilda
+Home-page: https://github.com/cryotools/matilda
 Author: Phillip Schuster, Ana-Lena Tappe & Alexander Georgi
 Author-email: phillip.schuster@geo.hu-berlin.de
 License: MIT
