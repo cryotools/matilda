@@ -132,10 +132,8 @@ MATILDA has 21 non-optional parameters, most of which are HBV standard parameter
 ## Authors
 
 * **Phillip Schuster** - *Lead* - (https://github.com/phiscu)
-* **Alexander Georgi** - *Visualization and Integration with MATILDA-Online* - (https://github.com/geoalxx
+* **Alexander Georgi** - *Visualization and Integration with MATILDA-Online* - (https://github.com/geoalxx)
 * **Ana-Lena Tappe** - *Initial work* - (https://github.com/anatappe)
-* **Alexander Georgi** - *Contributor* - (https://github.com/geoalxx)
-
 
 See also the list of [contributors](https://www.geographie.hu-berlin.de/en/professorships/climate_geography/research-2/climate-change-and-cryosphere-research/ebaca) who participated in the initial project funded by the [GIZ](https://www.giz.de/de/downloads/giz2019-EN-Enhancing-Livelihoods.pdf).
 
