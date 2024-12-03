@@ -1,5 +1,8 @@
 # MATILDA: Modeling wATer resources In gLacierizeD cAtchments
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14267418.svg)](https://doi.org/10.5281/zenodo.14267418)
+
+
 MATILDA is a Python-based modeling framework for simulating water resources in glacierized catchments. This repository contains the core routines of the comprehensive [MATILDA-Online](https://matilda-online.github.io/jbook/) workflow:
 
 1. The *matilda.core* module combines a **temperature-index melt model** with the **HBV model** for hydrological simulations.
