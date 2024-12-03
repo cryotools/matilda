@@ -21,6 +21,7 @@ glacier changes.
     - DateTime==5.5
     - pyyaml==6.0.2
     - spotpy==1.6.2
+    - SciencePlots==2.1.1
 '''
 from . import core, mspot_glacier  # Contains all core functions
 

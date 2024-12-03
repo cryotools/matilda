@@ -26,7 +26,8 @@ setuptools.setup(
 	'xarray==2024.10.0',
 	'DateTime==5.5',
 	'pyyaml==6.0.2',
-	'spotpy==1.6.2'
+	'spotpy==1.6.2',
+	'SciencePlots==2.1.1'
     ],
     extras_require={
     'dev': ['pytest>=7.4.4'],
