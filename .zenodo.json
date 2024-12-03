@@ -1,0 +1,28 @@
+{
+  "license": "MIT",
+  "title": "MATILDA: Modeling wATer resources In gLacierizeD cAtchments",
+  "creators": [
+    {
+      "name": "Schuster, Phillip",
+      "affiliation": "Humboldt-Universität zu Berlin, Geography Department"
+    },
+    {
+      "name": "Georgi, Alexander",
+      "affiliation": "Humboldt-Universität zu Berlin, Geography Department"
+    },
+    {
+      "name": "Tappe, Ana-Lena",
+      "affiliation": "Humboldt-Universität zu Berlin, Geography Department"
+    }
+  ],
+  "version": "1.0.0",
+  "keywords": [
+    "glacier modeling",
+    "hydrology",
+    "melt model",
+    "HBV",
+    "spotpy"
+  ],
+  "description": "MATILDA is a Python-based modeling framework for simulating water resources in glacierized catchments. It combines a temperature-index melt model with the conceptual catchment model HBV and incorporates a parameterized glacier area/volume re-scaling routine."
+}
+
