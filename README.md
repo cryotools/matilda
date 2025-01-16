@@ -106,29 +106,29 @@ To apply the **Δh** parameterization of [Huss and Hock 2015](https://doi.org/10
 MATILDA has 21 non-optional parameters, most of which are HBV standard parameters.
 
 
-| **Parameter**        | **Description**                                                                 | **Unit/Range**        | **Default Value**     |
-|-----------------------|---------------------------------------------------------------------------------|-----------------------|-----------------------|
-| `lr_temp`            | Temperature lapse rate                                                         | °C m⁻¹               | -0.006               |
-| `lr_prec`            | Precipitation lapse rate                                                       | mm m⁻¹               | 0                    |
-| `TT_snow`            | Threshold temperature for snow                                                 | °C                   | 0                    |
-| `TT_diff`            | Temperature range for rain-snow transition                                     | °C                   | 2                    |
-| `CFMAX_snow`         | Melt factor for snow                                                           | mm °C⁻¹ day⁻¹        | 5                    |
-| `CFMAX_rel`          | Melt factor for ice relative to snow                                           | -                    | 2                    |
-| `BETA`               | Shape coefficient for soil moisture routine                                    | -                    | 1.0                  |
-| `CET`                | Correction factor for evapotranspiration                                       | -                    | 0.15                 |
-| `FC`                 | Field capacity of soil                                                         | mm                   | 250                  |
-| `K0`                 | Recession coefficient for surface flow                                         | day⁻¹                | 0.055                |
-| `K1`                 | Recession coefficient for intermediate groundwater flow                       | day⁻¹                | 0.055                |
-| `K2`                 | Recession coefficient for deep groundwater flow                                | day⁻¹                | 0.04                 |
-| `LP`                 | Fraction of field capacity where evapotranspiration is at its maximum          | -                    | 0.7                  |
-| `MAXBAS`             | Length of triangular routing function                                          | day                  | 3.0                  |
-| `PERC`               | Percolation rate from upper to lower groundwater reservoir                     | mm day⁻¹             | 1.5                  |
-| `UZL`                | Threshold for quick flow from upper zone                                       | mm                   | 120                  |
-| `PCORR`              | Precipitation correction factor                                                | -                    | 1.0                  |
-| `SFCF`               | Snowfall correction factor                                                     | -                    | 0.7                  |
-| `CWH`                | Water holding capacity of snowpack                                             | -                    | 0.1                  |
-| `AG`                 | Glacier area correction factor                                                 | -                    | 0.7                  |
-| `CFR`                | Refreezing coefficient                                                         | -                    | 0.15                 |
+| **Parameter**        | **Description**                                              | **Unit/Range**        | **Default Value**     |
+|-----------------------|--------------------------------------------------------------|-----------------------|-----------------------|
+| $\text{lr}_{\text{temp}}$ | Temperature lapse rate                                      | °C m⁻¹               | -0.006               |
+| $\text{lr}_{\text{prec}}$ | Precipitation lapse rate                                   | mm m⁻¹               | 0                    |
+| $\text{PCORR}$        | Precipitation correction factor                               | -                    | 1.0                  |
+| $\text{TT}_{\text{snow}}$ | Threshold temperature for snow                              | °C                   | 0                    |
+| $\text{TT}_{\text{diff}}$ | Temperature range for rain-snow transition                  | °C                   | 2                    |
+| $\text{SFCF}$         | Snowfall correction factor                                    | -                    | 0.7                  |
+| $\text{CFMAX}_{\text{snow}}$ | Melt factor for snow                                      | mm °C⁻¹ day⁻¹        | 5                    |
+| $\text{CFMAX}_{\text{rel}}$ | Melt factor for ice relative to snow                      | -                    | 2                    |
+| $\text{CWH}$          | Water holding capacity of snowpack                            | -                    | 0.1                  |
+| $\text{CFR}$          | Refreezing coefficient                                        | -                    | 0.15                 |
+| $\text{AG}$           | Control parameter of the glacier storage-release scheme        | -                    | 0.7                  |
+| $\text{BETA}$         | Shape coefficient for soil moisture routine                   | -                    | 1.0                  |
+| $\text{CET}$          | Correction factor for evapotranspiration                      | -                    | 0.15                 |
+| $\text{FC}$           | Field capacity of soil                                        | mm                   | 250                  |
+| $\text{LP}$           | Fraction of field capacity for maximum evapotranspiration     | -                    | 0.7                  |
+| $\text{K}_0$          | Recession coefficient for surface flow                        | day⁻¹                | 0.055                |
+| $\text{K}_1$          | Recession coefficient for intermediate groundwater flow       | day⁻¹                | 0.055                |
+| $\text{K}_2$          | Recession coefficient for deep groundwater flow               | day⁻¹                | 0.04                 |
+| $\text{PERC}$         | Percolation rate from upper to lower groundwater reservoir    | mm day⁻¹             | 1.5                  |
+| $\text{UZL}$          | Threshold for quick flow from upper zone                      | mm                   | 120                  |
+| $\text{MAXBAS}$       | Length of triangular routing function                         | day                  | 3.0                  |
 
 ---
 
