@@ -106,7 +106,7 @@ To apply the **Δh** parameterization of [Huss and Hock 2015](https://doi.org/10
 MATILDA has 21 non-optional parameters, most of which are HBV standard parameters.
 
 
-| **Parameter**        | **Description**                                              | **Unit/Range**        | **Default Value**     |
+| **Parameter**        | **Description**                                              | **Unit**        | **Default Value**     |
 |-----------------------|--------------------------------------------------------------|-----------------------|-----------------------|
 | $\text{lr}_{\text{temp}}$ | Temperature lapse rate                                      | °C m⁻¹               | -0.006               |
 | $\text{lr}_{\text{prec}}$ | Precipitation lapse rate                                   | mm m⁻¹               | 0                    |
