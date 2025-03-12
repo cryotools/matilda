@@ -1761,7 +1761,9 @@ def psample(
                 glacier_only=glacier_only,
                 target_mb=target_mb,
             )
-
+	
+	os.chdir(cwd)
+	
         return results
 
     os.chdir(cwd)
