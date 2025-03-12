@@ -2665,23 +2665,28 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
     # Plot the HBV output variables
     def plot_hbv(plot_data, parameter):
-        fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, sharex=True, figsize=(10, 6))
+        fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(
+            5, sharex=True, figsize=(8, 5.2), dpi=150, constrained_layout=True
+        )
 
         x_vals = plot_data.index.to_pydatetime()
-        ax1.plot(x_vals, plot_data["actual_evaporation"], "k")
-        ax2.plot(x_vals, plot_data["soil_moisture"], "k")
-        ax3.plot(x_vals, plot_data["snowpack_off_glaciers"], "k")
-        ax4.plot(x_vals, plot_data["upper_groundwater"], "k")
-        ax5.plot(x_vals, plot_data["lower_groundwater"], "k")
-        ax1.set_title("Actual Evapotranspiration", fontsize=9)
-        ax2.set_title("Soil Moisture", fontsize=9)
-        ax3.set_title("Water in Snowpack", fontsize=9)
-        ax4.set_title("Upper Groundwater Box", fontsize=9)
-        ax5.set_title("Lower Groundwater Box", fontsize=9)
-        ax1.set_ylabel("[mm]", fontsize=9), ax2.set_ylabel(
-            "[mm]", fontsize=9
-        ), ax3.set_ylabel("[mm]", fontsize=9)
-        ax4.set_ylabel("[mm]", fontsize=9), ax5.set_ylabel("[mm]", fontsize=9)
+        ax1.plot(x_vals, plot_data["actual_evaporation"], color="#009988")
+        ax2.plot(x_vals, plot_data["soil_moisture"], color="#CC3311")
+        ax3.plot(x_vals, plot_data["snowpack_off_glaciers"], color="#BBBBBB")
+        ax4.plot(x_vals, plot_data["upper_groundwater"], color="#0077BB")
+        ax5.plot(x_vals, plot_data["lower_groundwater"], color="#33BBEE")
+        ax1.set_title("Actual evapotranspiration")
+        ax2.set_title("Soil moisture")
+        ax3.set_title("Water in snowpack")
+        ax4.set_title("Upper groundwater box")
+        ax5.set_title("Lower groundwater box")
+
+        ax5.set_xlim(x_vals[0], x_vals[-1])
+        plt.xlabel("Date")
+
+        for ax in fig.get_axes():
+            ax.set_ylabel("[mm]")
+
         if str(plot_data.index.values[1])[:4] == str(plot_data.index.values[-1])[:4]:
             fig.suptitle(
                 parameter.freq_long
@@ -2692,16 +2697,14 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         else:
             fig.suptitle(
                 parameter.freq_long
-                + " HBV Output "
-                + "("
+                + " output from the HBV model in the period "
                 + str(plot_data.index.values[0])[:4]
                 + "-"
-                + str(plot_data.index.values[-1])[:4]
-                + ")",
-                size=14,
+                + str(plot_data.index.values[-1])[:4],
+                # size=14,
             )
-        plt.tight_layout()
-        fig.set_size_inches(10, 6)
+        # plt.tight_layout()
+        # fig.set_size_inches(10, 6)
         return fig
 
     # Plot the meteorological variables with Plotly
