@@ -995,10 +995,9 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
         else:
             new_area = 0
         # scale the output with the new glacierized area
-        glacier_change_area = glacier_change_area.append(
-            {"time": year, "glacier_area": new_area, "smb_scaled_cum": smb_cum},
-            ignore_index=True,
-        )
+        glacier_change_area = pd.concat([glacier_change_area,
+            pd.DataFrame([{"time": year, "glacier_area": new_area, "smb_scaled_cum": smb_cum}])
+            ], ignore_index=True)
         for col in up_cols:
             output_DDM[col + "_updated_scaled"] = np.where(
                 output_DDM["water_year"] == year,

@@ -1762,6 +1762,8 @@ def psample(
                 target_mb=target_mb,
             )
 
+        os.chdir(cwd)
+
         return results
 
     os.chdir(cwd)
