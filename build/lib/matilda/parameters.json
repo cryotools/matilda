@@ -82,7 +82,7 @@
       "default": 3.0,
       "min": 2,
       "max": 7,
-      "description": "Baseflow routing parameter"
+      "description": "Routing parameter"
     },
     "PERC": {
       "default": 1.5,
@@ -118,7 +118,7 @@
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "description": "Fraction of meltwater refreezing"
+      "description": "Control parameter of the glacier storage-release scheme"
     },
     "CFR": {
       "default": 0.15,

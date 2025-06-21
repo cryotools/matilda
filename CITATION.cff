@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the following metadata."
+title: "MATILDA: Modeling wATer resources In gLacierizeD cAtchments"
+version: "1.0.0"
+doi: "10.5281/zenodo.14267361"
+date-released: "2024-12-03"
+authors:
+  - family-names: "Schuster"
+    given-names: "Phillip"
+    orcid: "0000-0002-0794-6689"
+    affiliation: "Humboldt-Universität zu Berlin, Geography Department"
+  - family-names: "Georgi"
+    given-names: "Alexander"
+    orcid: "0009-0000-9465-6761"
+    affiliation: "Humboldt-Universität zu Berlin, Geography Department"
+  - family-names: "Tappe"
+    given-names: "Ana-Lena"
+    affiliation: "Humboldt-Universität zu Berlin, Geography Department"
+keywords:
+  - glacier modeling
+  - hydrology
+  - water resources
+  - temperature-index melt model
+  - HBV model
+  - parameter optimization
+license: "MIT"
+repository-code: "https://github.com/cryotools/matilda"
+url: "https://matilda-online.github.io/jbook/"
+abstract: >
+  MATILDA is a Python-based modeling framework designed to simulate water 
+  resources in glacierized catchments. It combines a temperature-index melt 
+  model with the conceptual catchment model HBV and incorporates a 
+  parameterized glacier area/volume re-scaling routine. 
+  It also includes parameter optimization capabilities using the SPOTPY library.
