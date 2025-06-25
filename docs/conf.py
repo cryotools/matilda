@@ -15,8 +15,10 @@ release = '1.0.1'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'myst_parser',           # Markdown-Unterstützung
-    'sphinx.ext.autodoc',    # falls du später Python-Code dokumentieren willst
+    'myst_parser',        
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode'
 ]
 
 templates_path = ['_templates']
