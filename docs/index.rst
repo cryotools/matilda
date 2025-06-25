@@ -3,11 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-matilda documentation
-=====================
+Matilda Manual
+==============
+
+MATILDA is a Python-based modeling framework for simulating water resources in glacierized catchments.
 
 .. toctree::
-   :maxdepth: 0
+   :maxdepth: 1
+   :caption: Documentation
 
-   readme
+   Getting started <readme>
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Matilda Package
+
+   modules
