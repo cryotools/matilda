@@ -1239,53 +1239,62 @@ def analyze_results(
     sampling_data : str or SPOTPY result object
         The file path to a SPOTPY results CSV file or a SPOTPY result object.
     obs : str or pandas.DataFrame
-        The file path to observed data (in CSV format with 'Date' column) or a DataFrame containing observed data.
+        The file path to observed data (CSV with a ``Date`` column) or a DataFrame containing observed data.
     algorithm : str
-        The SPOTPY algorithm used for sampling (e.g., 'abc', 'dream', 'sceua').
+        The SPOTPY algorithm used for sampling (e.g., ``abc``, ``dream``, ``sceua``).
     obj_dir : str, optional
-        Direction of the objective function optimization, either 'maximize' or 'minimize'. Default is 'maximize'.
+        Direction of the objective function optimization: either ``maximize`` or ``minimize``. Default is ``maximize``.
     fig_path : str, optional
-        Path to save generated plots. If None, plots are not saved.
+        Path to save generated plots. If ``None``, plots are not saved.
     dbname : str, optional
-        Name for saving the database and plots. Default is 'mspot_results'.
+        Name for saving the database and plots. Default is ``mspot_results``.
     glacier_only : bool, optional
-        If True, optimizes only for glacier-specific metrics (e.g., mass balance). Default is False.
+        If ``True``, optimizes only for glacier-specific metrics (e.g., mass balance). Default is ``False``.
     target_mb : float, optional
-        Target mean annual mass balance for melt model calibration. If None, this metric is not considered. Default is None.
+        Target mean annual mass balance for melt model calibration. If ``None``, this metric is not considered.
 
     Returns
     -------
     dict
-        A dictionary containing:
-        - 'best_param': dict
-            Best parameter set identified during sampling.
-        - 'best_index': int
-            Index of the best run in the SPOTPY results.
-        - 'best_model_run': array
-            Model output corresponding to the best parameter set.
-        - 'best_objf': float
-            Value of the objective function for the best parameter set.
-        - 'best_simulation': pandas.Series (if glacier_only is False and target_mb is None)
-            Simulated time series corresponding to the best parameter set.
-        - 'sampling_plot': matplotlib.Figure (if applicable)
-            Iteration vs. objective function plot.
-        - 'best_run_plot': matplotlib.Figure (if applicable)
-            Best simulation vs. observed data plot.
-        - 'par_uncertain_plot': matplotlib.Figure (if applicable)
-            Parameter uncertainty plot.
+        A dictionary containing the following elements:
+
+        - ``best_param`` : dict  
+          Best parameter set identified during sampling.
+
+        - ``best_index`` : int  
+          Index of the best run in the SPOTPY results.
+
+        - ``best_model_run`` : array  
+          Model output corresponding to the best parameter set.
+
+        - ``best_objf`` : float  
+          Value of the objective function for the best parameter set.
+
+        - ``best_simulation`` : pandas.Series, optional  
+          Simulated time series corresponding to the best parameter set (only if ``glacier_only`` is ``False`` and ``target_mb`` is ``None``).
+
+        - ``sampling_plot`` : matplotlib.Figure, optional  
+          Iteration vs. objective function plot.
+
+        - ``best_run_plot`` : matplotlib.Figure, optional  
+          Best simulation vs. observed data plot.
+
+        - ``par_uncertain_plot`` : matplotlib.Figure, optional  
+          Parameter uncertainty plot.
 
     Notes
     -----
-    - The objective function can be maximized (e.g., Kling-Gupta Efficiency) or minimized (e.g., Mean Absolute Error)
-      based on the algorithm and obj_dir setting.
+    - The objective function can be maximized (e.g., Kling-Gupta Efficiency) or minimized (e.g., Mean Absolute Error),
+      based on the ``obj_dir`` setting.
     - For glacier-specific calibration, only glacier mass balance data is considered.
 
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    SPOTPY library:
+
+    - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
+      Python Package." *PLOS ONE*, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+    - GitHub repository: https://github.com/thouska/spotpy
     """
 
     if isinstance(obs, str):
@@ -1779,13 +1788,13 @@ def load_parameters(path, algorithm, obj_dir="maximize", glacier_only=False):
     Parameters
     ----------
     path : str
-        File path to the SPOTPY sampling results (e.g., 'results.csv').
+        File path to the SPOTPY sampling results (e.g., ``results.csv``).
     algorithm : str
-        SPOTPY algorithm used for sampling (e.g., 'lhs', 'mcmc', 'dream').
+        SPOTPY algorithm used for sampling (e.g., ``lhs``, ``mcmc``, ``dream``).
     obj_dir : str, optional
-        Direction of the objective function optimization ('maximize' or 'minimize'). Default is 'maximize'.
+        Direction of the objective function optimization (``maximize`` or ``minimize``). Default is ``maximize``.
     glacier_only : bool, optional
-        If True, processes only glacier-specific sampling results (default is False).
+        If ``True``, processes only glacier-specific sampling results. Default is ``False``.
 
     Returns
     -------
@@ -1794,16 +1803,17 @@ def load_parameters(path, algorithm, obj_dir="maximize", glacier_only=False):
 
     Notes
     -----
-    - This function uses the `analyze_results` function to extract the best parameters.
-    - It assumes that the corresponding observation file is named `<path_without_extension>_observations.csv`.
-    - Depending on the number of samples loading of the sampling file might be slow.
+    - This function uses the ``analyze_results`` function to extract the best parameters.
+    - It assumes that the corresponding observation file is named ``<path_without_extension>_observations.csv``.
+    - Depending on the number of samples, loading the sampling file might be slow.
 
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    SPOTPY library:
+
+    - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). *SPOTting Model Parameters Using a Ready-Made
+      Python Package*. PLOS ONE, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+    - GitHub repository: https://github.com/thouska/spotpy
     """
 
     sampling_csv = path
@@ -1825,38 +1835,40 @@ def get_par_bounds(path, threshold=10, percentage=True, drop=None):
     Parameters
     ----------
     path : str
-        File path to the SPOTPY sampling results (e.g., 'results.csv').
+        File path to the SPOTPY sampling results (e.g., ``results.csv``).
     threshold : float, optional
         The threshold for selecting the best-performing runs:
-        - If `percentage` is True, `threshold` represents the percentage of the top-performing runs to consider.
-        - If `percentage` is False, `threshold` represents the numerical threshold for the objective function.
-        Default is 10.
+        - If ``percentage`` is True, ``threshold`` represents the percentage of the top-performing runs to consider.
+        - If ``percentage`` is False, ``threshold`` represents the numerical threshold for the objective function.
+        Default is ``10``.
     percentage : bool, optional
-        Determines whether to interpret `threshold` as a percentage (True) or a numerical threshold (False).
-        Default is True.
+        Determines whether to interpret ``threshold`` as a percentage (``True``) or a numerical threshold (``False``).
+        Default is ``True``.
     drop : list of str, optional
-        A list of parameter names to exclude from the resulting bounds. Default is None.
+        A list of parameter names to exclude from the resulting bounds. Default is ``None``.
 
     Returns
     -------
     dict
-        A dictionary containing the lower (`_lo`) and upper (`_up`) bounds for each parameter, derived from the
+        A dictionary containing the lower (``_lo``) and upper (``_up``) bounds for each parameter, derived from the
         best-performing runs.
 
     Notes
     -----
     - The function loads SPOTPY sampling results and identifies the best-performing runs using the specified threshold
       and criteria.
-    - Parameters specified in the `drop` list are excluded from the output bounds.
-    - The resulting dictionary contains keys in the format `<parameter_name>_lo` and `<parameter_name>_up`.
+    - Parameters specified in the ``drop`` list are excluded from the output bounds.
+    - The resulting dictionary contains keys in the format ``<parameter_name>_lo`` and ``<parameter_name>_up``.
 
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    SPOTPY library:
+
+    - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). *SPOTting Model Parameters Using a Ready-Made
+      Python Package*. PLOS ONE, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+    - GitHub repository: https://github.com/thouska/spotpy
     """
+    
     if drop is None:
         drop = []  # Initialize to an empty list if not provided
 

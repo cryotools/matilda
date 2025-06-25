@@ -43,8 +43,12 @@ Usage
 Run the MATILDA framework using the `matilda_simulation` function, which combines all preprocessing, modeling, and postprocessing steps. 
 The framework allows customization via parameters, input datasets, and optional outputs (e.g., plots and CSV files).
 
-Example:
-    ```python
+Example
+-------
+Run a basic simulation:
+
+.. code-block:: python
+
     output = matilda_simulation(
         input_df=your_data,
         obs=observed_runoff,
@@ -52,7 +56,6 @@ Example:
         output="output_folder",
         plots=True
     )
-    ```
 
 License
 -------
@@ -760,33 +763,33 @@ def create_lookup_table(glacier_profile, parameter):
     ----------
     glacier_profile : pandas.DataFrame
         DataFrame containing the glacier's initial state, including:
-            - `Area`: Area of each elevation band (in km²).
-            - `WE`: Initial water equivalent of each elevation band (in mm w.e.).
-            - `Elevation`: Elevation of each band (in meters).
+            - ``Area``: Area of each elevation band (in km²).
+            - ``WE``: Initial water equivalent of each elevation band (in mm w.e.).
+            - ``Elevation``: Elevation of each band (in meters).
     parameter : pandas.Series
         Series of MATILDA parameters, including:
-            - `area_glac`: Total glacier area (in km²).
+            - ``area_glac``: Total glacier area (in km²).
 
     Returns
     -------
     pandas.DataFrame
         Lookup table showing scaled glacier area for each elevation band over 101 mass states (from 100% to 0% in 1% steps).
-        Each column corresponds to an elevation band (`EleZone`), and each row represents a scaled mass state.
+        Each column corresponds to an elevation band (``EleZone``), and each row represents a scaled mass state.
 
     References
     ----------
     - Huss, M., Jouvet, G., Farinotti, D., & Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
-      of glacier retreat. *Hydrology and Earth System Sciences, 14*(5), 815–829.
+      of glacier retreat. *Hydrology and Earth System Sciences*, 14(5), 815–829.
       https://doi.org/10.5194/hess-14-815-2010
     - Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., & Stahl, K. (2018). Technical note: Representing glacier geometry
-      changes in a semi-distributed hydrological model. *Hydrology and Earth System Sciences, 22*(4), 2211–2224.
+      changes in a semi-distributed hydrological model. *Hydrology and Earth System Sciences*, 22(4), 2211–2224.
       https://doi.org/10.5194/hess-22-2211-2018
 
     Notes
     -----
-    1. The deltaH parameterization involves a scaling factor (`fs`) based on the total glacier mass change and the
+    1. The deltaH parameterization involves a scaling factor (``fs``) based on the total glacier mass change and the
        normalized elevation profile of the glacier.
-    2. Three different parameter sets (`a`, `b`, `c`, `y`) are applied based on glacier size as outlined in Huss et al. (2010).
+    2. Three different parameter sets (``a``, ``b``, ``c``, ``y``) are applied based on glacier size as outlined in Huss et al. (2010).
     3. Elevation bands with negative water equivalent are excluded iteratively during the scaling process.
     """
 
@@ -1014,6 +1017,364 @@ def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
 
     return output_DDM, glacier_change_area
 
+
+def glacier_area_change(output_DDM, lookup_table, glacier_profile, parameter):
+    """
+    Calculates the new glacier area for each hydrological year and scales glacier variables using the deltaH scaling
+    approach. This is the second part of the glacier scaling routine, based on Seibert et al. (2018) and Huss et al. (2010).
+
+    Parameters
+    ----------
+    output_DDM : pandas.DataFrame
+        Degree Day Model (DDM) output containing surface mass balance (``DDM_smb``) and other glacier-related variables.
+    lookup_table : pandas.DataFrame
+        Lookup table created in part 1 of the scaling routine, mapping glacier area changes to mass loss percentages.
+    glacier_profile : pandas.DataFrame
+        DataFrame containing glacier initial states:
+            - ``Area``: Area of each elevation band (in km²).
+            - ``WE``: Initial water equivalent of each elevation band (in mm w.e.).
+    parameter : pandas.Series
+        Series of MATILDA parameters, including:
+            - ``area_glac``: Total glacier area (in km²).
+            - ``area_cat``: Catchment area (in km²).
+            - ``hydro_year``: Starting month of the hydrological year (1–12).
+
+    Returns
+    -------
+    tuple
+        - ``output_DDM`` (pandas.DataFrame): Updated DDM output with scaled glacier variables for each hydrological year.
+        - ``glacier_change_area`` (pandas.DataFrame): Time series of annual glacier area changes and cumulative scaled SMB.
+
+    References
+    ----------
+    - Huss, M., Jouvet, G., Farinotti, D., & Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
+      of glacier retreat. *Hydrology and Earth System Sciences*, 14(5), 815–829.
+      https://doi.org/10.5194/hess-14-815-2010
+    - Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., & Stahl, K. (2018). Technical note: Representing glacier geometry
+      changes in a semi-distributed hydrological model. *Hydrology and Earth System Sciences*, 22(4), 2211–2224.
+      https://doi.org/10.5194/hess-22-2211-2018
+
+    Notes
+    -----
+    1. The glacier area change is calculated annually based on the cumulative surface mass balance (SMB).
+    2. SMB is scaled to the current glacier area to reflect its dynamic changes.
+    3. If the cumulative SMB indicates a mass loss beyond 99% of the initial mass, the glacier area is set to zero.
+    4. Variables in ``output_DDM`` are updated to reflect the new glacierized area fraction each year.
+    """
+
+    # determine hydrological years
+    data["water_year"] = np.where(
+        (data.index.month) >= parameter.hydro_year, data.index.year + 1, data.index.year
+    )
+
+    # initial glacier mass from the glacier profile in mm w.e. (relative to the whole catchment)
+    m = np.nansum((glacier_profile["Area"]) * glacier_profile["WE"])
+
+    # initial area
+    initial_area = glacier_profile.groupby("EleZone")["Area"].sum()
+
+    # re-calculate the mean glacier elevation based on the glacier profile in rough elevation zones for consistency (method outlined in following loop)
+    print("Recalculating initial elevations based on glacier profile")
+    init_dist = (
+        initial_area.values / initial_area.values.sum()
+    )  # fractions of glacierized area elev zones
+    init_elev = (
+        init_dist * lookup_table.columns.values
+    )  # multiply fractions with average zone elevations
+    init_elev = int(init_elev.sum())
+    print(">> Prior glacier elevation: " + str(parameter.ele_glac) + "m a.s.l.")
+    print(">> Recalculated glacier elevation: " + str(init_elev) + "m a.s.l.")
+
+    # re-calculate the mean non-glacierized elevation accordingly
+    if parameter.ele_cat is None:
+        ele_non_glac = None
+    else:
+        ele_non_glac = (
+            (parameter.ele_cat - parameter.area_glac / parameter.area_cat * init_elev)
+            * parameter.area_cat
+            / (parameter.area_cat - parameter.area_glac)
+        )
+    if ele_non_glac is not None:
+        print(
+            ">> Prior non-glacierized elevation: "
+            + str(round(parameter.ele_non_glac))
+            + "m a.s.l."
+        )
+        print(
+            ">> Recalculated non-glacierized elevation: "
+            + str(round(ele_non_glac))
+            + "m a.s.l."
+        )
+
+    # Setup initial variables for main loop
+    new_area = parameter.area_glac
+    smb_cum = 0
+    surplus = 0
+    warn = True
+    output_DDM = pd.DataFrame()
+    parameter_updated = copy.deepcopy(parameter)
+    parameter_updated.ele_glac = init_elev
+    parameter_updated.ele_non_glac = ele_non_glac
+
+    # create initial non-updated dataframes
+    input_df_glacier, input_df_catchment = input_scaling(data, parameter_updated)
+
+    # Slice input data to simulation period (with full hydrological years if the setup period allows it)
+    if datetime.fromisoformat(parameter.sim_start).month < parameter.hydro_year:
+        startyear = data[parameter.sim_start : parameter.sim_end].water_year[0] - 1
+    else:
+        startyear = data[parameter.sim_start : parameter.sim_end].water_year[0]
+
+    startdate = str(startyear) + "-" + str(parameter.hydro_year) + "-" + "01"
+
+    if datetime.fromisoformat(startdate) < datetime.fromisoformat(
+        parameter.set_up_start
+    ):
+        # Provided setup period does not cover the full hydrological year sim_start is in
+        data_update = data[parameter.sim_start : parameter.sim_end]
+        input_df_glacier = input_df_glacier[parameter.sim_start : parameter.sim_end]
+        input_df_catchment_spinup = input_df_catchment[
+            parameter.set_up_start : parameter.sim_start
+        ]
+        input_df_catchment = input_df_catchment[parameter.sim_start : parameter.sim_end]
+
+        print(
+            "**********\n"
+            "WARNING!\n"
+            "The provided setup period does not cover the full hydrological year the simulation period \n"
+            "starts in. The initial surface mass balance (SMB) of the first hydrological year in the glacier \n"
+            "rescaling routine therefore possibly misses a significant part of the accumulation period (e.g. Oct-Dec).\n"
+            "**********\n"
+        )
+    else:
+        data_update = data[startdate : parameter.sim_end]
+        input_df_glacier = input_df_glacier[startdate : parameter.sim_end]
+        input_df_catchment_spinup = input_df_catchment[
+            parameter.set_up_start : startdate
+        ]
+        input_df_catchment = input_df_catchment[startdate : parameter.sim_end]
+
+    # create initial df of glacier change
+    glacier_change = pd.DataFrame(
+        {
+            "time": startyear,
+            "glacier_area": [parameter.area_glac],
+            "glacier_elev": init_elev,
+        }
+    )
+
+    # Loop through simulation period annually updating catchment fractions and scaling elevations
+    if parameter.ele_dat is None:
+        raise ValueError(
+            "You need to provide ele_dat in order to apply the glacier-rescaling routine."
+        )
+    print("Calculating glacier evolution")
+    for i in range(len(data_update.water_year.unique())):
+        year = data_update.water_year.unique()[i]
+        mask = data_update.water_year == year
+
+        # Use updated glacier area of the previous year
+        parameter_updated.area_glac = new_area
+        # Use updated glacier elevation of the previous year
+        if i != 0:
+            parameter_updated.ele_glac = new_distribution
+
+        # Calculate the updated mean elevation of the non-glacierized catchment area
+        if parameter_updated.ele_cat is None:
+            parameter_updated.ele_non_glac = None
+        else:
+            parameter_updated.ele_non_glac = (
+                (
+                    parameter_updated.ele_cat
+                    - parameter_updated.area_glac
+                    / parameter_updated.area_cat
+                    * parameter_updated.ele_glac
+                )
+                * parameter_updated.area_cat
+                / (parameter_updated.area_cat - parameter_updated.area_glac)
+            )
+
+        # Scale glacier and hbv routine inputs in selected year with updated parameters
+        input_df_glacier[mask], input_df_catchment[mask] = input_scaling(
+            data_update[mask], parameter_updated
+        )
+
+        # Calculate positive degree days and glacier ablation/accumulation
+        degreedays_ds = calculate_PDD(input_df_glacier[mask], prints=False)
+        output_DDM_year = calculate_glaciermelt(
+            degreedays_ds, parameter_updated, prints=False
+        )
+        output_DDM_year["water_year"] = data_update.water_year[mask]
+
+        # deselect output columns not to update
+        up_cols = output_DDM_year.columns.drop(
+            ["DDM_smb", "DDM_temp", "pdd", "water_year"]
+        )
+
+        # create columns for updated DDM output
+        for col in up_cols:
+            output_DDM_year[col + "_updated_scaled"] = copy.deepcopy(
+                output_DDM_year[col]
+            )
+
+        # Rescale glacier geometry and update glacier parameters in all but the last (incomplete) water year
+        if i < len(data_update.water_year.unique()) - 1:
+
+            smb_unscaled = output_DDM_year["DDM_smb"].sum()
+
+            # if True: model runs with positive MB_cum at any time are 'dropped' (runoff = 0.01, SMB 9999)
+            if drop_surplus:
+
+                if i == 0 and smb_unscaled > 0:
+                    print(
+                        "**********\n"
+                        "WARNING:\n"
+                        "The cumulative surface mass balance in the first year of the simulation period is \n"
+                        "positive. You may want to shift the starting year or set drop_surplus=False.\n"
+                        "**********\n"
+                    )
+                # scale the smb to the (updated) glacierized fraction of the catchment
+                smb = smb_unscaled * (
+                    new_area / parameter.area_cat
+                )  # SMB is area (re-)scaled because m is area scaled as well
+                # add the smb from the previous year(s) to the new year
+                smb_cum = smb_cum + smb
+                if smb_cum > 0:
+                    if warn:
+                        print(
+                            "**********\n"
+                            "WARNING:\n"
+                            "The cumulative surface mass balance in the simulation period is positive. \n"
+                            "The glacier rescaling routine cannot model glacier extent exceeding the initial status of \n"
+                            "the provided glacier profile. In order to exclude this run from parameter optimization \n"
+                            "routines, a flag is passed, simulated runoff is set to 0.01, and SMB to 9999. \n"
+                            "If you want to maintain the average mass balance set drop_surplus=False.\n"
+                            "**********\n"
+                        )
+                        warn = False
+                    smb_cum = m
+                    new_distribution = parameter.ele_glac
+                    smb_flag = True
+                else:
+                    smb_flag = False
+
+            # if drop_surplus = False the surplus from years with positive MB_cum is added in later years
+            else:
+                # scale the smb to the (updated) glacierized fraction of the catchment
+                smb = smb_unscaled * (
+                    new_area / parameter.area_cat
+                )  # SMB is area (re-)scaled because m is area scaled as well
+                smb_scaled = smb.copy()
+
+                # If the cumulative SMB has been positive in previous years the surplus is added here
+                if surplus > 0:
+                    if smb < 0:
+                        diff = surplus + smb
+                        surplus = max(diff, 0)
+                        smb = min(diff, 0)
+                # add the smb from the previous year(s) to the new year
+                smb_cum = smb_cum + smb
+                # Check whether glacier extent exceeds the initial state (smb_cum > 0). Shift surplus to next year(s).
+                if smb_cum > 0:
+                    if warn:
+                        print(
+                            "**********\n"
+                            "WARNING:\n"
+                            "At some point of the simulation period the cumulative surface mass balance is\n"
+                            " positive. The glacier rescaling routine cannot model glacier extent exceeding the initial\n"
+                            " status of the provided glacier profile. The surplus is stored and added in subsequent years\n"
+                            " with negative mass balance(s) to maintain the long-term average balance.\n"
+                            "**********\n"
+                        )
+                        warn = False
+                    surplus += max(smb_cum, 0)
+                    smb_cum = 0
+
+                smb_flag = False
+
+            # calculate the percentage of melt in comparison to the initial mass
+            smb_percentage = round((-smb_cum / m) * 100)
+            if (smb_percentage < 99) & (smb_percentage >= 0):
+                # select the correct row from the lookup table depending on the smb
+                area_melt = lookup_table.iloc[smb_percentage]
+                # derive the new glacier area by multiplying the initial area with the area changes
+                new_area = (
+                    np.nansum((area_melt.values * initial_area.values))
+                    * parameter.area_cat
+                )
+                # derive new spatial distribution of glacierized area (relative fraction in every elevation zone)
+                new_distribution = (
+                    (area_melt.values * initial_area.values) * parameter.area_cat
+                ) / new_area
+                # multiply relative portions with mean zone elevations to get rough estimate for new mean elevation
+                new_distribution = (
+                    new_distribution * lookup_table.columns.values
+                )  # column headers contain elevations
+                new_distribution = int(np.nansum(new_distribution))
+            else:
+                new_area = 0
+
+            glacier_mass_abs = (1 - smb_percentage * 0.01) * m
+            glacier_vol_init = (
+                (m / 1000) * parameter.area_glac * 1e6 / 0.908
+            )  # mass in mmwe, area in km^2
+            glacier_vol = (glacier_mass_abs / 1000) * new_area * 1e6 / 0.908
+            glacier_vol_perc = glacier_vol / glacier_vol_init
+
+            # Append to glacier change dataframe for subsequent functions (skip last incomplete year)
+            data = {
+                "time": year,
+                "glacier_area": new_area,
+                "glacier_elev": new_distribution,
+                "smb_water_year": smb_unscaled,
+            }
+
+            if drop_surplus:
+                data["smb_scaled_cum"] = smb_cum
+            else:
+                data.update(
+                    {
+                        "smb_scaled": smb_scaled,
+                        "smb_scaled_capped": smb,
+                        "smb_scaled_capped_cum": smb_cum,
+                        "surplus": surplus,
+                        "glacier_melt_perc": smb_percentage,
+                        "glacier_mass_mmwe": glacier_mass_abs,
+                        "glacier_vol_m3": glacier_vol,
+                        "glacier_vol_perc": glacier_vol_perc,
+                    }
+                )
+
+            # Create the DataFrame and concatenate
+            new_row = pd.DataFrame(data, index=[i])
+            glacier_change = pd.concat([glacier_change, new_row], ignore_index=True)
+
+        # Scale DDM output to new glacierized fraction
+        for col in up_cols:
+            output_DDM_year[col + "_updated_scaled"] = np.where(
+                output_DDM_year["water_year"] == year,
+                output_DDM_year[col] * (new_area / parameter.area_cat),
+                output_DDM_year[col + "_updated_scaled"],
+            )
+        # Append year to full dataset
+        output_DDM = pd.concat([output_DDM, output_DDM_year])
+
+        if smb_flag:
+            output_DDM["smb_flag"] = 1
+            output_DDM["DDM_smb"] = (
+                9999  # To exclude run from parameter optimization of glacial parameters
+            )
+
+    glacier_change["time"] = pd.to_datetime(glacier_change["time"], format="%Y")
+    glacier_change.set_index("time", inplace=True, drop=False)
+    glacier_change["time"] = glacier_change["time"].dt.strftime("%Y")
+    glacier_change = glacier_change.rename_axis("TIMESTAMP")
+
+    output_DDM = output_DDM[parameter.sim_start : parameter.sim_end]
+    # Add original spin-up period back to HBV input
+    input_df_catchment = pd.concat([input_df_catchment_spinup, input_df_catchment])
+
+    return output_DDM, glacier_change, input_df_catchment
 
 def updated_glacier_melt(
     data, lookup_table, glacier_profile, parameter, drop_surplus=False
@@ -1375,7 +1736,6 @@ def updated_glacier_melt(
 
     return output_DDM, glacier_change, input_df_catchment
 
-
 def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     """
     Simulates runoff from a catchment using the HBV model. Calculates key hydrological processes, including snowmelt,
@@ -1389,30 +1749,30 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     ----------
     input_df_catchment : pandas.DataFrame
         Input climate dataset with daily resolution, including:
-            - `T2`: Temperature (°C).
-            - `RRR`: Total precipitation (mm).
-            - `rain`: Rainfall (mm).
-            - `snow`: Snowfall (mm).
-            - `PE` (optional): Potential evapotranspiration (mm).
+            - ``T2``: Temperature (°C).
+            - ``RRR``: Total precipitation (mm).
+            - ``rain``: Rainfall (mm).
+            - ``snow``: Snowfall (mm).
+            - ``PE`` (optional): Potential evapotranspiration (mm).
     parameter : pandas.Series
         Series of HBV model parameters, including:
-            - `CFMAX_snow`: Degree-day factor for snowmelt.
-            - `CFR`: Refreezing factor for snowmelt.
-            - `TT_snow`: Threshold temperature for snowmelt.
-            - `CWH`: Water holding capacity of snowpack.
-            - `FC`: Field capacity of the soil.
-            - `LP`: Soil moisture threshold for potential evapotranspiration.
-            - `BETA`: Shape parameter for soil moisture recharge.
-            - `PERC`: Percolation rate from upper to lower groundwater box.
-            - `K0`, `K1`, `K2`: Recession coefficients for runoff components.
-            - `UZL`: Threshold for upper groundwater runoff.
-            - `CET`: Correction factor for evapotranspiration.
-            - `MAXBAS`: Parameter for hydrograph smoothing.
-            - `area_cat`: Total catchment area (km²).
-            - `area_glac`: Glacierized area within the catchment (km²).
-            - `lat`: Latitude of the catchment for radiation calculations.
-            - `sim_start`, `sim_end`: Simulation period (YYYY-MM-DD).
-            - `set_up_start`, `set_up_end`: Setup period (YYYY-MM-DD).
+            - ``CFMAX_snow``: Degree-day factor for snowmelt.
+            - ``CFR``: Refreezing factor for snowmelt.
+            - ``TT_snow``: Threshold temperature for snowmelt.
+            - ``CWH``: Water holding capacity of snowpack.
+            - ``FC``: Field capacity of the soil.
+            - ``LP``: Soil moisture threshold for potential evapotranspiration.
+            - ``BETA``: Shape parameter for soil moisture recharge.
+            - ``PERC``: Percolation rate from upper to lower groundwater box.
+            - ``K0``, ``K1``, ``K2``: Recession coefficients for runoff components.
+            - ``UZL``: Threshold for upper groundwater runoff.
+            - ``CET``: Correction factor for evapotranspiration.
+            - ``MAXBAS``: Parameter for hydrograph smoothing.
+            - ``area_cat``: Total catchment area (km²).
+            - ``area_glac``: Glacierized area within the catchment (km²).
+            - ``lat``: Latitude of the catchment for radiation calculations.
+            - ``sim_start``, ``sim_end``: Simulation period (YYYY-MM-DD).
+            - ``set_up_start``, ``set_up_end``: Setup period (YYYY-MM-DD).
     glacier_area : pandas.DataFrame, optional
         Time series of annual glacier areas for dynamically scaling snow and rain fractions. Defaults to None.
 
@@ -1420,19 +1780,19 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     -------
     pandas.DataFrame
         A DataFrame containing simulated hydrological variables and runoff, including:
-            - `HBV_temp`: Input temperature (°C).
-            - `HBV_prec`: Input precipitation (mm).
-            - `HBV_rain`: Rainfall off-glacier (mm).
-            - `HBV_snow`: Snowfall off-glacier (mm).
-            - `HBV_pe`: Potential evapotranspiration (mm).
-            - `HBV_snowpack`: Snowpack water equivalent (mm).
-            - `HBV_soil_moisture`: Soil moisture content (mm).
-            - `HBV_AET`: Actual evapotranspiration (mm).
-            - `HBV_refreezing`: Refreezing within the snowpack (mm).
-            - `HBV_upper_gw`: Water in the upper groundwater box (mm).
-            - `HBV_lower_gw`: Water in the lower groundwater box (mm).
-            - `HBV_melt_off_glacier`: Meltwater runoff from snow and refreezing off-glacier (mm).
-            - `Q_HBV`: Simulated catchment runoff (mm).
+            - ``HBV_temp``: Input temperature (°C).
+            - ``HBV_prec``: Input precipitation (mm).
+            - ``HBV_rain``: Rainfall off-glacier (mm).
+            - ``HBV_snow``: Snowfall off-glacier (mm).
+            - ``HBV_pe``: Potential evapotranspiration (mm).
+            - ``HBV_snowpack``: Snowpack water equivalent (mm).
+            - ``HBV_soil_moisture``: Soil moisture content (mm).
+            - ``HBV_AET``: Actual evapotranspiration (mm).
+            - ``HBV_refreezing``: Refreezing within the snowpack (mm).
+            - ``HBV_upper_gw``: Water in the upper groundwater box (mm).
+            - ``HBV_lower_gw``: Water in the lower groundwater box (mm).
+            - ``HBV_melt_off_glacier``: Meltwater runoff from snow and refreezing off-glacier (mm).
+            - ``Q_HBV``: Simulated catchment runoff (mm).
 
     References
     ----------
@@ -1440,7 +1800,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
       Zenodo. https://doi.org/10.5281/zenodo.59501
     - Oudin, L., Hervé, A., Perrin, C., Michel, C., Andréassian, V., Anctil, F., & Loumagne, C. (2005).
       Which potential evapotranspiration input for a lumped rainfall–runoff model?: Part 2—Towards a simple and efficient
-      potential evapotranspiration model for rainfall–runoff modelling. *Journal of Hydrology, 303*(1), 290–306.
+      potential evapotranspiration model for rainfall–runoff modelling. *Journal of Hydrology*, 303(1), 290–306.
       https://doi.org/10.1016/j.jhydrol.2004.08.026
 
     Notes
@@ -1858,11 +2218,11 @@ def create_statistics(output_MATILDA):
     -------
     pandas.DataFrame
         A DataFrame containing descriptive statistics (e.g., mean, standard deviation, min, max)
-        for each column in `output_MATILDA`, along with the sum of all columns appended as an additional row.
+        for each column in ``output_MATILDA``, along with the sum of all columns appended as an additional row.
 
     Notes
     -----
-    1. The sum row is labeled as "sum" and included at the bottom of the statistics DataFrame.
+    1. The sum row is labeled as ``sum`` and included at the bottom of the statistics DataFrame.
     2. All values are rounded to three decimal places for consistency.
     """
 
@@ -1895,41 +2255,41 @@ def matilda_submodules(
         Preprocessed input dataset containing climate variables such as temperature, precipitation, snow, and rain.
     parameter : pandas.Series
         Series of MATILDA parameters including:
-            - Simulation settings (`sim_start`, `sim_end`, `set_up_start`, `set_up_end`, `freq`, `freq_long`).
-            - Glacier parameters (`area_glac`, `area_cat`, `ele_glac`, `ele_cat`, `warn`).
+            - Simulation settings (``sim_start``, ``sim_end``, ``set_up_start``, ``set_up_end``, ``freq``, ``freq_long``).
+            - Glacier parameters (``area_glac``, ``area_cat``, ``ele_glac``, ``ele_cat``, ``warn``).
             - HBV and DDM model parameters.
     obs : pandas.DataFrame, optional
-        Observed runoff data for model evaluation. Defaults to None.
+        Observed runoff data for model evaluation. Defaults to ``None``.
     glacier_profile : pandas.DataFrame, optional
-        Initial glacier profile with columns such as `Area`, `WE` (water equivalent), and `Elevation`. Required if `elev_rescaling=True`.
+        Initial glacier profile with columns such as ``Area``, ``WE`` (water equivalent), and ``Elevation``. Required if ``elev_rescaling=True``.
     elev_rescaling : bool, optional
-        If True, enables glacier elevation rescaling based on the deltaH scaling routine. Defaults to False.
+        If ``True``, enables glacier elevation rescaling based on the deltaH scaling routine. Defaults to ``False``.
     drop_surplus : bool, optional
-        If True, drops runs where the cumulative surface mass balance (SMB) is positive. Defaults to False.
+        If ``True``, drops runs where the cumulative surface mass balance (SMB) is positive. Defaults to ``False``.
 
     Returns
     -------
     list
         A list containing the following elements:
-            - `output_MATILDA_compact` (pandas.DataFrame): Compact output with key variables for quick assessment.
-            - `output_MATILDA` (pandas.DataFrame): Full simulation results including all variables.
-            - `kge` (str or float): Kling-Gupta Efficiency coefficient for model performance evaluation.
-            - `stats` (pandas.DataFrame): Statistical summary of the simulation results.
-            - `lookup_table` (str or pandas.DataFrame): Lookup table for glacier area changes (if applicable).
-            - `glacier_change` (str or pandas.DataFrame): Time series of glacier changes (if applicable).
+            - ``output_MATILDA_compact`` (pandas.DataFrame): Compact output with key variables for quick assessment.
+            - ``output_MATILDA`` (pandas.DataFrame): Full simulation results including all variables.
+            - ``kge`` (str or float): Kling-Gupta Efficiency coefficient for model performance evaluation.
+            - ``stats`` (pandas.DataFrame): Statistical summary of the simulation results.
+            - ``lookup_table`` (str or pandas.DataFrame): Lookup table for glacier area changes (if applicable).
+            - ``glacier_change`` (str or pandas.DataFrame): Time series of glacier changes (if applicable).
 
     Notes
     -----
-    1. If `elev_rescaling=True` and `glacier_profile` is provided, glacier elevation and area are dynamically updated annually.
+    1. If ``elev_rescaling=True`` and ``glacier_profile`` is provided, glacier elevation and area are dynamically updated annually.
     2. When glacier elevation scaling is turned off, average glacier elevation is treated as constant, which may introduce biases for longer simulations.
-    3. Observed runoff (`obs`) is required for model efficiency metrics such as KGE, NSE, RMSE, and MARE.
+    3. Observed runoff (``obs``) is required for model efficiency metrics such as KGE, NSE, RMSE, and MARE.
     4. The function calculates and outputs both compact and detailed results for downstream analyses.
 
     Warnings
     --------
-    - If no glacier profile is provided while `elev_rescaling=True`, an error is raised.
-    - Glacier melt calculations are skipped if the glacier area is zero (`area_glac = 0`).
-    - Model efficiency metrics are not calculated if observed data (`obs`) is not provided.
+    - If no glacier profile is provided while ``elev_rescaling=True``, an error is raised.
+    - Glacier melt calculations are skipped if the glacier area is zero (``area_glac = 0``).
+    - Model efficiency metrics are not calculated if observed data (``obs``) is not provided.
     """
 
     # Filter warnings:
@@ -2248,31 +2608,31 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     ----------
     output_MATILDA : list
         MATILDA simulation output containing the following elements:
-            - Compact output (pandas.DataFrame): Key simulation variables (e.g., runoff, precipitation, temperature).
-            - Full simulation results (pandas.DataFrame).
+            - Compact output (``pandas.DataFrame``): Key simulation variables (e.g., runoff, precipitation, temperature).
+            - Full simulation results (``pandas.DataFrame``).
             - Model efficiency metric (e.g., Kling-Gupta Efficiency coefficient).
-            - Statistics (pandas.DataFrame).
+            - Statistics (``pandas.DataFrame``).
             - Glacier lookup table (if applicable).
             - Glacier change data (if applicable).
     parameter : pandas.Series
         Series of MATILDA parameters, including:
-            - `freq`: Frequency for resampling (e.g., "D" for daily, "M" for monthly, "Y" for yearly).
-            - `freq_long`: Long-form frequency description (e.g., "Daily", "Monthly").
-            - `sim_start`: Start date of the simulation period (YYYY-MM-DD).
-            - `sim_end`: End date of the simulation period (YYYY-MM-DD).
+            - ``freq``: Frequency for resampling (e.g., ``"D"`` for daily, ``"M"`` for monthly, ``"Y"`` for yearly).
+            - ``freq_long``: Long-form frequency description (e.g., ``"Daily"``, ``"Monthly"``).
+            - ``sim_start``: Start date of the simulation period (``YYYY-MM-DD``).
+            - ``sim_end``: End date of the simulation period (``YYYY-MM-DD``).
     plot_type : str, optional
         Specifies the type of plots to generate:
-            - `"print"`: Static plots using Matplotlib.
-            - `"interactive"`: Interactive plots using Plotly.
-            - `"all"`: Both static and interactive plots.
-            Defaults to `"print"`.
+            - ``"print"``: Static plots using Matplotlib.
+            - ``"interactive"``: Interactive plots using Plotly.
+            - ``"all"``: Both static and interactive plots.
+        Defaults to ``"print"``.
 
     Returns
     -------
     list
-        The updated `output_MATILDA` list with added visualizations. The plots are appended as follows:
-            - Static Matplotlib plots: `[fig1, fig2, fig3]` for meteorological inputs, runoff, and HBV reservoirs, respectively.
-            - Interactive Plotly plots: `[fig1, fig2]` for full results and annual mean results, respectively.
+        The updated ``output_MATILDA`` list with added visualizations. The plots are appended as follows:
+            - Static Matplotlib plots: ``[fig1, fig2, fig3]`` for meteorological inputs, runoff, and HBV reservoirs, respectively.
+            - Interactive Plotly plots: ``[fig1, fig2]`` for full results and annual mean results, respectively.
 
     Notes
     -----
@@ -2283,16 +2643,16 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
     2. **Interactive Plots**:
         - Provides detailed and zoomable visualizations for meteorological inputs, runoff, and contributions using Plotly.
         - Includes annotations for model efficiency metrics like KGE.
-    3. Data is resampled to the specified frequency (`freq`) for consistent visualization across time steps.
-    4. Observed runoff data (`observed_runoff`) is included if available in the input.
+    3. Data is resampled to the specified frequency (``freq``) for consistent visualization across time steps.
+    4. Observed runoff data (``observed_runoff``) is included if available in the input.
 
     Warnings
     --------
-    - Ensure that `output_MATILDA` contains valid simulation results before calling this function.
-    - Interactive plots require Plotly; ensure it is installed for `"interactive"` or `"all"` options.
+    - Ensure that ``output_MATILDA`` contains valid simulation results before calling this function.
+    - Interactive plots require Plotly; ensure it is installed for ``"interactive"`` or ``"all"`` options.
     - Large datasets may cause performance issues with interactive plotting.
     """
-
+    
     # resampling the output to the specified frequency
     def plot_data(output_MATILDA, parameter):
         if "observed_runoff" in output_MATILDA[0].columns:
@@ -3137,23 +3497,23 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print
     ----------
     output_MATILDA : list
         List containing the outputs from the MATILDA simulation. Includes:
-            - Full model output (pandas.DataFrame).
-            - Model statistics (pandas.DataFrame).
-            - Model parameters (pandas.Series).
-            - Glacier area data (optional, pandas.DataFrame).
+            - Full model output (``pandas.DataFrame``).
+            - Model statistics (``pandas.DataFrame``).
+            - Model parameters (``pandas.Series``).
+            - Glacier area data (optional, ``pandas.DataFrame``).
             - Plots (Matplotlib or Plotly objects, depending on the plot type).
     parameter : pandas.Series
         Series containing the simulation parameters, including:
-            - `sim_start`: Start date of the simulation period (YYYY-MM-DD).
-            - `sim_end`: End date of the simulation period (YYYY-MM-DD).
+            - ``sim_start``: Start date of the simulation period (``YYYY-MM-DD``).
+            - ``sim_end``: End date of the simulation period (``YYYY-MM-DD``).
     output_path : str
         Directory path where the output files will be saved. A subfolder with the simulation date and time will be created.
     plot_type : str, optional
         Specifies the type of plots to save:
-            - `"print"`: Saves Matplotlib plots as PNG files.
-            - `"interactive"`: Saves Plotly plots as HTML files.
-            - `"all"`: Saves both Matplotlib and Plotly plots in their respective formats.
-        Defaults to `"print"`.
+            - ``"print"``: Saves Matplotlib plots as PNG files.
+            - ``"interactive"``: Saves Plotly plots as HTML files.
+            - ``"all"``: Saves both Matplotlib and Plotly plots in their respective formats.
+        Defaults to ``"print"``.
 
     Returns
     -------
@@ -3162,32 +3522,35 @@ def matilda_save_output(output_MATILDA, parameter, output_path, plot_type="print
 
     Notes
     -----
-    1. A subdirectory is created under `output_path` with a timestamped name for organizing the outputs.
+    1. A subdirectory is created under ``output_path`` with a timestamped name for organizing the outputs.
     2. The outputs saved include:
-        - Full simulation results as CSV (`model_output_<date_range>.csv`).
-        - Statistics as CSV (`model_stats_<date_range>.csv`).
-        - Parameters as CSV (`model_parameter.csv`).
-        - Glacier area changes as CSV (`glacier_area_<date_range>.csv`) if applicable.
-    3. Plots are saved in the specified format (`PNG` or `HTML`).
+        - Full simulation results as CSV (``model_output_<date_range>.csv``).
+        - Statistics as CSV (``model_stats_<date_range>.csv``).
+        - Parameters as CSV (``model_parameter.csv``).
+        - Glacier area changes as CSV (``glacier_area_<date_range>.csv``) if applicable.
+    3. Plots are saved in the specified format (``PNG`` or ``HTML``).
     4. The function automatically handles the appending of date ranges and timestamps to filenames.
 
     Warnings
     --------
-    - Ensure the specified `output_path` exists and has write permissions.
-    - When using `"interactive"` or `"all"`, ensure Plotly is installed for saving HTML plots.
+    - Ensure the specified ``output_path`` exists and has write permissions.
+    - When using ``"interactive"`` or ``"all"``, ensure Plotly is installed for saving HTML plots.
 
     Examples
     --------
     Save MATILDA outputs and plots (Matplotlib only):
+
     >>> matilda_save_output(output_MATILDA, parameter, "/path/to/output", plot_type="print")
 
     Save MATILDA outputs and interactive plots (Plotly):
+
     >>> matilda_save_output(output_MATILDA, parameter, "/path/to/output", plot_type="interactive")
 
     Save MATILDA outputs with both static and interactive plots:
+
     >>> matilda_save_output(output_MATILDA, parameter, "/path/to/output", plot_type="all")
     """
-
+    
     if output_path[-1] == "/":
         output_path = (
             output_path
@@ -3311,7 +3674,8 @@ def matilda_simulation(
     Parameters
     ----------
     input_df : pandas.DataFrame
-        Input meteorological data for the simulation. Must include timestamp and relevant fields (e.g., temperature, precipitation).
+        Input meteorological data for the simulation. Must include timestamp and relevant fields
+        (e.g., temperature, precipitation).
     obs : pandas.DataFrame, optional
         Observed runoff data for model calibration or comparison. If provided, it will be included in outputs.
     glacier_profile : pandas.DataFrame, optional
@@ -3319,39 +3683,39 @@ def matilda_simulation(
     output : str, optional
         Directory path to save outputs (CSV files, statistics, plots). If not specified, outputs are not saved.
     warn : bool, optional
-        Whether to show warnings during execution. Default is `False`.
+        Whether to show warnings during execution. Default is ``False``.
     set_up_start : str, optional
-        Start date for the model spin-up period (YYYY-MM-DD). Default is `None`.
+        Start date for the model spin-up period (``YYYY-MM-DD``). Default is ``None``.
     set_up_end : str, optional
-        End date for the model spin-up period (YYYY-MM-DD). Default is `None`.
+        End date for the model spin-up period (``YYYY-MM-DD``). Default is ``None``.
     sim_start : str, optional
-        Start date for the simulation period (YYYY-MM-DD). Default is `None`.
+        Start date for the simulation period (``YYYY-MM-DD``). Default is ``None``.
     sim_end : str, optional
-        End date for the simulation period (YYYY-MM-DD). Default is `None`.
+        End date for the simulation period (``YYYY-MM-DD``). Default is ``None``.
     freq : str, optional
-        Simulation time step frequency (`"D"` for daily, `"M"` for monthly). Default is `"D"`.
+        Simulation time step frequency (``"D"`` for daily, ``"M"`` for monthly). Default is ``"D"``.
     lat : float, optional
         Latitude of the catchment area for potential evapotranspiration calculation. Required for HBV simulations.
     area_cat : float, optional
         Total catchment area in km². Required for runoff scaling.
     area_glac : float, optional
-        Glacierized area of the catchment in km². Default is `None`.
+        Glacierized area of the catchment in km². Default is ``None``.
     ele_dat : float, optional
-        Elevation of the meteorological station used for input data in meters. Default is `None`.
+        Elevation of the meteorological station used for input data in meters. Default is ``None``.
     ele_glac : float, optional
-        Average elevation of the glacierized area in meters. Default is `None`.
+        Average elevation of the glacierized area in meters. Default is ``None``.
     ele_cat : float, optional
-        Average elevation of the entire catchment in meters. Default is `None`.
+        Average elevation of the entire catchment in meters. Default is ``None``.
     plots : bool, optional
-        Whether to generate plots. Default is `True`.
+        Whether to generate plots. Default is ``True``.
     plot_type : str, optional
-        Type of plots to generate. Options are `"print"`, `"interactive"`, or `"all"`. Default is `"print"`.
+        Type of plots to generate. Options are ``"print"``, ``"interactive"``, or ``"all"``. Default is ``"print"``.
     science_plot : bool, optional
-        Whether to apply a scientific plot style using `scienceplot`package. Default is `True`.
+        Whether to apply a scientific plot style using the ``scienceplot`` package. Default is ``True``.
     elev_rescaling : bool, optional
-        Whether to perform annual elevation rescaling for glaciers. Default is `False`.
+        Whether to perform annual elevation rescaling for glaciers. Default is ``False``.
     drop_surplus : bool, optional
-        Whether to drop surplus glacial mass balance during simulation. Default is `False`.
+        Whether to drop surplus glacial mass balance during simulation. Default is ``False``.
     **matilda_param : dict, optional
         Additional model parameters passed as key-value pairs. These override the default parameter values.
 
@@ -3359,19 +3723,19 @@ def matilda_simulation(
     -------
     list
         A list containing:
-            - Compact MATILDA output (pandas.DataFrame).
-            - Full MATILDA output (pandas.DataFrame).
-            - Efficiency coefficient (str or float).
-            - Model statistics (pandas.DataFrame).
-            - Glacier lookup table (optional, str or pandas.DataFrame).
-            - Glacier changes (optional, str or pandas.DataFrame).
+            - Compact MATILDA output (``pandas.DataFrame``).
+            - Full MATILDA output (``pandas.DataFrame``).
+            - Efficiency coefficient (``str`` or ``float``).
+            - Model statistics (``pandas.DataFrame``).
+            - Glacier lookup table (optional, ``str`` or ``pandas.DataFrame``).
+            - Glacier changes (optional, ``str`` or ``pandas.DataFrame``).
 
     Notes
     -----
-    1. Outputs are saved to disk if `output` is specified.
+    1. Outputs are saved to disk if ``output`` is specified.
     2. Observed runoff data, if provided, is included in the efficiency calculations and final outputs.
-    3. Plots can be suppressed by setting `plots=False`.
-    4. If `science_plot=True`, plots are styled with a scientific layout using the `science` and `no-latex` options.
+    3. Plots can be suppressed by setting ``plots=False``.
+    4. If ``science_plot=True``, plots are styled with a scientific layout using the ``science`` and ``no-latex`` options.
     """
 
     print("---")
