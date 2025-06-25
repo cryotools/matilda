@@ -1,3 +1,9 @@
-sphinx
+sphinx>=7.0
 myst-parser
 sphinx_rtd_theme
+pandas
+numpy
+matplotlib
+spotpy
+scipy
+hydroeval
