@@ -7,7 +7,6 @@ matilda.core module
    :show-inheritance:
    :undoc-members:
 
-
 matilda.mspot module
 -----------------------------
 

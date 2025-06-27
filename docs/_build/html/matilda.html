@@ -48,17 +48,6 @@
 <p class="caption" role="heading"><span class="caption-text">MATILDA Modules</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">matilda.core module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#matilda-modeling-water-resources-in-glacierized-catchments">MATILDA: Modeling wATer resources In gLacierizeD cAtchments</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#description">Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#dependencies">Dependencies</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#id5">)</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#license">License</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#contact">Contact</a></li>
-</ul>
-</li>
 <li class="toctree-l2"><a class="reference internal" href="#matilda.core.calculate_PDD"><code class="docutils literal notranslate"><span class="pre">calculate_PDD()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#matilda.core.calculate_glaciermelt"><code class="docutils literal notranslate"><span class="pre">calculate_glaciermelt()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#matilda.core.create_lookup_table"><code class="docutils literal notranslate"><span class="pre">create_lookup_table()</span></code></a></li>
@@ -78,14 +67,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#module-matilda.mspot_glacier">matilda.mspot module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#matilda-calibration-module-mspot">MATILDA Calibration Module “mspot”</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#functions">Functions:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#reference">Reference:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id22">Dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id23">Usage:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id24">License:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id25">Contact</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#matilda.mspot_glacier.HiddenPrints"><code class="docutils literal notranslate"><span class="pre">HiddenPrints</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#matilda.mspot_glacier.HiddenPrints.__enter__"><code class="docutils literal notranslate"><span class="pre">HiddenPrints.__enter__()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#matilda.mspot_glacier.HiddenPrints.__exit__"><code class="docutils literal notranslate"><span class="pre">HiddenPrints.__exit__()</span></code></a></li>
@@ -108,8 +89,8 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#matilda.mspot_glacier.spot_setup_glacier"><code class="docutils literal notranslate"><span class="pre">spot_setup_glacier()</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">simulation()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id26"><code class="docutils literal notranslate"><span class="pre">evaluation()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id27"><code class="docutils literal notranslate"><span class="pre">objectivefunction()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17"><code class="docutils literal notranslate"><span class="pre">evaluation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id18"><code class="docutils literal notranslate"><span class="pre">objectivefunction()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#matilda.mspot_glacier.summer"><code class="docutils literal notranslate"><span class="pre">summer()</span></code></a></li>
@@ -145,74 +126,6 @@
              
   <section id="module-matilda.core">
 <span id="matilda-core-module"></span><h1>matilda.core module<a class="headerlink" href="#module-matilda.core" title="Link to this heading"></a></h1>
-<section id="matilda-modeling-water-resources-in-glacierized-catchments">
-<h2>MATILDA: Modeling wATer resources In gLacierizeD cAtchments<a class="headerlink" href="#matilda-modeling-water-resources-in-glacierized-catchments" title="Link to this heading"></a></h2>
-<section id="description">
-<h3>Description<a class="headerlink" href="#description" title="Link to this heading"></a></h3>
-<p>MATILDA is a hydrological modeling framework designed to simulate runoff contributions in glacierized catchments.
-It integrates a degree-day model (DDM) with the HBV hydrological model (Bergström, 1976) to partition runoff into
-glacial and non-glacial components. The model can account for changes in glacier geometry through annual rescaling
-based on elevation-band profiles.</p>
-<p>Core features include:
-- Preprocessing of meteorological input data.
-- Degree-day-based glacier melt modeling.
-- HBV-based rainfall-runoff simulation.
-- Optional elevation-based glacier geometry rescaling.
-- Output visualization and statistics generation.</p>
-<p class="rubric">References</p>
-<ol class="arabic simple">
-<li><p>Bergström, S. (1976). Development and application of a conceptual runoff model for Scandinavian catchments.
-SMHI Reports RHO No. 7.</p></li>
-<li><p>Ayzel, G. (2016). Lumped Hydrological Models Playground ([LHMP](<a class="reference external" href="https://github.com/hydrogo/LHMP">https://github.com/hydrogo/LHMP</a>)). Zenodo.
-<a class="reference external" href="https://doi.org/10.5281/zenodo.59501">https://doi.org/10.5281/zenodo.59501</a></p></li>
-<li><p>Seguinot, J. (2013–2018). Python positive degree-day model for glacier surface mass balance ([pypdd](<a class="reference external" href="https://github.com/juseg/pypdd">https://github.com/juseg/pypdd</a>)).</p></li>
-<li><p>Oudin, L., et al. (2005). Which potential evapotranspiration input for a lumped rainfall-runoff model?:
-Part 2—Towards a simple and efficient potential evapotranspiration model for rainfall-runoff modeling.
-Journal of Hydrology, 303(1), 290–306. <a class="reference external" href="https://doi.org/10.1016/j.jhydrol.2004.08.026">https://doi.org/10.1016/j.jhydrol.2004.08.026</a></p></li>
-</ol>
-</section>
-<section id="dependencies">
-<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h3>
-<ul class="simple">
-<li><p>Python 3.x</p></li>
-<li><p>pandas</p></li>
-<li><p>numpy</p></li>
-<li><p>matplotlib</p></li>
-<li><p>xarray</p></li>
-<li><p>hydroeval</p></li>
-<li><p>scipy</p></li>
-</ul>
-</section>
-<section id="usage">
-<h3>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h3>
-<p>Run the MATILDA framework using the <cite>matilda_simulation</cite> function, which combines all preprocessing, modeling, and postprocessing steps.
-The framework allows customization via parameters, input datasets, and optional outputs (e.g., plots and CSV files).</p>
-<p class="rubric">Example</p>
-<p><a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python
-output = matilda_simulation(</p>
-<blockquote>
-<div><p>input_df=your_data,
-obs=observed_runoff,
-glacier_profile=glacier_profile_data,
-output=”output_folder”,
-plots=True</p>
-</div></blockquote>
-<section id="id5">
-<h4>)<a class="headerlink" href="#id5" title="Link to this heading"></a></h4>
-</section>
-</section>
-<section id="license">
-<h3>License<a class="headerlink" href="#license" title="Link to this heading"></a></h3>
-<p>This software is released under the MIT License. See LICENSE file for details.</p>
-</section>
-<section id="contact">
-<h3>Contact<a class="headerlink" href="#contact" title="Link to this heading"></a></h3>
-<p>For questions or contributions, please contact:
-- Developer: Phillip Schuster
-- Email: <a class="reference external" href="mailto:phillip&#46;schuster&#37;&#52;&#48;geo&#46;hu-berlin&#46;de">phillip<span>&#46;</span>schuster<span>&#64;</span>geo<span>&#46;</span>hu-berlin<span>&#46;</span>de</a>
-- Institution: Humboldt-Universität zu Berlin</p>
-</section>
-</section>
 <dl class="py function">
 <dt class="sig sig-object py" id="matilda.core.calculate_PDD">
 <span class="sig-prename descclassname"><span class="pre">matilda.core.</span></span><span class="sig-name descname"><span class="pre">calculate_PDD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/matilda/core.html#calculate_PDD"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#matilda.core.calculate_PDD" title="Link to this definition"></a></dt>
@@ -353,10 +266,10 @@ Each column corresponds to an elevation band (<cite>EleZone</cite>), and each ro
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>Huss, M., Jouvet, G., Farinotti, D., &amp; Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
-of glacier retreat. <a href="#id6"><span class="problematic" id="id7">*</span></a>Hydrology and Earth System Sciences, 14*(5), 815–829.
+of glacier retreat. <a href="#id1"><span class="problematic" id="id2">*</span></a>Hydrology and Earth System Sciences, 14*(5), 815–829.
 <a class="reference external" href="https://doi.org/10.5194/hess-14-815-2010">https://doi.org/10.5194/hess-14-815-2010</a></p></li>
 <li><p>Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., &amp; Stahl, K. (2018). Technical note: Representing glacier geometry
-changes in a semi-distributed hydrological model. <a href="#id8"><span class="problematic" id="id9">*</span></a>Hydrology and Earth System Sciences, 22*(4), 2211–2224.
+changes in a semi-distributed hydrological model. <a href="#id3"><span class="problematic" id="id4">*</span></a>Hydrology and Earth System Sciences, 22*(4), 2211–2224.
 <a class="reference external" href="https://doi.org/10.5194/hess-22-2211-2018">https://doi.org/10.5194/hess-22-2211-2018</a></p></li>
 </ul>
 <p class="rubric">Notes</p>
@@ -434,10 +347,10 @@ approach. This is the second part of the glacier scaling routine, based on Seibe
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>Huss, M., Jouvet, G., Farinotti, D., &amp; Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
-of glacier retreat. <a href="#id10"><span class="problematic" id="id11">*</span></a>Hydrology and Earth System Sciences, 14*(5), 815–829.
+of glacier retreat. <a href="#id5"><span class="problematic" id="id6">*</span></a>Hydrology and Earth System Sciences, 14*(5), 815–829.
 <a class="reference external" href="https://doi.org/10.5194/hess-14-815-2010">https://doi.org/10.5194/hess-14-815-2010</a></p></li>
 <li><p>Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., &amp; Stahl, K. (2018). Technical note: Representing glacier geometry
-changes in a semi-distributed hydrological model. <a href="#id12"><span class="problematic" id="id13">*</span></a>Hydrology and Earth System Sciences, 22*(4), 2211–2224.
+changes in a semi-distributed hydrological model. <a href="#id7"><span class="problematic" id="id8">*</span></a>Hydrology and Earth System Sciences, 22*(4), 2211–2224.
 <a class="reference external" href="https://doi.org/10.5194/hess-22-2211-2018">https://doi.org/10.5194/hess-22-2211-2018</a></p></li>
 </ul>
 <p class="rubric">Notes</p>
@@ -528,7 +441,7 @@ Evapotranspiration values are calculated using the method outlined in Oudin et a
 Zenodo. <a class="reference external" href="https://doi.org/10.5281/zenodo.59501">https://doi.org/10.5281/zenodo.59501</a></p></li>
 <li><p>Oudin, L., Hervé, A., Perrin, C., Michel, C., Andréassian, V., Anctil, F., &amp; Loumagne, C. (2005).
 Which potential evapotranspiration input for a lumped rainfall–runoff model?: Part 2—Towards a simple and efficient
-potential evapotranspiration model for rainfall–runoff modelling. <a href="#id14"><span class="problematic" id="id15">*</span></a>Journal of Hydrology, 303*(1), 290–306.
+potential evapotranspiration model for rainfall–runoff modelling. <a href="#id9"><span class="problematic" id="id10">*</span></a>Journal of Hydrology, 303*(1), 290–306.
 <a class="reference external" href="https://doi.org/10.1016/j.jhydrol.2004.08.026">https://doi.org/10.1016/j.jhydrol.2004.08.026</a></p></li>
 </ul>
 <p class="rubric">Notes</p>
@@ -613,7 +526,7 @@ parameter set for the simulation.</p>
 </dd>
 <dt>warn<span class="classifier">bool, optional</span></dt><dd><p>Whether to display warnings for potential configuration issues (default: False).</p>
 </dd>
-<dt><a href="#id16"><span class="problematic" id="id17">**</span></a>matilda_param<span class="classifier">dict, optional</span></dt><dd><p>Additional model parameters, passed as key-value pairs. If a parameter is not
+<dt><a href="#id11"><span class="problematic" id="id12">**</span></a>matilda_param<span class="classifier">dict, optional</span></dt><dd><p>Additional model parameters, passed as key-value pairs. If a parameter is not
 provided, default values from the parameter JSON file are used.</p>
 </dd>
 </dl>
@@ -1062,10 +975,10 @@ approach. This is the second part of the glacier scaling routine, based on Seibe
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p>Huss, M., Jouvet, G., Farinotti, D., &amp; Bauder, A. (2010). Future high-mountain hydrology: a new parameterization
-of glacier retreat. <a href="#id18"><span class="problematic" id="id19">*</span></a>Hydrology and Earth System Sciences, 14*(5), 815–829.
+of glacier retreat. <a href="#id13"><span class="problematic" id="id14">*</span></a>Hydrology and Earth System Sciences, 14*(5), 815–829.
 <a class="reference external" href="https://doi.org/10.5194/hess-14-815-2010">https://doi.org/10.5194/hess-14-815-2010</a></p></li>
 <li><p>Seibert, J., Vis, M. J. P., Kohn, I., Weiler, M., &amp; Stahl, K. (2018). Technical note: Representing glacier geometry
-changes in a semi-distributed hydrological model. <a href="#id20"><span class="problematic" id="id21">*</span></a>Hydrology and Earth System Sciences, 22*(4), 2211–2224.
+changes in a semi-distributed hydrological model. <a href="#id15"><span class="problematic" id="id16">*</span></a>Hydrology and Earth System Sciences, 22*(4), 2211–2224.
 <a class="reference external" href="https://doi.org/10.5194/hess-22-2211-2018">https://doi.org/10.5194/hess-22-2211-2018</a></p></li>
 </ul>
 <p class="rubric">Notes</p>
@@ -1080,77 +993,6 @@ changes in a semi-distributed hydrological model. <a href="#id20"><span class="p
 </section>
 <section id="module-matilda.mspot_glacier">
 <span id="matilda-mspot-module"></span><h1>matilda.mspot module<a class="headerlink" href="#module-matilda.mspot_glacier" title="Link to this heading"></a></h1>
-<section id="matilda-calibration-module-mspot">
-<h2>MATILDA Calibration Module “mspot”<a class="headerlink" href="#matilda-calibration-module-mspot" title="Link to this heading"></a></h2>
-<p>This script provides tools for calibrating the MATILDA glacio-hydrological model using statistical parameter optimization
-techniques. It makes extensive use of the SPOTPY package for sampling, optimization, and parameter uncertainty analysis. The module
-is tailored for glacierized catchments and includes support for both catchment-wide and glacier-only calibration.</p>
-</section>
-<section id="key-features">
-<h2>Key Features:<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
-<ul class="simple">
-<li><p>Parameter Sampling: Flexible setup for sampling hydrological model parameters using various algorithms from SPOTPY.</p></li>
-<li><p>Objective Functions: Includes multiple objective functions such as Kling-Gupta Efficiency (KGE), Mean Absolute Error
-(MAE), and custom user-defined functions.</p></li>
-<li><p>Calibration Targets: Supports calibration against observed discharge, glacier mass balance, and snow water equivalent.</p></li>
-<li><p>Statistical Analysis: Provides tools to analyze parameter posterior distributions and derive parameter bounds.</p></li>
-<li><p>Seasonal and Annual Analysis: Includes functions for evaluating seasonal (winter/summer) and annual metrics.</p></li>
-<li><p>Parallel Computing: Supports parallel sampling for computational efficiency.</p></li>
-</ul>
-</section>
-<section id="functions">
-<h2>Functions:<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
-<ol class="arabic simple">
-<li><p><cite>yesno</cite>: Interactive function to confirm actions.</p></li>
-<li><p><cite>dict2bounds</cite>: Converts a dictionary of parameter values into bounds.</p></li>
-<li><p><cite>loglike_kge</cite>: Calculates a pseudo-log-likelihood using the Kling-Gupta Efficiency (KGE).</p></li>
-<li><p><cite>winter</cite>, <cite>summer</cite>, <cite>annual</cite>: Extract seasonal or annual data slices for evaluation.</p></li>
-<li><p><cite>scaled_pdd</cite>, <cite>scaled_ndd</cite>: Apply temperature lapse rates to calculate positive or negative degree days.</p></li>
-<li><p><cite>spot_setup</cite> and <cite>spot_setup_glacier</cite>: Set up SPOTPY sampling for catchment-wide and glacier-specific calibration.</p></li>
-<li><p><cite>analyze_results</cite>: Analyze SPOTPY results to identify the best-performing parameter set and generate diagnostic plots.</p></li>
-<li><p><cite>psample</cite>: Automates parameter sampling and optimization with various SPOTPY algorithms.</p></li>
-<li><p><cite>load_parameters</cite>: Loads the best-performing parameter set from SPOTPY results.</p></li>
-<li><p><cite>get_par_bounds</cite>: Derives parameter bounds from SPOTPY sampling results.</p></li>
-</ol>
-</section>
-<section id="reference">
-<h2>Reference:<a class="headerlink" href="#reference" title="Link to this heading"></a></h2>
-<dl class="simple">
-<dt>SPOTPY Library:</dt><dd><ul class="simple">
-<li><p>Houska, T., Kraft, P., Chamorro-Chavez, A., &amp; Breuer, L. (2015). “SPOTting Model Parameters Using a Ready-Made
-Python Package.” PLOS ONE, 10(12), 1-22. <a class="reference external" href="https://doi.org/10.1371/journal.pone.0145180">https://doi.org/10.1371/journal.pone.0145180</a></p></li>
-<li><p>GitHub repository: <a class="reference external" href="https://github.com/thouska/spotpy">https://github.com/thouska/spotpy</a></p></li>
-</ul>
-</dd>
-</dl>
-</section>
-<section id="id22">
-<h2>Dependencies<a class="headerlink" href="#id22" title="Link to this heading"></a></h2>
-<ul class="simple">
-<li><p>Python 3.7 or higher</p></li>
-<li><p>spotpy</p></li>
-<li><p>pandas</p></li>
-<li><p>numpy</p></li>
-<li><p>matplotlib</p></li>
-<li><p>hydroeval</p></li>
-<li><p>scipy</p></li>
-</ul>
-</section>
-<section id="id23">
-<h2>Usage:<a class="headerlink" href="#id23" title="Link to this heading"></a></h2>
-<p>This script is designed to be part of the MATILDA framework as calibration tool for the matilda.core model.</p>
-</section>
-<section id="id24">
-<h2>License:<a class="headerlink" href="#id24" title="Link to this heading"></a></h2>
-<p>This software is released under the MIT License. See LICENSE file for details.</p>
-</section>
-<section id="id25">
-<h2>Contact<a class="headerlink" href="#id25" title="Link to this heading"></a></h2>
-<p>For questions or contributions, please contact:
-- Developer: Phillip Schuster
-- Email: <a class="reference external" href="mailto:phillip&#46;schuster&#37;&#52;&#48;geo&#46;hu-berlin&#46;de">phillip<span>&#46;</span>schuster<span>&#64;</span>geo<span>&#46;</span>hu-berlin<span>&#46;</span>de</a>
-- Institution: Humboldt-Universität zu Berlin</p>
-</section>
 <dl class="py class">
 <dt class="sig sig-object py" id="matilda.mspot_glacier.HiddenPrints">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">matilda.mspot_glacier.</span></span><span class="sig-name descname"><span class="pre">HiddenPrints</span></span><a class="reference internal" href="_modules/matilda/mspot_glacier.html#HiddenPrints"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#matilda.mspot_glacier.HiddenPrints" title="Link to this definition"></a></dt>
@@ -1783,14 +1625,14 @@ and summer mass balance optimization based on observed data.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="id26">
-<span class="sig-prename descclassname"><span class="pre">matilda.mspot_glacier.</span></span><span class="sig-name descname"><span class="pre">evaluation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#id26" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="id17">
+<span class="sig-prename descclassname"><span class="pre">matilda.mspot_glacier.</span></span><span class="sig-name descname"><span class="pre">evaluation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#id17" title="Link to this definition"></a></dt>
 <dd><p>Prepares observed mass balance data (annual, winter, or summer) for comparison.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="id27">
-<span class="sig-prename descclassname"><span class="pre">matilda.mspot_glacier.</span></span><span class="sig-name descname"><span class="pre">objectivefunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id27" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="id18">
+<span class="sig-prename descclassname"><span class="pre">matilda.mspot_glacier.</span></span><span class="sig-name descname"><span class="pre">objectivefunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#id18" title="Link to this definition"></a></dt>
 <dd><p>Defines the objective function to calculate the error between simulated and observed mass balance values.</p>
 </dd></dl>
 
