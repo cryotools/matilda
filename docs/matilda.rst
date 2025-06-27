@@ -1,5 +1,3 @@
-Matilda Submodules
-==================
 
 matilda.core module
 -------------------
@@ -9,15 +7,8 @@ matilda.core module
    :show-inheritance:
    :undoc-members:
 
-matilda.matilda\_core module
-----------------------------
 
-.. automodule:: matilda.matilda_core
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-matilda.mspot\_glacier module
+matilda.mspot module
 -----------------------------
 
 .. automodule:: matilda.mspot_glacier
@@ -25,10 +16,3 @@ matilda.mspot\_glacier module
    :show-inheritance:
    :undoc-members:
 
-Module contents
----------------
-
-.. automodule:: matilda
-   :members:
-   :show-inheritance:
-   :undoc-members:
