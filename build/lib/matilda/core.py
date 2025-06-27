@@ -5,46 +5,57 @@ MATILDA: Modeling wATer resources In gLacierizeD cAtchments
 
 Description
 -----------
-MATILDA is a hydrological modeling framework designed to simulate runoff contributions in glacierized catchments. 
-It integrates a degree-day model (DDM) with the HBV hydrological model (Bergström, 1976) to partition runoff into 
-glacial and non-glacial components. The model can account for changes in glacier geometry through annual rescaling 
+
+MATILDA is a hydrological modeling framework designed to simulate runoff contributions in glacierized catchments.  
+It integrates a degree-day model (DDM) with the HBV hydrological model (Bergström, 1976) to partition runoff into  
+glacial and non-glacial components. The model can account for changes in glacier geometry through annual rescaling  
 based on elevation-band profiles.
 
 Core features include:
-- Preprocessing of meteorological input data.
-- Degree-day-based glacier melt modeling.
-- HBV-based rainfall-runoff simulation.
-- Optional elevation-based glacier geometry rescaling.
-- Output visualization and statistics generation.
+
+- Preprocessing of meteorological input data
+- Degree-day-based glacier melt modeling
+- HBV-based rainfall-runoff simulation
+- Optional elevation-based glacier geometry rescaling
+- Output visualization and statistics generation
 
 References
 ----------
-1. Bergström, S. (1976). Development and application of a conceptual runoff model for Scandinavian catchments. 
+
+1. Bergström, S. (1976). *Development and application of a conceptual runoff model for Scandinavian catchments*.  
    SMHI Reports RHO No. 7.
-2. Ayzel, G. (2016). Lumped Hydrological Models Playground ([LHMP](https://github.com/hydrogo/LHMP)). Zenodo. 
+
+2. Ayzel, G. (2016). Lumped Hydrological Models Playground  
+   (`LHMP <https://github.com/hydrogo/LHMP>`_). Zenodo.  
    https://doi.org/10.5281/zenodo.59501
-3. Seguinot, J. (2013–2018). Python positive degree-day model for glacier surface mass balance ([pypdd](https://github.com/juseg/pypdd)).
-4. Oudin, L., et al. (2005). Which potential evapotranspiration input for a lumped rainfall-runoff model?: 
-   Part 2—Towards a simple and efficient potential evapotranspiration model for rainfall-runoff modeling. 
+
+3. Seguinot, J. (2013–2018). Python positive degree-day model for glacier surface mass balance  
+   (`pypdd <https://github.com/juseg/pypdd>`_)
+
+4. Oudin, L., et al. (2005). *Which potential evapotranspiration input for a lumped rainfall-runoff model?*  
    Journal of Hydrology, 303(1), 290–306. https://doi.org/10.1016/j.jhydrol.2004.08.026
 
 Dependencies
 ------------
-- Python 3.x
-- pandas
-- numpy
-- matplotlib
-- xarray
-- hydroeval
+
+- Python 3.x  
+- pandas  
+- numpy  
+- matplotlib  
+- xarray  
+- hydroeval  
 - scipy
 
 Usage
 -----
-Run the MATILDA framework using the `matilda_simulation` function, which combines all preprocessing, modeling, and postprocessing steps. 
-The framework allows customization via parameters, input datasets, and optional outputs (e.g., plots and CSV files).
+
+Run the MATILDA framework using the ``matilda_simulation`` function, which combines all preprocessing, modeling,  
+and postprocessing steps. The framework allows customization via parameters, input datasets, and optional outputs  
+(e.g., plots and CSV files).
 
 Example
 -------
+
 Run a basic simulation:
 
 .. code-block:: python
@@ -59,14 +70,17 @@ Run a basic simulation:
 
 License
 -------
+
 This software is released under the MIT License. See LICENSE file for details.
 
 Contact
 -------
+
 For questions or contributions, please contact:
-- Developer: Phillip Schuster
-- Email: phillip.schuster@geo.hu-berlin.de
-- Institution: Humboldt-Universität zu Berlin
+
+- **Developer**: Phillip Schuster  
+- **Email**: phillip.schuster@geo.hu-berlin.de  
+- **Institution**: Humboldt-Universität zu Berlin
 """
 
 import os

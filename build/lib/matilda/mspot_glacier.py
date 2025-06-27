@@ -1231,25 +1231,32 @@ def analyze_results(
     """
     Analyze the results of SPOTPY sampling for model calibration of the MATILDA model.
 
-    This function processes sampling results from SPOTPY to identify the best parameter set, evaluate performance,
-    and optionally generate visualizations of the results.
+    This function processes sampling results from SPOTPY to identify the best parameter set,
+    evaluate performance, and optionally generate visualizations of the results.
 
     Parameters
     ----------
     sampling_data : str or SPOTPY result object
-        The file path to a SPOTPY results CSV file or a SPOTPY result object.
+        File path to a SPOTPY results CSV file or a SPOTPY result object.
+
     obs : str or pandas.DataFrame
-        The file path to observed data (CSV with a ``Date`` column) or a DataFrame containing observed data.
+        File path to observed data (CSV with a ``Date`` column) or a DataFrame containing observed data.
+
     algorithm : str
         The SPOTPY algorithm used for sampling (e.g., ``abc``, ``dream``, ``sceua``).
+
     obj_dir : str, optional
         Direction of the objective function optimization: either ``maximize`` or ``minimize``. Default is ``maximize``.
+
     fig_path : str, optional
         Path to save generated plots. If ``None``, plots are not saved.
+
     dbname : str, optional
         Name for saving the database and plots. Default is ``mspot_results``.
+
     glacier_only : bool, optional
         If ``True``, optimizes only for glacier-specific metrics (e.g., mass balance). Default is ``False``.
+
     target_mb : float, optional
         Target mean annual mass balance for melt model calibration. If ``None``, this metric is not considered.
 
@@ -1258,28 +1265,29 @@ def analyze_results(
     dict
         A dictionary containing the following elements:
 
-        - ``best_param`` : dict  
+        - ``best_param`` (dict):  
           Best parameter set identified during sampling.
 
-        - ``best_index`` : int  
+        - ``best_index`` (int):  
           Index of the best run in the SPOTPY results.
 
-        - ``best_model_run`` : array  
+        - ``best_model_run`` (array):  
           Model output corresponding to the best parameter set.
 
-        - ``best_objf`` : float  
+        - ``best_objf`` (float):  
           Value of the objective function for the best parameter set.
 
-        - ``best_simulation`` : pandas.Series, optional  
-          Simulated time series corresponding to the best parameter set (only if ``glacier_only`` is ``False`` and ``target_mb`` is ``None``).
+        - ``best_simulation`` (pandas.Series, optional):  
+          Simulated time series corresponding to the best parameter set  
+          (only if ``glacier_only`` is ``False`` and ``target_mb`` is ``None``).
 
-        - ``sampling_plot`` : matplotlib.Figure, optional  
+        - ``sampling_plot`` (matplotlib.Figure, optional):  
           Iteration vs. objective function plot.
 
-        - ``best_run_plot`` : matplotlib.Figure, optional  
+        - ``best_run_plot`` (matplotlib.Figure, optional):  
           Best simulation vs. observed data plot.
 
-        - ``par_uncertain_plot`` : matplotlib.Figure, optional  
+        - ``par_uncertain_plot`` (matplotlib.Figure, optional):  
           Parameter uncertainty plot.
 
     Notes
@@ -1294,6 +1302,7 @@ def analyze_results(
 
     - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
       Python Package." *PLOS ONE*, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+
     - GitHub repository: https://github.com/thouska/spotpy
     """
 
@@ -1829,36 +1838,43 @@ def get_par_bounds(path, threshold=10, percentage=True, drop=None):
     """
     Generate parameter bounds from SPOTPY sampling results.
 
-    This function extracts the minimum and maximum values of model parameters from the best-performing runs in
-    SPOTPY sampling results. The best-performing runs are determined based on a likelihood threshold or percentage.
+    This function extracts the minimum and maximum values of model parameters from the best-performing runs
+    in SPOTPY sampling results. These runs are selected based on a likelihood threshold or percentage.
 
     Parameters
     ----------
     path : str
         File path to the SPOTPY sampling results (e.g., ``results.csv``).
+
     threshold : float, optional
         The threshold for selecting the best-performing runs:
         - If ``percentage`` is True, ``threshold`` represents the percentage of the top-performing runs to consider.
-        - If ``percentage`` is False, ``threshold`` represents the numerical threshold for the objective function.
+        - If ``percentage`` is False, ``threshold`` represents a cutoff value for the objective function.
         Default is ``10``.
+
     percentage : bool, optional
-        Determines whether to interpret ``threshold`` as a percentage (``True``) or a numerical threshold (``False``).
+        If ``True``, interpret ``threshold`` as a percentage.
+        If ``False``, interpret it as a fixed objective function threshold.
         Default is ``True``.
+
     drop : list of str, optional
-        A list of parameter names to exclude from the resulting bounds. Default is ``None``.
+        List of parameter names to exclude from the resulting bounds.
+        Default is ``None``.
 
     Returns
     -------
     dict
-        A dictionary containing the lower (``_lo``) and upper (``_up``) bounds for each parameter, derived from the
-        best-performing runs.
+        Dictionary containing the lower (``_lo``) and upper (``_up``) bounds for each parameter,
+        derived from the best-performing runs.
+
+        Example:
+        ``{'param1_lo': 0.1, 'param1_up': 0.3, 'param2_lo': 5.0, 'param2_up': 10.0}``
 
     Notes
     -----
-    - The function loads SPOTPY sampling results and identifies the best-performing runs using the specified threshold
-      and criteria.
-    - Parameters specified in the ``drop`` list are excluded from the output bounds.
-    - The resulting dictionary contains keys in the format ``<parameter_name>_lo`` and ``<parameter_name>_up``.
+    - The function loads SPOTPY sampling results and filters them using the specified threshold and criteria.
+    - Parameters listed in ``drop`` will not be included in the output.
+    - Resulting dictionary keys follow the format ``<parameter>_lo`` and ``<parameter>_up``.
 
     References
     ----------
@@ -1866,6 +1882,7 @@ def get_par_bounds(path, threshold=10, percentage=True, drop=None):
 
     - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). *SPOTting Model Parameters Using a Ready-Made
       Python Package*. PLOS ONE, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+
     - GitHub repository: https://github.com/thouska/spotpy
     """
     
