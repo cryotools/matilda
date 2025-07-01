@@ -16,10 +16,12 @@
       <script src="_static/documentation_options.js?v=292eb321"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Matilda Modules" href="modules.html" />
+    <link rel="next" title="matilda.core module" href="matilda.html" />
     <link rel="prev" title="Matilda Manual" href="index.html" /> 
 </head>
 
@@ -59,9 +61,10 @@
 </ul>
 </li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Matilda Package</span></p>
+<p class="caption" role="heading"><span class="caption-text">MATILDA Modules</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">Matilda Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matilda.html">matilda.core module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matilda.html#module-matilda.mspot_glacier">matilda.mspot module</a></li>
 </ul>
 
         </div>
@@ -88,7 +91,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="matilda-modeling-water-resources-in-glacierized-catchments">
+  <section class="tex2jax_ignore mathjax_ignore" id="matilda-modeling-water-resources-in-glacierized-catchments">
 <h1>MATILDA: Modeling wATer resources In gLacierizeD cAtchments<a class="headerlink" href="#matilda-modeling-water-resources-in-glacierized-catchments" title="Link to this heading"></a></h1>
 <p><a class="reference external" href="https://doi.org/10.5281/zenodo.14267360"><img alt="DOI" src="https://zenodo.org/badge/DOI/10.5281/zenodo.14267360.svg" /></a></p>
 <p>MATILDA is a Python-based modeling framework for simulating water resources in glacierized catchments. This repository contains the core routines of the comprehensive <a class="reference external" href="https://matilda-online.github.io/jbook/">MATILDA-Online</a> workflow:</p>
@@ -257,107 +260,107 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$\text{lr}_{\text{temp}}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{lr}_{\text{temp}}\)</span></p></td>
 <td><p>Temperature lapse rate</p></td>
 <td><p>°C m⁻¹</p></td>
 <td><p>-0.006</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{lr}_{\text{prec}}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{lr}_{\text{prec}}\)</span></p></td>
 <td><p>Precipitation lapse rate</p></td>
 <td><p>mm m⁻¹</p></td>
 <td><p>0</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{PCORR}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{PCORR}\)</span></p></td>
 <td><p>Precipitation correction factor</p></td>
 <td><p>-</p></td>
 <td><p>1.0</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{TT}_{\text{snow}}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{TT}_{\text{snow}}\)</span></p></td>
 <td><p>Threshold temperature for snow</p></td>
 <td><p>°C</p></td>
 <td><p>0</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{TT}_{\text{diff}}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{TT}_{\text{diff}}\)</span></p></td>
 <td><p>Temperature range for rain-snow transition</p></td>
 <td><p>°C</p></td>
 <td><p>2</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{SFCF}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{SFCF}\)</span></p></td>
 <td><p>Snowfall correction factor</p></td>
 <td><p>-</p></td>
 <td><p>0.7</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{CFMAX}_{\text{snow}}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{CFMAX}_{\text{snow}}\)</span></p></td>
 <td><p>Melt factor for snow</p></td>
 <td><p>mm °C⁻¹ day⁻¹</p></td>
 <td><p>5</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{CFMAX}_{\text{rel}}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{CFMAX}_{\text{rel}}\)</span></p></td>
 <td><p>Melt factor for ice relative to snow</p></td>
 <td><p>-</p></td>
 <td><p>2</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{CWH}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{CWH}\)</span></p></td>
 <td><p>Water holding capacity of snowpack</p></td>
 <td><p>-</p></td>
 <td><p>0.1</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{CFR}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{CFR}\)</span></p></td>
 <td><p>Refreezing coefficient</p></td>
 <td><p>-</p></td>
 <td><p>0.15</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{AG}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{AG}\)</span></p></td>
 <td><p>Control parameter of the glacier storage-release scheme</p></td>
 <td><p>-</p></td>
 <td><p>0.7</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{BETA}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{BETA}\)</span></p></td>
 <td><p>Shape coefficient for soil moisture routine</p></td>
 <td><p>-</p></td>
 <td><p>1.0</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{CET}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{CET}\)</span></p></td>
 <td><p>Correction factor for evapotranspiration</p></td>
 <td><p>-</p></td>
 <td><p>0.15</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{FC}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{FC}\)</span></p></td>
 <td><p>Field capacity of soil</p></td>
 <td><p>mm</p></td>
 <td><p>250</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{LP}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{LP}\)</span></p></td>
 <td><p>Fraction of field capacity for maximum evapotranspiration</p></td>
 <td><p>-</p></td>
 <td><p>0.7</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{K}_0$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{K}_0\)</span></p></td>
 <td><p>Recession coefficient for surface flow</p></td>
 <td><p>day⁻¹</p></td>
 <td><p>0.055</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{K}_1$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{K}_1\)</span></p></td>
 <td><p>Recession coefficient for intermediate groundwater flow</p></td>
 <td><p>day⁻¹</p></td>
 <td><p>0.055</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{K}_2$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{K}_2\)</span></p></td>
 <td><p>Recession coefficient for deep groundwater flow</p></td>
 <td><p>day⁻¹</p></td>
 <td><p>0.04</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{PERC}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{PERC}\)</span></p></td>
 <td><p>Percolation rate from upper to lower groundwater reservoir</p></td>
 <td><p>mm day⁻¹</p></td>
 <td><p>1.5</p></td>
 </tr>
-<tr class="row-odd"><td><p>$\text{UZL}$</p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\text{UZL}\)</span></p></td>
 <td><p>Threshold for quick flow from upper zone</p></td>
 <td><p>mm</p></td>
 <td><p>120</p></td>
 </tr>
-<tr class="row-even"><td><p>$\text{MAXBAS}$</p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\text{MAXBAS}\)</span></p></td>
 <td><p>Length of triangular routing function</p></td>
 <td><p>day</p></td>
 <td><p>3.0</p></td>
@@ -409,7 +412,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="Matilda Manual" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="modules.html" class="btn btn-neutral float-right" title="Matilda Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="matilda.html" class="btn btn-neutral float-right" title="matilda.core module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
