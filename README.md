@@ -1,6 +1,7 @@
 # MATILDA: Modeling wATer resources In gLacierizeD cAtchments
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14267360.svg)](https://doi.org/10.5281/zenodo.14267360) ![Documentation Status](https://readthedocs.org/projects/matilda-rtd/badge/?version=latest)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14267360.svg)](https://doi.org/10.5281/zenodo.14267360) [![Documentation Status](https://readthedocs.org/projects/matilda-rtd/badge/?version=latest)](https://matilda-rtd.readthedocs.io/en/latest/)
+
 
 
 
