@@ -495,77 +495,172 @@ def spot_setup(
 
     Parameters
     ----------
-    General inputs:
-    - set_up_start, set_up_end : str
-        Start and end dates of the setup period.
-    - sim_start, sim_end : str
-        Start and end dates of the simulation period.
-    - freq : str, optional
-        Frequency of the data, default is daily ("D").
-    - lat : float, optional
+    set_up_start : str, optional
+        Start date of the setup period.
+    set_up_end : str, optional
+        End date of the setup period.
+    sim_start : str, optional
+        Start date of the simulation period.
+    sim_end : str, optional
+        End date of the simulation period.
+    freq : str, optional
+        Frequency of the data, default is "D" (daily).
+    lat : float, optional
         Latitude of the catchment for extraterrestrial radiation calculation.
-    - area_cat, area_glac : float
-        Catchment and glacierized areas in km².
-    - ele_dat, ele_glac, ele_cat : float
-        Mean elevations (m a.s.l.) of the data, glacier, and catchment.
-    - glacier_profile : DataFrame, optional
+    area_cat : float, optional
+        Catchment area in km².
+    area_glac : float, optional
+        Glacierized area in km².
+    ele_dat : float, optional
+        Mean elevation (m a.s.l.) of the data.
+    ele_glac : float, optional
+        Mean elevation (m a.s.l.) of the glacier.
+    ele_cat : float, optional
+        Mean elevation (m a.s.l.) of the catchment.
+    glacier_profile : pandas.DataFrame, optional
         Glacier profile for scaling and elevation rescaling.
-    - elev_rescaling : bool, optional
-        Flag for enabling elevation rescaling, default is True.
-    - target_mb, target_swe : float, optional
-        Target surface mass balance (MB) or snow water equivalent (SWE) for calibration.
-    - swe_scaling : float, optional
-        Scaling factor for snow water equivalent. Used to account for the mismatch in resolution of the SWE calibration
-        data and the glacier mask used for MATILDA.
-
-    Parameter bounds for calibration:
-    - Fix parameter bounds (e.g., `lr_temp_lo`, `lr_temp_up` for lapse rates).
-    - `fix_param` : list, optional
+    elev_rescaling : bool, optional
+        Flag for enabling elevation rescaling. Default is True.
+    target_mb : float, optional
+        Target surface mass balance (MB) for calibration.
+    target_swe : float, optional
+        Target snow water equivalent (SWE) for calibration.
+    swe_scaling : float, optional
+        Scaling factor for snow water equivalent. Used to account for the mismatch 
+        in resolution of the SWE calibration data and the glacier mask used for MATILDA.
+    fix_param : list of str, optional
         List of parameters to fix during calibration.
-    - `fix_val` : dict, optional
+    fix_val : dict, optional
         Fixed parameter values (if applicable).
-
-    SPOTPY settings:
-    - `interf` : int, optional
-        Inference factor for parameter iterations, default is 4.
-    - `freqst` : int, optional
-        Frequency step for sensitivity analysis, default is 2.
-
-    Methods
-    -------
-    simulation(x, param_names, fix_param, fix_val, swe_scaling)
-        Executes the MATILDA simulation with sampled parameters and fixed parameters (if specified).
-    evaluation()
-        Prepares the observed data (e.g., streamflow, SWE) for comparison with simulation results.
-    objectivefunction(simulation, evaluation, params=None)
-        Defines the objective function for model evaluation using the Kling-Gupta Efficiency (KGE) or user-defined metrics.
+    obj_func : callable, optional
+        Custom objective function for evaluation.
+    lr_temp_lo : float, optional
+        Lower bound for temperature lapse rate (°C/m). Default is -0.0065.
+    lr_temp_up : float, optional
+        Upper bound for temperature lapse rate (°C/m). Default is -0.0055.
+    lr_prec_lo : float, optional
+        Lower bound for precipitation lapse rate. Default is 0.
+    lr_prec_up : float, optional
+        Upper bound for precipitation lapse rate. Default is 0.002.
+    BETA_lo : float, optional
+        Lower bound for BETA parameter. Default is 1.
+    BETA_up : float, optional
+        Upper bound for BETA parameter. Default is 6.
+    CET_lo : float, optional
+        Lower bound for CET parameter. Default is 0.
+    CET_up : float, optional
+        Upper bound for CET parameter. Default is 0.3.
+    FC_lo : float, optional
+        Lower bound for FC parameter. Default is 50.
+    FC_up : float, optional
+        Upper bound for FC parameter. Default is 500.
+    K0_lo : float, optional
+        Lower bound for K0 parameter. Default is 0.01.
+    K0_up : float, optional
+        Upper bound for K0 parameter. Default is 0.4.
+    K1_lo : float, optional
+        Lower bound for K1 parameter. Default is 0.01.
+    K1_up : float, optional
+        Upper bound for K1 parameter. Default is 0.4.
+    K2_lo : float, optional
+        Lower bound for K2 parameter. Default is 0.001.
+    K2_up : float, optional
+        Upper bound for K2 parameter. Default is 0.15.
+    LP_lo : float, optional
+        Lower bound for LP parameter. Default is 0.3.
+    LP_up : float, optional
+        Upper bound for LP parameter. Default is 1.
+    MAXBAS_lo : float, optional
+        Lower bound for MAXBAS parameter. Default is 2.
+    MAXBAS_up : float, optional
+        Upper bound for MAXBAS parameter. Default is 7.
+    PERC_lo : float, optional
+        Lower bound for PERC parameter. Default is 0.
+    PERC_up : float, optional
+        Upper bound for PERC parameter. Default is 3.
+    UZL_lo : float, optional
+        Lower bound for UZL parameter. Default is 0.
+    UZL_up : float, optional
+        Upper bound for UZL parameter. Default is 500.
+    PCORR_lo : float, optional
+        Lower bound for precipitation correction factor. Default is 0.5.
+    PCORR_up : float, optional
+        Upper bound for precipitation correction factor. Default is 2.
+    TT_snow_lo : float, optional
+        Lower bound for snow temperature threshold (°C). Default is -1.5.
+    TT_snow_up : float, optional
+        Upper bound for snow temperature threshold (°C). Default is 1.5.
+    TT_diff_lo : float, optional
+        Lower bound for difference between rain and snow temperature thresholds (°C). Default is 0.5.
+    TT_diff_up : float, optional
+        Upper bound for difference between rain and snow temperature thresholds (°C). Default is 2.5.
+    CFMAX_snow_lo : float, optional
+        Lower bound for degree-day factor for snow melt (mm/°C/day). Default is 0.5.
+    CFMAX_snow_up : float, optional
+        Upper bound for degree-day factor for snow melt (mm/°C/day). Default is 10.
+    CFMAX_rel_lo : float, optional
+        Lower bound for degree-day factor for relative snow and ice melt. Default is 1.2.
+    CFMAX_rel_up : float, optional
+        Upper bound for degree-day factor for relative snow and ice melt. Default is 2.
+    SFCF_lo : float, optional
+        Lower bound for snow correction factor. Default is 0.4.
+    SFCF_up : float, optional
+        Upper bound for snow correction factor. Default is 1.
+    CWH_lo : float, optional
+        Lower bound for CWH parameter. Default is 0.
+    CWH_up : float, optional
+        Upper bound for CWH parameter. Default is 0.2.
+    AG_lo : float, optional
+        Lower bound for AG parameter. Default is 0.
+    AG_up : float, optional
+        Upper bound for AG parameter. Default is 1.
+    CFR_lo : float, optional
+        Lower bound for refreezing factor. Default is 0.05.
+    CFR_up : float, optional
+        Upper bound for refreezing factor. Default is 0.25.
+    interf : int, optional
+        Inference factor for parameter iterations. Default is 4.
+    freqst : int, optional
+        Frequency step for sensitivity analysis. Default is 2.
 
     Returns
     -------
     spot_setup_class : class
         Configured SPOTPY setup class for MATILDA parameter optimization and calibration.
 
+    Notes
+    -----
+    This function creates a SPOTPY setup class that can be used with various SPOTPY algorithms
+    for parameter optimization. The class handles parameter sampling, model simulation, and
+    objective function evaluation.
+
+    Examples
+    --------
+    >>> setup = spot_setup(df, obs, target_swe=swe_data)
+    >>> spot_instance = setup(df, obs, swe_data)
+    >>> # Use with SPOTPY algorithm
+    >>> from spotpy.algorithms import sceua
+    >>> sampler = sceua(spot_instance)
+    >>> sampler.sample(1000)
+
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
-
-    - Kling-Gupta Efficiency (KGE):
-      - Gupta, H. V., & Kling, H. (2011). "On typical range, sensitivity, and normalization of Mean Squared Error and
-        Nash-Sutcliffe Efficiency type metrics." Water Resources Research, 47(10). https://doi.org/10.1029/2011WR010962
-      - Kling, H., Fuchs, M., & Paulin, M. (2012). "Runoff conditions in the upper Danube basin under an ensemble of
-        climate change scenarios." Journal of Hydrology, 424-425, 264-277. https://doi.org/10.1016/j.jhydrol.2012.01.011
+    .. [1] Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). 
+           "SPOTting Model Parameters Using a Ready-Made Python Package." 
+           PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
+    .. [2] GitHub repository: https://github.com/thouska/spotpy
+    .. [3] Gupta, H. V., & Kling, H. (2011). "On typical range, sensitivity, and 
+           normalization of Mean Squared Error and Nash-Sutcliffe Efficiency type metrics." 
+           Water Resources Research, 47(10). https://doi.org/10.1029/2011WR010962
     """
 
     class spot_setup_class:
         """
-        spot_setup_class: A SPOTPY setup class for MATILDA model parameter calibration.
+        A SPOTPY setup class for MATILDA model parameter calibration.
 
-        This class is designed to facilitate the optimization and calibration of the MATILDA model parameters
-        using SPOTPY, a statistical parameter optimization library. It defines the parameter space, simulation
-        methods, evaluation functions, and the objective function to assess the model's performance.
+        This class facilitates the optimization and calibration of the MATILDA model parameters
+        using SPOTPY, a statistical parameter optimization library. It defines the parameter space, 
+        simulation methods, evaluation functions, and the objective function to assess the model's performance.
 
         Attributes
         ----------
@@ -580,42 +675,19 @@ def spot_setup(
         -------
         __init__(df, obs, swe, obj_func=None)
             Initializes the setup class with input data, observations, and an optional objective function.
-
-        simulation(x, param_names=param_names, fix_param=fix_param, fix_val=fix_val, swe_scaling=swe_scaling)
+        simulation(x, param_names=None)
             Runs the MATILDA simulation with sampled parameters and any fixed parameters specified.
-
         evaluation()
-            Prepares the observed data (e.g., streamflow, snow water equivalent, surface mass balance) for
-            comparison with simulation results.
+            Prepares the observed data for comparison with simulation results.
+        objectivefunction(simulation, evaluation)
+            Calculates the objective function to evaluate model performance.
 
-        objectivefunction(simulation, evaluation, params=None)
-            Calculates the objective function to evaluate model performance. Supports metrics such as
-            the Kling-Gupta Efficiency (KGE) and custom metrics defined by the user.
-
-        Usage
-        -----
-        The `spot_setup_class` is instantiated with observed data (`obs`) and optionally with snow water equivalent
-        (SWE) data and a custom objective function. Once instantiated, it can be passed to SPOTPY's optimization
-        and sensitivity analysis tools to calibrate the MATILDA model.
-
-        Example
-        -------
-        from spotpy.algorithms import sceua
-        spot_setup_instance = spot_setup(df, obs, swe, obj_func)
-        sampler = sceua(spot_setup_instance)
-        sampler.sample(1000)
-
-        References
-        ----------
-        - SPOTPY library:
-          - Houska, T., et al. (2015). "SPOTting Model Parameters Using a Ready-Made Python Package." PLOS ONE.
-          - GitHub: https://github.com/thouska/spotpy
-
-        - Kling-Gupta Efficiency (KGE):
-          - Gupta, H. V., & Kling, H. (2011). "On typical range, sensitivity, and normalization of Mean Squared Error
-            and Nash-Sutcliffe Efficiency type metrics." Water Resources Research.
-          - Kling, H., et al. (2012). "Runoff conditions in the upper Danube basin under an ensemble of climate
-            change scenarios." Journal of Hydrology.
+        Examples
+        --------
+        >>> from spotpy.algorithms import sceua
+        >>> spot_setup_instance = spot_setup(df, obs, swe, obj_func)
+        >>> sampler = sceua(spot_setup_instance)
+        >>> sampler.sample(1000)
         """
 
         # defining all parameters and the distribution
@@ -727,6 +799,21 @@ def spot_setup(
             self.fix_val = fix_val
 
         def simulation(self, x, param_names=None):
+            """
+            Run MATILDA simulation with sampled parameters.
+
+            Parameters
+            ----------
+            x : object
+                SPOTPY parameter object containing sampled parameter values.
+            param_names : list, optional
+                List of parameter names to use. If None, uses self.param_names.
+
+            Returns
+            -------
+            list or pandas.Series
+                Simulation results depending on target configuration.
+            """
             if param_names is None:
                 param_names = self.param_names
 
@@ -783,6 +870,14 @@ def spot_setup(
             ]
 
         def evaluation(self):
+            """
+            Prepare observed data for model evaluation.
+
+            Returns
+            -------
+            pandas.Series or list
+                Processed observed data for comparison with simulation results.
+            """
             obs_preproc = self.obs.copy()
             obs_preproc.set_index("Date", inplace=True)
             obs_preproc.index = pd.to_datetime(obs_preproc.index)
@@ -823,6 +918,21 @@ def spot_setup(
             return [obs_preproc.Qobs, target_mb, swe_obs.SWE_Mean]
 
         def objectivefunction(self, simulation, evaluation):
+            """
+            Calculate objective function for model evaluation.
+
+            Parameters
+            ----------
+            simulation : array_like or list
+                Simulated values from the model.
+            evaluation : array_like or list
+                Observed values for comparison.
+
+            Returns
+            -------
+            float or list
+                Objective function value(s) for model performance assessment.
+            """
             # SPOTPY expects to get one or multiple values back,
             # that define the performance of the model run
             if target_mb is not None:
@@ -911,8 +1021,7 @@ def spot_setup_glacier(
     freqst=2,
 ):
     """
-    Spotpy-based setup for parameter optimization and calibration of the MATILDA model for a (sub-)catchment entirely
-    covered by glaciers.
+    Spotpy-based setup for parameter optimization and calibration of the MATILDA model for glacier-covered catchments.
 
     This class provides the framework to optimize the parameters of the MATILDA model using SPOTPY, a statistical parameter
     optimization tool. It enables flexible parameter setup, handles fixed parameters, and evaluates simulation results
@@ -921,77 +1030,104 @@ def spot_setup_glacier(
 
     Parameters
     ----------
-    General inputs:
-    - set_up_start, set_up_end : str
-        Start and end dates of the setup period.
-    - sim_start, sim_end : str
-        Start and end dates of the simulation period.
-    - freq : str, optional
-        Frequency of the data, default is daily ("D").
-    - lat : float, optional
+    set_up_start : str, optional
+        Start date of the setup period.
+    set_up_end : str, optional
+        End date of the setup period.
+    sim_start : str, optional
+        Start date of the simulation period.
+    sim_end : str, optional
+        End date of the simulation period.
+    freq : str, optional
+        Frequency of the data, default is "D" (daily).
+    lat : float, optional
         Latitude of the catchment for extraterrestrial radiation calculation.
-    - area_cat, area_glac : float
-        Catchment and glacierized areas in km².
-    - ele_dat, ele_glac, ele_cat : float
-        Mean elevations (m a.s.l.) of the data, glacier, and catchment.
-    - glacier_profile : DataFrame
+    area_cat : float, optional
+        Catchment area in km².
+    area_glac : float, optional
+        Glacierized area in km².
+    ele_dat : float, optional
+        Mean elevation (m a.s.l.) of the data.
+    ele_glac : float, optional
+        Mean elevation (m a.s.l.) of the glacier.
+    glacier_profile : pandas.DataFrame, optional
         Glacier profile used for elevation rescaling and look-up table generation.
-    - obs_type : str, optional
+    obs_type : str, optional
         Type of observed mass balance data: "annual", "winter", or "summer". Default is "annual".
-    - obj_func : callable, optional
+    obj_func : callable, optional
         Custom objective function to compare simulation and observation. If None, the Mean Absolute Error (MAE) is used.
-
-    Parameter bounds for calibration:
-    - lr_temp_lo, lr_temp_up : float
-        Bounds for temperature lapse rate (°C/m).
-    - lr_prec_lo, lr_prec_up : float
-        Bounds for precipitation correction factor.
-    - PCORR_lo, PCORR_up : float
-        Bounds for precipitation correction factor.
-    - TT_snow_lo, TT_snow_up : float
-        Bounds for snow temperature threshold (°C).
-    - TT_diff_lo, TT_diff_up : float
-        Bounds for the difference between rain and snow temperature thresholds (°C).
-    - CFMAX_snow_lo, CFMAX_snow_up : float
-        Bounds for the degree-day factor for snow melt (mm/°C/day).
-    - CFMAX_rel_lo, CFMAX_rel_up : float
-        Bounds for the degree-day factor for relative snow and ice melt.
-    - SFCF_lo, SFCF_up : float
-        Bounds for snow correction factor.
-    - CFR_lo, CFR_up : float
-        Bounds for the refreezing factor.
-
-    SPOTPY settings:
-    - interf : int, optional
-        Inference factor for parameter iterations, default is 4.
-    - freqst : int, optional
-        Frequency step for sensitivity analysis, default is 2.
-
-    Methods
-    -------
-    simulation(x)
-        Executes the glacier mass balance simulation using the degree-day model (DDM).
-    evaluation()
-        Prepares observed mass balance data (annual, winter, or summer) for comparison.
-    objectivefunction(simulation, evaluation, params=None)
-        Defines the objective function to calculate the error between simulated and observed mass balance values.
+    lr_temp_lo : float, optional
+        Lower bound for temperature lapse rate (°C/m). Default is -0.0065.
+    lr_temp_up : float, optional
+        Upper bound for temperature lapse rate (°C/m). Default is -0.0055.
+    lr_prec_lo : float, optional
+        Lower bound for precipitation correction factor. Default is 0.
+    lr_prec_up : float, optional
+        Upper bound for precipitation correction factor. Default is 0.002.
+    PCORR_lo : float, optional
+        Lower bound for precipitation correction factor. Default is 0.5.
+    PCORR_up : float, optional
+        Upper bound for precipitation correction factor. Default is 2.
+    TT_snow_lo : float, optional
+        Lower bound for snow temperature threshold (°C). Default is -1.5.
+    TT_snow_up : float, optional
+        Upper bound for snow temperature threshold (°C). Default is 1.5.
+    TT_diff_lo : float, optional
+        Lower bound for difference between rain and snow temperature thresholds (°C). Default is 0.5.
+    TT_diff_up : float, optional
+        Upper bound for difference between rain and snow temperature thresholds (°C). Default is 2.5.
+    CFMAX_snow_lo : float, optional
+        Lower bound for degree-day factor for snow melt (mm/°C/day). Default is 0.5.
+    CFMAX_snow_up : float, optional
+        Upper bound for degree-day factor for snow melt (mm/°C/day). Default is 10.
+    CFMAX_rel_lo : float, optional
+        Lower bound for degree-day factor for relative snow and ice melt. Default is 1.2.
+    CFMAX_rel_up : float, optional
+        Upper bound for degree-day factor for relative snow and ice melt. Default is 2.
+    SFCF_lo : float, optional
+        Lower bound for snow correction factor. Default is 0.4.
+    SFCF_up : float, optional
+        Upper bound for snow correction factor. Default is 1.
+    CFR_lo : float, optional
+        Lower bound for refreezing factor. Default is 0.05.
+    CFR_up : float, optional
+        Upper bound for refreezing factor. Default is 0.25.
+    interf : int, optional
+        Inference factor for parameter iterations. Default is 4.
+    freqst : int, optional
+        Frequency step for sensitivity analysis. Default is 2.
 
     Returns
     -------
     spot_setup_class : class
         Configured SPOTPY setup class for glacier mass balance parameter optimization.
 
+    Notes
+    -----
+    This function creates a SPOTPY setup class specifically for glacier mass balance calibration.
+    The class handles parameter sampling, model simulation, and objective function evaluation
+    for glacier-covered catchments.
+
+    Examples
+    --------
+    >>> setup = spot_setup_glacier(df, obs, glacier_profile=profile)
+    >>> spot_instance = setup(df, obs)
+    >>> # Use with SPOTPY algorithm
+    >>> from spotpy.algorithms import sceua
+    >>> sampler = sceua(spot_instance)
+    >>> sampler.sample(1000)
+
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    .. [1] Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). 
+           "SPOTting Model Parameters Using a Ready-Made Python Package." 
+           PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
+    .. [2] GitHub repository: https://github.com/thouska/spotpy
     """
 
     class spot_setup_class:
         """
-        spot_setup_class: A SPOTPY setup class for MATILDA model glacier mass balance parameter calibration.
+        A SPOTPY setup class for MATILDA model glacier mass balance parameter calibration.
 
         This class facilitates the calibration and optimization of the MATILDA model parameters for glacier mass balance
         modeling. It uses SPOTPY, a statistical parameter optimization library, to define the parameter space, simulate
@@ -1000,98 +1136,20 @@ def spot_setup_glacier(
         Attributes
         ----------
         param : list
-            List of SPOTPY parameter distributions for calibration, including lapse rates, temperature thresholds, and
-            degree-day factors.
+            List of SPOTPY parameter distributions for calibration.
         par_iter : int
             Number of parameter iterations needed for sensitivity analysis and parameter inference.
 
         Methods
         -------
         __init__(df, obs, obj_func=None)
-            Initializes the class with input data (`df`), observed data (`obs`), and an optional custom objective function.
-
+            Initializes the class with input data, observed data, and an optional custom objective function.
         simulation(x)
-            Simulates glacier mass balance using the MATILDA model with the specified parameters.
-
+            Simulates glacier mass balance using the MATILDA model with specified parameters.
         evaluation()
-            Processes the observed mass balance data into a format compatible with the simulated outputs.
-
+            Processes the observed mass balance data into a format compatible with simulated outputs.
         objectivefunction(simulation, evaluation, params=None)
-            Defines the objective function to evaluate the model's performance. By default, it uses the Mean Absolute
-            Error (MAE) or a custom user-defined function.
-
-        Usage
-        -----
-        The `spot_setup_class` is instantiated with observed data and passed to SPOTPY for parameter optimization and
-        sensitivity analysis.
-
-        Example
-        -------
-        from spotpy.algorithms import sceua
-
-        spot_setup_instance = spot_setup_glacier(df, obs, obj_func)
-        sampler = sceua(spot_setup_instance)
-        sampler.sample(1000)
-
-        Parameters
-        ----------
-        General Inputs:
-        - set_up_start, set_up_end : str
-            Start and end dates of the setup period.
-        - sim_start, sim_end : str
-            Start and end dates of the simulation period.
-        - freq : str, optional
-            Frequency of the data, default is daily ("D").
-        - lat : float, optional
-            Latitude of the catchment for extraterrestrial radiation calculation.
-        - area_cat, area_glac : float
-            Catchment and glacierized areas in km².
-        - ele_dat, ele_glac, ele_cat : float
-            Mean elevations (m a.s.l.) of the data, glacier, and catchment.
-        - glacier_profile : DataFrame
-            Glacier profile used for elevation rescaling and look-up table generation.
-        - obs_type : str, optional
-            Type of observed mass balance data ("annual", "winter", or "summer"). Default is "annual".
-        - obj_func : callable, optional
-            Custom objective function to compare simulation and observation. Defaults to Mean Absolute Error (MAE).
-
-        Parameter Bounds for Calibration:
-        - lr_temp_lo, lr_temp_up : float
-            Bounds for the temperature lapse rate (°C/m).
-        - lr_prec_lo, lr_prec_up : float
-            Bounds for the precipitation correction factor.
-        - PCORR_lo, PCORR_up : float
-            Bounds for the precipitation correction factor.
-        - TT_snow_lo, TT_snow_up : float
-            Bounds for the snow temperature threshold (°C).
-        - TT_diff_lo, TT_diff_up : float
-            Bounds for the difference between rain and snow temperature thresholds (°C).
-        - CFMAX_snow_lo, CFMAX_snow_up : float
-            Bounds for the degree-day factor for snow melt (mm/°C/day).
-        - CFMAX_rel_lo, CFMAX_rel_up : float
-            Bounds for the degree-day factor for relative snow and ice melt.
-        - SFCF_lo, SFCF_up : float
-            Bounds for the snow correction factor.
-        - CFR_lo, CFR_up : float
-            Bounds for the refreezing factor.
-
-        SPOTPY Settings:
-        - interf : int, optional
-            Inference factor for parameter iterations. Default is 4.
-        - freqst : int, optional
-            Frequency step for sensitivity analysis. Default is 2.
-
-        Returns
-        -------
-        spot_setup_class : class
-            Configured SPOTPY setup class for glacier mass balance parameter optimization.
-
-        References
-        ----------
-        - SPOTPY library:
-          - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-            Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-          - GitHub repository: https://github.com/thouska/spotpy
+            Defines the objective function to evaluate the model's performance.
         """
 
         # defining all parameters and the distribution
@@ -1130,6 +1188,19 @@ def spot_setup_glacier(
             self.obs = obs
 
         def simulation(self, x):
+            """
+            Run glacier mass balance simulation with sampled parameters.
+
+            Parameters
+            ----------
+            x : object
+                SPOTPY parameter object containing sampled parameter values.
+
+            Returns
+            -------
+            pandas.Series
+                Simulated glacier mass balance time series.
+            """
             with HiddenPrints():
                 parameter = matilda_parameter(
                     self.Input,
@@ -1165,6 +1236,14 @@ def spot_setup_glacier(
             return sim
 
         def evaluation(self):
+            """
+            Prepare observed mass balance data for model evaluation.
+
+            Returns
+            -------
+            pandas.DataFrame
+                Processed observed mass balance data.
+            """
             obs_preproc = self.obs.copy()
             obs_preproc.set_index("YEAR", inplace=True)
             obs_preproc.index = pd.to_datetime(obs_preproc.index)
@@ -1172,6 +1251,21 @@ def spot_setup_glacier(
             return obs_preproc
 
         def objectivefunction(self, simulation, evaluation):
+            """
+            Calculate objective function for model evaluation.
+
+            Parameters
+            ----------
+            simulation : pandas.Series
+                Simulated mass balance values from the model.
+            evaluation : pandas.DataFrame
+                Observed mass balance values for comparison.
+
+            Returns
+            -------
+            float
+                Objective function value for model performance assessment.
+            """
             # Aggregate MBs to fit the calibration data
             sim = []
             obs = []
@@ -1231,61 +1325,52 @@ def analyze_results(
     """
     Analyze the results of SPOTPY sampling for model calibration of the MATILDA model.
 
-    This function processes sampling results from SPOTPY to identify the best parameter set, evaluate performance,
-    and optionally generate visualizations of the results.
+    This function processes sampling results from SPOTPY to identify the best parameter set,
+    evaluate performance, and optionally generate visualizations of the results.
 
     Parameters
     ----------
     sampling_data : str or SPOTPY result object
-        The file path to a SPOTPY results CSV file or a SPOTPY result object.
+        File path to a SPOTPY results CSV file or a SPOTPY result object.
     obs : str or pandas.DataFrame
-        The file path to observed data (in CSV format with 'Date' column) or a DataFrame containing observed data.
+        File path to observed data (CSV with a ``Date`` column) or a DataFrame containing observed data.
     algorithm : str
-        The SPOTPY algorithm used for sampling (e.g., 'abc', 'dream', 'sceua').
+        The SPOTPY algorithm used for sampling (e.g., ``abc``, ``dream``, ``sceua``).
     obj_dir : str, optional
-        Direction of the objective function optimization, either 'maximize' or 'minimize'. Default is 'maximize'.
+        Direction of the objective function optimization: either ``maximize`` or ``minimize``. Default is ``maximize``.
     fig_path : str, optional
-        Path to save generated plots. If None, plots are not saved.
+        Path to save generated plots. If ``None``, plots are not saved.
     dbname : str, optional
-        Name for saving the database and plots. Default is 'mspot_results'.
+        Name for saving the database and plots. Default is ``mspot_results``.
     glacier_only : bool, optional
-        If True, optimizes only for glacier-specific metrics (e.g., mass balance). Default is False.
+        If ``True``, optimizes only for glacier-specific metrics (e.g., mass balance). Default is ``False``.
     target_mb : float, optional
-        Target mean annual mass balance for melt model calibration. If None, this metric is not considered. Default is None.
+        Target mean annual mass balance for melt model calibration. If ``None``, this metric is not considered.
 
     Returns
     -------
     dict
-        A dictionary containing:
-        - 'best_param': dict
-            Best parameter set identified during sampling.
-        - 'best_index': int
-            Index of the best run in the SPOTPY results.
-        - 'best_model_run': array
-            Model output corresponding to the best parameter set.
-        - 'best_objf': float
-            Value of the objective function for the best parameter set.
-        - 'best_simulation': pandas.Series (if glacier_only is False and target_mb is None)
-            Simulated time series corresponding to the best parameter set.
-        - 'sampling_plot': matplotlib.Figure (if applicable)
-            Iteration vs. objective function plot.
-        - 'best_run_plot': matplotlib.Figure (if applicable)
-            Best simulation vs. observed data plot.
-        - 'par_uncertain_plot': matplotlib.Figure (if applicable)
-            Parameter uncertainty plot.
+        A dictionary containing the following elements:
+
+        - **best_param** (dict) : Best parameter set identified during sampling.
+        - **best_index** (int) : Index of the best run in the SPOTPY results.
+        - **best_model_run** (array) : Model output corresponding to the best parameter set.
+        - **best_objf** (float) : Value of the objective function for the best parameter set.
+        - **best_simulation** (pandas.Series, optional) : Simulated time series corresponding to the best parameter set (only if ``glacier_only`` is ``False`` and ``target_mb`` is ``None``).
+        - **sampling_plot** (matplotlib.Figure, optional) : Iteration vs. objective function plot.
+        - **best_run_plot** (matplotlib.Figure, optional) : Best simulation vs. observed data plot.
+        - **par_uncertain_plot** (matplotlib.Figure, optional) : Parameter uncertainty plot.
 
     Notes
     -----
-    - The objective function can be maximized (e.g., Kling-Gupta Efficiency) or minimized (e.g., Mean Absolute Error)
-      based on the algorithm and obj_dir setting.
+    - The objective function can be maximized (e.g., Kling-Gupta Efficiency) or minimized (e.g., Mean Absolute Error), based on the ``obj_dir`` setting.
     - For glacier-specific calibration, only glacier mass balance data is considered.
 
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    SPOTPY library:
+        - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made Python Package." *PLOS ONE*, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+        - GitHub repository: https://github.com/thouska/spotpy
     """
 
     if isinstance(obs, str):
@@ -1482,89 +1567,98 @@ def psample(
     obs : pandas.DataFrame or str
         Observed data as a DataFrame or a file path to a CSV file containing observations.
     rep : int, optional
-        Number of sampling repetitions (default is 10).
+        Number of sampling repetitions. Default is 10.
     output : str, optional
-        Path to save the output files (default is None).
+        Path to save the output files. Default is None.
     dbname : str, optional
-        Name of the database for saving results (default is 'matilda_par_smpl').
+        Name of the database for saving results. Default is 'matilda_par_smpl'.
     dbformat : str, optional
         Format for the SPOTPY database (e.g., 'csv', 'sql'). Default is None (no database saved).
     obj_func : callable, optional
         Custom objective function for parameter optimization. If None, defaults are used.
     opt_iter : bool, optional
-        If True, samples the optimum number of iterations based on the setup (default is False).
+        If True, samples the optimum number of iterations based on the setup. Default is False.
     fig_path : str, optional
-        Path to save generated plots (default is None).
-    set_up_start, set_up_end : str, optional
-        Start and end dates for the model setup period (e.g., '2000-01-01').
-    sim_start, sim_end : str, optional
-        Start and end dates for the simulation period.
+        Path to save generated plots. Default is None.
+    set_up_start : str, optional
+        Start date for the model setup period (e.g., '2000-01-01').
+    set_up_end : str, optional
+        End date for the model setup period.
+    sim_start : str, optional
+        Start date for the simulation period.
+    sim_end : str, optional
+        End date for the simulation period.
     freq : str, optional
-        Temporal resolution of the input data (default is 'D').
+        Temporal resolution of the input data. Default is 'D'.
     lat : float, optional
         Latitude of the study area (used for potential evapotranspiration calculations).
     area_cat : float, optional
         Total catchment area in km².
     area_glac : float, optional
         Glacierized area in km².
-    ele_dat, ele_glac, ele_cat : float, optional
-        Elevations (mean, glacier, and catchment).
+    ele_dat : float, optional
+        Mean elevation of the data.
+    ele_glac : float, optional
+        Mean elevation of the glacier.
+    ele_cat : float, optional
+        Mean elevation of the catchment.
     glacier_profile : pandas.DataFrame, optional
         Glacier profile data for rescaling and optimization routines.
     interf : int, optional
-        Inference factor for SPOTPY (default is 4).
+        Inference factor for SPOTPY. Default is 4.
     freqst : int, optional
-        Frequency step for SPOTPY (default is 2).
+        Frequency step for SPOTPY. Default is 2.
     parallel : bool, optional
-        If True, runs sampling in parallel using MPI (default is False).
+        If True, runs sampling in parallel using MPI. Default is False.
     cores : int, optional
-        Number of cores to use for parallel sampling (default is 2).
+        Number of cores to use for parallel sampling. Default is 2.
     save_sim : bool, optional
-        Whether to save simulation results in the database (default is True).
+        Whether to save simulation results in the database. Default is True.
     elev_rescaling : bool, optional
-        If True, applies elevation-based rescaling for glacier simulations (default is True).
+        If True, applies elevation-based rescaling for glacier simulations. Default is True.
     glacier_only : bool, optional
-        If True, runs sampling specifically for glacier-related parameters (default is False).
+        If True, runs sampling specifically for glacier-related parameters. Default is False.
     obs_type : str, optional
         Type of observed data for glacier calibration ('annual', 'winter', or 'summer'). Default is 'annual'.
     target_mb : float, optional
-        Target mass balance for glacier calibration (default is None).
+        Target mass balance for glacier calibration. Default is None.
     target_swe : float, optional
-        Target snow water equivalent for calibration (default is None).
+        Target snow water equivalent for calibration. Default is None.
     swe_scaling : float, optional
-        Scaling factor for snow water equivalent (default is None).
+        Scaling factor for snow water equivalent. Default is None.
     algorithm : str, optional
         SPOTPY algorithm to use (e.g., 'lhs', 'mcmc', 'dream'). Default is 'lhs'.
     obj_dir : str, optional
         Direction of the objective function optimization ('maximize' or 'minimize'). Default is 'maximize'.
     fix_param : list of str, optional
-        List of parameters to fix during sampling (default is None).
+        List of parameters to fix during sampling. Default is None.
     fix_val : dict, optional
-        Dictionary of fixed parameter values (default is None).
+        Dictionary of fixed parameter values. Default is None.
     demcz_args : dict, optional
-        Additional arguments for the DEMCz algorithm (default is None).
-    kwargs : dict, optional
+        Additional arguments for the DEMCz algorithm. Default is None.
+    **kwargs
         Additional parameters for the MATILDA model.
 
     Returns
     -------
     dict
         Results of the sampling, including:
-        - 'best_param': dict
+        
+        - **best_param** : dict
             Best parameter set identified during sampling.
-        - 'best_index': int
+        - **best_index** : int
             Index of the best run in the SPOTPY results.
-        - 'best_model_run': array
+        - **best_model_run** : array
             Model output corresponding to the best parameter set.
-        - 'best_objf': float
+        - **best_objf** : float
             Value of the objective function for the best parameter set.
-        - 'best_simulation': pandas.Series (if applicable)
-            Simulated time series corresponding to the best parameter set.
-        - 'sampling_plot': matplotlib.Figure (if applicable)
+        - **best_simulation** : pandas.Series, optional
+            Simulated time series corresponding to the best parameter set (only if applicable).
+        - **sampling_plot** : matplotlib.Figure, optional
             Iteration vs. objective function plot.
-        - 'best_run_plot': matplotlib.Figure (if applicable)
+        - **best_run_plot** : matplotlib.Figure, optional
             Best simulation vs. observed data plot.
-        - 'par_uncertain_plot': matplotlib.Figure (if applicable)
+        - **par_uncertain_plot** : matplotlib.Figure, optional
             Parameter uncertainty plot.
 
     Notes
@@ -1574,10 +1668,9 @@ def psample(
 
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    SPOTPY library:
+        - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made Python Package." *PLOS ONE*, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+        - GitHub repository: https://github.com/thouska/spotpy
     """
 
     cwd = os.getcwd()
@@ -1779,13 +1872,13 @@ def load_parameters(path, algorithm, obj_dir="maximize", glacier_only=False):
     Parameters
     ----------
     path : str
-        File path to the SPOTPY sampling results (e.g., 'results.csv').
+        File path to the SPOTPY sampling results (e.g., ``results.csv``).
     algorithm : str
-        SPOTPY algorithm used for sampling (e.g., 'lhs', 'mcmc', 'dream').
+        SPOTPY algorithm used for sampling (e.g., ``lhs``, ``mcmc``, ``dream``).
     obj_dir : str, optional
-        Direction of the objective function optimization ('maximize' or 'minimize'). Default is 'maximize'.
+        Direction of the objective function optimization (``maximize`` or ``minimize``). Default is ``maximize``.
     glacier_only : bool, optional
-        If True, processes only glacier-specific sampling results (default is False).
+        If ``True``, processes only glacier-specific sampling results. Default is ``False``.
 
     Returns
     -------
@@ -1794,16 +1887,17 @@ def load_parameters(path, algorithm, obj_dir="maximize", glacier_only=False):
 
     Notes
     -----
-    - This function uses the `analyze_results` function to extract the best parameters.
-    - It assumes that the corresponding observation file is named `<path_without_extension>_observations.csv`.
-    - Depending on the number of samples loading of the sampling file might be slow.
+    - This function uses the :func:`analyze_results` function to extract the best parameters.
+    - It assumes that the corresponding observation file is named ``<path_without_extension>_observations.csv``.
+    - Depending on the number of samples, loading the sampling file might be slow.
 
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    SPOTPY library:
+        Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). *SPOTting Model Parameters Using a Ready-Made
+        Python Package*. PLOS ONE, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+
+        GitHub repository: https://github.com/thouska/spotpy
     """
 
     sampling_csv = path
@@ -1819,44 +1913,50 @@ def get_par_bounds(path, threshold=10, percentage=True, drop=None):
     """
     Generate parameter bounds from SPOTPY sampling results.
 
-    This function extracts the minimum and maximum values of model parameters from the best-performing runs in
-    SPOTPY sampling results. The best-performing runs are determined based on a likelihood threshold or percentage.
+    This function extracts the minimum and maximum values of model parameters from the best-performing runs
+    in SPOTPY sampling results. These runs are selected based on a likelihood threshold or percentage.
 
     Parameters
     ----------
     path : str
-        File path to the SPOTPY sampling results (e.g., 'results.csv').
+        File path to the SPOTPY sampling results (e.g., ``results.csv``).
     threshold : float, optional
         The threshold for selecting the best-performing runs:
-        - If `percentage` is True, `threshold` represents the percentage of the top-performing runs to consider.
-        - If `percentage` is False, `threshold` represents the numerical threshold for the objective function.
+        
+        - If ``percentage`` is True, ``threshold`` represents the percentage of the top-performing runs to consider.
+        - If ``percentage`` is False, ``threshold`` represents a cutoff value for the objective function.
+        
         Default is 10.
     percentage : bool, optional
-        Determines whether to interpret `threshold` as a percentage (True) or a numerical threshold (False).
-        Default is True.
+        If ``True``, interpret ``threshold`` as a percentage.
+        If ``False``, interpret it as a fixed objective function threshold.
+        Default is ``True``.
     drop : list of str, optional
-        A list of parameter names to exclude from the resulting bounds. Default is None.
+        List of parameter names to exclude from the resulting bounds.
+        Default is ``None``.
 
     Returns
     -------
     dict
-        A dictionary containing the lower (`_lo`) and upper (`_up`) bounds for each parameter, derived from the
-        best-performing runs.
+        Dictionary containing the lower (``_lo``) and upper (``_up``) bounds for each parameter,
+        derived from the best-performing runs.
+
+        Example: ``{'param1_lo': 0.1, 'param1_up': 0.3, 'param2_lo': 5.0, 'param2_up': 10.0}``
 
     Notes
     -----
-    - The function loads SPOTPY sampling results and identifies the best-performing runs using the specified threshold
-      and criteria.
-    - Parameters specified in the `drop` list are excluded from the output bounds.
-    - The resulting dictionary contains keys in the format `<parameter_name>_lo` and `<parameter_name>_up`.
+    - The function loads SPOTPY sampling results and filters them using the specified threshold and criteria.
+    - Parameters listed in ``drop`` will not be included in the output.
+    - Resulting dictionary keys follow the format ``<parameter>_lo`` and ``<parameter>_up``.
 
     References
     ----------
-    - SPOTPY library:
-      - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). "SPOTting Model Parameters Using a Ready-Made
-        Python Package." PLOS ONE, 10(12), 1-22. https://doi.org/10.1371/journal.pone.0145180
-      - GitHub repository: https://github.com/thouska/spotpy
+    SPOTPY library:
+        - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). *SPOTting Model Parameters Using a Ready-Made
+          Python Package*. PLOS ONE, 10(12), 1–22. https://doi.org/10.1371/journal.pone.0145180
+        - GitHub repository: https://github.com/thouska/spotpy
     """
+    
     if drop is None:
         drop = []  # Initialize to an empty list if not provided
 

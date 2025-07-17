@@ -352,14 +352,16 @@ def melt_rates(snow, pdd, parameter):
 
 
 def calculate_glaciermelt(ds, parameter):
-    """Degree Day Model to calculate the accumulation, snow and ice melt and runoff rate from the glaciers.
-    Roughly based on PYPDD (github.com/juseg/pypdd)
-    - # Copyright (c) 2013--2018, Julien Seguinot <seguinot@vaw.baug.ethz.ch>)
-    pypdd.py line 311
-        Compute accumulation rate from temperature and precipitation.
-        The fraction of precipitation that falls as snow decreases linearly
-        from one to zero between temperature thresholds defined by the
-        `temp_snow` and `temp_rain` attributes. """
+    """
+    Degree Day Model to calculate the accumulation, snow and ice melt, and runoff rate from glaciers.
+
+    Roughly based on PYPDD (https://github.com/juseg/pypdd), originally developed by Julien Seguinot
+    (Copyright (c) 2013–2018).
+
+    The accumulation rate is computed from temperature and precipitation.
+    The fraction of precipitation that falls as snow decreases linearly from 1 to 0
+    between temperature thresholds defined by the `temp_snow` and `temp_rain` attributes.
+    """
 
     print("Calculating glacial melt")
 
