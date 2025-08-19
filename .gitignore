@@ -1,3 +1,7 @@
 **/__pycache__/
 __pycache__/
 How2installoncirrus
+# bulk runner artifacts
+bulk_runner/outputs/
+bulk_runner/**/*.parquet
+
