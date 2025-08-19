@@ -91,22 +91,26 @@ def run_matilda_job(job: MatildaJob) -> dict[str, Any]:
         glacier_rescaling = out[5]
 
         # Save outputs
-        print(f"[DEBUG] model_output type: {type(model_output)}")
-        print(f"[DEBUG] glacier_rescaling type: {type(glacier_rescaling)}")
-
         base.mkdir(parents=True, exist_ok=True)
 
-        if isinstance(model_output, pd.DataFrame):
-            model_output.to_parquet(base / "discharge.parquet")
-        else:
-            (base / "discharge.txt").write_text(repr(model_output))
+        # Prefer pyarrow if available
+        PARQUET_ENGINE = "pyarrow"
 
-        if isinstance(glacier_rescaling, pd.DataFrame):
-            glacier_rescaling.to_parquet(base / "glacier_rescaling.parquet")
-        else:
-            (base / "glacier_rescaling.txt").write_text(repr(glacier_rescaling))
+        # 1) discharge / main output
+        model_output.to_parquet(base / "discharge.parquet", engine=PARQUET_ENGINE)
 
-        ok, err = True, None
+        # 2) glacier rescaling
+        glacier_rescaling.to_parquet(base / "glacier_rescaling.parquet", engine=PARQUET_ENGINE)
+
+        # tiny meta for quick scans (optional but handy)
+        pd.DataFrame([{
+            "ok": True,
+            "rows_discharge": len(model_output),
+            "cols_discharge": model_output.shape[1],
+            "rows_glacier_rescaling": len(glacier_rescaling),
+            "cols_glacier_rescaling": glacier_rescaling.shape[1],
+        }]).to_parquet(base / "meta.parquet", engine=PARQUET_ENGINE)
+
     except Exception as e:
         ok, err = False, repr(e)
         # write full traceback into the run folder for quick debugging
