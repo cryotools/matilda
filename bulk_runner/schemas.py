@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 @dataclass(frozen=True)
 class MatildaJob:
@@ -7,8 +8,9 @@ class MatildaJob:
     parent_id: str
     scenario: str
     model: str
-    forcing_path: str               # ERA5L CSV for THIS run
-    params_path: str                # parameters.yml / .json
-    settings_path: str | None       # optional .yml/.json
-    glacier_profile_path: str | None  # only if glacierized
-    out_dir: str                    # e.g., "bulk_runner/outputs"
+    forcing_path: str                 # required
+    params_path: Optional[str] = None # optional parameters.yml/.json
+    obs_path: Optional[str] = None    # optional gauging/observations CSV
+    settings_path: Optional[str] = None
+    glacier_profile_path: Optional[str] = None
+    out_dir: str = "bulk_runner/outputs"
