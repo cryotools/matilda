@@ -43,9 +43,10 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../readme.html">Getting started</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Matilda Package</span></p>
+<p class="caption" role="heading"><span class="caption-text">MATILDA Modules</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Matilda Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../matilda.html">matilda.core module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../matilda.html#module-matilda.mspot_glacier">matilda.mspot module</a></li>
 </ul>
 
         </div>
@@ -1096,10 +1097,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">new_area</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="c1"># scale the output with the new glacierized area</span>
-        <span class="n">glacier_change_area</span> <span class="o">=</span> <span class="n">glacier_change_area</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">year</span><span class="p">,</span> <span class="s2">&quot;glacier_area&quot;</span><span class="p">:</span> <span class="n">new_area</span><span class="p">,</span> <span class="s2">&quot;smb_scaled_cum&quot;</span><span class="p">:</span> <span class="n">smb_cum</span><span class="p">},</span>
-            <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="n">glacier_change_area</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">glacier_change_area</span><span class="p">,</span>
+            <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">year</span><span class="p">,</span> <span class="s2">&quot;glacier_area&quot;</span><span class="p">:</span> <span class="n">new_area</span><span class="p">,</span> <span class="s2">&quot;smb_scaled_cum&quot;</span><span class="p">:</span> <span class="n">smb_cum</span><span class="p">}])</span>
+            <span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">up_cols</span><span class="p">:</span>
             <span class="n">output_DDM</span><span class="p">[</span><span class="n">col</span> <span class="o">+</span> <span class="s2">&quot;_updated_scaled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
                 <span class="n">output_DDM</span><span class="p">[</span><span class="s2">&quot;water_year&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">year</span><span class="p">,</span>
