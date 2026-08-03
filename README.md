@@ -131,8 +131,8 @@ MATILDA defines 23 model parameters with default values, most of which are HBV s
 | $\text{PERC}$         | Percolation rate from upper to lower groundwater reservoir    | mm day⁻¹             | 1.5                  |
 | $\text{UZL}$          | Threshold for quick flow from upper zone                      | mm                   | 120                  |
 | $\text{MAXBAS}$       | Length of triangular routing function                         | day                  | 3.0                  |
-| $\text{hydro\_year}$ | Starting month of the hydrological year                       | month (1–12)         | 10                   |
-| $\text{pfilter}$      | Precipitation threshold for elevation scaling                  | precipitation unit   | 0                    |
+| `hydro_year` | Starting month of the hydrological year                       | month (1–12)         | 10                   |
+| `pfilter`      | Precipitation threshold for elevation scaling                  | precipitation unit   | 0                    |
 
 ---
 
