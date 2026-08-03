@@ -15,8 +15,6 @@ jobs:
     timeout-minutes: 30
     env:
       MPLBACKEND: Agg
-      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
-      XDG_CACHE_HOME: ${{ runner.temp }}/cache
 
     steps:
       - uses: actions/checkout@v7
@@ -29,6 +27,11 @@ jobs:
             requirements.txt
             requirements-test.txt
             pyproject.toml
+
+      - name: Configure runtime directories
+        run: |
+          echo "MPLCONFIGDIR=${RUNNER_TEMP}/matplotlib" >> "${GITHUB_ENV}"
+          echo "XDG_CACHE_HOME=${RUNNER_TEMP}/cache" >> "${GITHUB_ENV}"
 
       - name: Install package and test dependencies
         run: |
