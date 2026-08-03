@@ -1,14 +1,14 @@
 # Testing and numerical impact reports
 
-MATILDA's characterization suite protects the complete numerical result of a
-standard 2000–2020 glacier-evolution simulation. It compares the compact and
-full daily process tables, KGE, summary statistics, glacier elevation
+MATILDA's model output consistency tests protect the complete numerical result
+of a standard 2000–2020 glacier-evolution simulation. It compares the compact
+and full daily process tables, KGE, summary statistics, glacier elevation
 distribution, and annual glacier evolution. Dates, column order, data types,
 and missing-value positions are part of the reference contract.
 
 ## Local Python 3.11 environment
 
-The maintained characterization environment uses Python 3.11.15. Create an
+The maintained test environment uses Python 3.11.15. Create an
 isolated environment from that interpreter and install the pinned test tools:
 
 ```bash

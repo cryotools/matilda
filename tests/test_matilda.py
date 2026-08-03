@@ -1,4 +1,4 @@
-"""Full-model characterization tests for the maintained reference scenario."""
+"""Model output consistency tests for the maintained reference scenario."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def test_reference_integrity(reference_manifest):
 
 
 def test_reference_environment(reference_manifest):
-    """Run characterization checks with the recorded scientific dependencies."""
+    """Run consistency checks with the recorded scientific dependencies."""
     assert platform.python_version() == reference_manifest["python"]
     assert metadata.version("matilda") == reference_manifest["model_version"]
     expected_dependencies = {
@@ -44,7 +44,7 @@ def test_reference_environment(reference_manifest):
     assert installed == expected_dependencies
 
 
-@pytest.mark.characterization
+@pytest.mark.model_consistency
 def test_public_output_contract(current_output, reference_manifest):
     """Protect the positions and basic types of the public list result."""
     assert isinstance(current_output, list)
@@ -61,8 +61,8 @@ def test_public_output_contract(current_output, reference_manifest):
     assert isinstance(current_output[10], PlotlyFigure)
 
 
-@pytest.mark.characterization
-def test_full_numerical_characterization(
+@pytest.mark.model_consistency
+def test_full_model_output_consistency(
     current_output,
     reference_output,
     impact_report_directory,

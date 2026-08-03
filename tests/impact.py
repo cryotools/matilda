@@ -1,4 +1,4 @@
-"""Detailed numerical impact reporting for MATILDA characterization outputs."""
+"""Detailed numerical impact reporting for MATILDA model output comparisons."""
 
 from __future__ import annotations
 
