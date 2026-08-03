@@ -13,9 +13,10 @@ MATILDA is a Python-based modeling framework for simulating water resources in g
    :caption: Documentation
 
    Getting started <readme>
+   Testing and impact reports <testing>
 
 .. toctree::
    :maxdepth: 1
    :caption: MATILDA Modules
 
-   matilda  
+   matilda

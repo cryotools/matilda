@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "reference_file": "baseline_output.pickle",
+  "reference_sha256": "91612660fc4c670b2d46676c0e5278d950e81dec4f91a1b6ec7b67ea814c9152",
+  "core_baseline_commit": "7a7625c9365e21dfe1b9e267b08139774e37c446",
+  "model_version": "1.0.2",
+  "python": "3.11.15",
+  "dependencies": {
+    "HydroErr": "1.24",
+    "hydroeval": "0.1.0",
+    "matplotlib": "3.9.2",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "plotly": "5.24.1",
+    "scipy": "1.10.1",
+    "xarray": "2024.10.0",
+    "DateTime": "5.5",
+    "PyYAML": "6.0.2",
+    "spotpy": "1.6.2",
+    "SciencePlots": "2.1.1"
+  },
+  "transitive_test_dependencies": {
+    "contourpy": "1.3.3",
+    "cycler": "0.12.1",
+    "fonttools": "4.63.0",
+    "iniconfig": "2.3.0",
+    "kiwisolver": "1.5.0",
+    "packaging": "26.2",
+    "pillow": "12.3.0",
+    "pluggy": "1.6.0",
+    "Pygments": "2.20.0",
+    "pyparsing": "3.3.2",
+    "pytest": "9.1.1",
+    "python-dateutil": "2.9.0.post0",
+    "pytz": "2026.3.post1",
+    "six": "1.17.0",
+    "tenacity": "9.1.4",
+    "tzdata": "2026.3",
+    "zope.interface": "8.5"
+  },
+  "scenario": {
+    "setup_period": "1998-01-01/1999-12-31",
+    "simulation_period": "2000-01-01/2020-12-31",
+    "glacier_evolution": true,
+    "output_frequency": "M"
+  },
+  "public_output_length": 11,
+  "compared_outputs": {
+    "0": "compact_daily",
+    "1": "full_daily",
+    "2": "model_efficiency",
+    "3": "summary_statistics",
+    "4": "glacier_elevation_distribution",
+    "5": "annual_glacier_evolution"
+  },
+  "comparison_policy": "Exact values, structure, dtypes, indexes, columns, and missing-value positions"
+}

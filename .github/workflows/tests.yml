@@ -1,0 +1,60 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  python-311:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MPLBACKEND: Agg
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11.15"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-test.txt
+            pyproject.toml
+
+      - name: Configure runtime directories
+        run: |
+          echo "MPLCONFIGDIR=${RUNNER_TEMP}/matplotlib" >> "${GITHUB_ENV}"
+          echo "XDG_CACHE_HOME=${RUNNER_TEMP}/cache" >> "${GITHUB_ENV}"
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install -r requirements-test.txt
+          python -m pip install -e . --no-deps
+
+      - name: Check installed dependencies
+        run: python -m pip check
+
+      - name: Run test suite and create impact reports
+        run: python -m pytest --impact-report=impact-report
+
+      - name: Build wheel from maintained sources
+        run: python -m pip wheel . --no-deps --wheel-dir wheelhouse
+
+      - name: Verify wheel contents
+        run: python tests/verify_wheel.py wheelhouse/*.whl
+
+      - name: Preserve numerical impact reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: model-impact-python-3.11
+          path: impact-report/
+          if-no-files-found: warn
+          retention-days: 14
