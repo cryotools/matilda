@@ -131,7 +131,7 @@ MATILDA defines 23 model parameters with default values, most of which are HBV s
 | $\text{PERC}$         | Percolation rate from upper to lower groundwater reservoir    | mm day⁻¹             | 1.5                  |
 | $\text{UZL}$          | Threshold for quick flow from upper zone                      | mm                   | 120                  |
 | $\text{MAXBAS}$       | Length of triangular routing function                         | day                  | 3.0                  |
-| $\text{hydro_year}$   | Starting month of the hydrological year                        | month (1–12)         | 10                   |
+| $\text{hydro\_year}$ | Starting month of the hydrological year                       | month (1–12)         | 10                   |
 | $\text{pfilter}$      | Precipitation threshold for elevation scaling                  | precipitation unit   | 0                    |
 
 ---
@@ -171,5 +171,4 @@ The development of MATILDA integrated several well-established hydrological and 
 **SPOTPY (Parameter Optimization):**
 
   - Houska, T., Kraft, P., Chamorro-Chavez, A., & Breuer, L. (2015). SPOTting Model Parameters Using a Ready-Made Python Package. *PLOS ONE*, 10(12), 1–22. [http://doi.org/10.1371/journal.pone.0145180](http://doi.org/10.1371/journal.pone.0145180)
-
 
