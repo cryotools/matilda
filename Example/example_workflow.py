@@ -1,15 +1,12 @@
 """MATILDA Package - Example Script:
-    Demonstrates the MATILDA workflow using a 3y example dataset. Per default the script reads the input files from
-    the directory the script is located in.
-    When executed, the model runs twice:
-    - The first part features the comprehensive matilda_simulation function.
-    - The second part runs the individual steps in separate functions and shows optional arguments.
-    The output is saved in the working directory in separate subdirectories for both runs.
+    Demonstrates the MATILDA workflow using a 3y example dataset. By default, the script reads the input files from
+    the directory in which the script is located.
+    The model is run with the comprehensive matilda_simulation function, and output is saved in the working directory.
 """
 import os
 import sys
 import pandas as pd
-from matilda.core import matilda_simulation, matilda_parameter, matilda_preproc, matilda_submodules, matilda_plots, matilda_save_output
+from matilda.core import matilda_simulation
 
 ## Model input
 working_directory = sys.path[0]      # Points to the folder where the script is located. Change to your needs.
@@ -41,7 +38,6 @@ output_matilda = matilda_simulation(df, obs=obs, output=working_directory,
                                     # 3. Include interactive plots:
                                     plot_type='all'	# If you receive errors relating to plotly either try a different plotly version or change plot_type to "print"
                                     )
-
 
 
 

@@ -1,3 +1,10 @@
-**/__pycache__/
 __pycache__/
+*.py[cod]
+
+build/
+dist/
+*.egg-info/
+docs/_build/
+
+.DS_Store
 How2installoncirrus

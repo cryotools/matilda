@@ -25,5 +25,4 @@ glacier changes.
 '''
 from . import core, mspot_glacier  # Contains all core functions
 
-__version__ = '1.0'
-
+__version__ = '1.0.2'
