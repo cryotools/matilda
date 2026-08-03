@@ -37,7 +37,7 @@ detailed reports, run:
 .venv/bin/python -m pytest --impact-report=impact-report
 ```
 
-The command writes three files:
+The command writes three files for the long glacier-evolution reference:
 
 - `variable_impact.csv` reports the number of changed values, maximum absolute
   change, mean absolute change, RMSE, changes in totals and means, and the first
@@ -46,9 +46,33 @@ The command writes three files:
   year for outputs with date indexes.
 - `summary.json` lists the affected model-process groups.
 
+The `zero_glacier/` and `fixed_glacier/` subdirectories contain the same three
+reports for the exact synthetic model-mode references.
+
 These reports are intended to show which processes, variables, and periods are
 affected by a change. They can therefore guide decisions about which figures,
 tables, calibrations, or catchment simulations need to be repeated.
+
+## Synthetic model-mode tests
+
+Deterministic synthetic forcing covers a complete setup year followed by the
+2000–2001 simulation period. This includes winter and summer conditions and the
+leap day in 2000 without requiring observed runoff from another catchment.
+
+The synthetic tests cover:
+
+- parameter initialization and validation;
+- rain–snow partitioning and precipitation conservation;
+- snow and ice melt limits, refreezing, and glacier-reservoir bookkeeping;
+- zero-glacier and fixed-glacier public simulation paths;
+- non-negative stores and fluxes where physically required;
+- calendar completeness, deterministic repetition, and input immutability;
+- one model evaluation initiated through `mspot`.
+
+The runoff series used by the `mspot` test is synthetic and non-constant. Its
+only purpose is to exercise unit conversion, alignment, and objective-function
+calculation. It is not used to assess predictive performance or scientific
+validity.
 
 ## Reference policy
 
@@ -58,9 +82,18 @@ the output, retain its impact reports for review first. Update the reference
 only after the scientific consequences and compatibility implications have
 been accepted.
 
-The current reference covers one long glacier-evolution scenario. Separate
-tests are still required before changing zero-glacier, full-glacier,
-fixed-elevation, short-period, and calibration pathways.
+Exact numerical references cover the long glacier-evolution scenario and the
+synthetic zero-glacier and fixed-elevation scenarios. Reference files have
+recorded checksums and are only regenerated after an intentional scientific
+change has been assessed and accepted. The explicit command for that step is:
+
+```bash
+.venv/bin/python -m tests.generate_synthetic_references --replace
+```
+
+Separate tests are still required for complete glacier loss, positive
+cumulative mass-balance handling, and serial-versus-parallel calibration
+equivalence.
 
 The continuous-integration workflow also builds a wheel and verifies that its
 package files are byte-for-byte copies of the maintained sources.

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "core_baseline_commit": "7a7625c9365e21dfe1b9e267b08139774e37c446",
+  "model_version": "1.0.2",
+  "python": "3.11.15",
+  "setup_period": "1999-01-01/1999-12-31",
+  "simulation_period": "2000-01-01/2001-12-31",
+  "comparison_policy": "Exact values, structure, dtypes, indexes, columns, and missing-value positions",
+  "references": {
+    "zero_glacier": {
+      "file": "synthetic_zero_glacier_output.pickle",
+      "sha256": "dea2269e472c155b018f73864c1db591158875738092151400c8ccba476fba4e",
+      "area_glac_km2": 0.0
+    },
+    "fixed_glacier": {
+      "file": "synthetic_fixed_glacier_output.pickle",
+      "sha256": "eee9196d834ea5b62406bdba1d48ae28ce90e56906d4935136caaefca883f7f4",
+      "area_glac_km2": 20.0
+    }
+  }
+}
