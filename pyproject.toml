@@ -7,4 +7,6 @@ testpaths = ["tests"]
 addopts = "--strict-markers -ra"
 markers = [
     "model_consistency: full-model comparisons against the maintained numerical reference",
+    "model_modes: synthetic public-API simulations for distinct model configurations",
+    "calibration: mspot setup and calibration-path checks",
 ]

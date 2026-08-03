@@ -194,10 +194,17 @@ def _column_impact(
     }
 
 
-def build_variable_impact_report(current_output, reference_output) -> pd.DataFrame:
+def build_variable_impact_report(
+    current_output,
+    reference_output,
+    frame_outputs=None,
+    include_model_efficiency: bool = True,
+) -> pd.DataFrame:
     """Return one quantitative comparison row for every maintained variable."""
+    if frame_outputs is None:
+        frame_outputs = FRAME_OUTPUTS
     rows = []
-    for position, output_name in FRAME_OUTPUTS.items():
+    for position, output_name in frame_outputs.items():
         reference = reference_output[position]
         current = current_output[position]
         variables = list(reference.columns) + [
@@ -217,45 +224,56 @@ def build_variable_impact_report(current_output, reference_output) -> pd.DataFra
             else:
                 rows.append(_column_impact(output_name, variable, reference, current))
 
-    reference_kge = float(reference_output[2])
-    current_kge = float(current_output[2])
-    delta = current_kge - reference_kge
-    rows.append(
-        {
-            "output": "model_efficiency",
-            "process": "runoff",
-            "variable": "KGE",
-            "status": "unchanged" if current_kge == reference_kge else "changed",
-            "reference_dtype": type(reference_output[2]).__name__,
-            "current_dtype": type(current_output[2]).__name__,
-            "index_equal": True,
-            "reference_rows": 1,
-            "current_rows": 1,
-            "reference_missing": int(np.isnan(reference_kge)),
-            "current_missing": int(np.isnan(current_kge)),
-            "changed_count": int(current_kge != reference_kge),
-            "max_abs_change": abs(delta),
-            "mean_abs_change": abs(delta),
-            "rmse": abs(delta),
-            "reference_sum": reference_kge,
-            "current_sum": current_kge,
-            "sum_change": delta,
-            "relative_sum_change_percent": (
-                delta / abs(reference_kge) * 100 if reference_kge != 0 else np.nan
-            ),
-            "reference_mean": reference_kge,
-            "current_mean": current_kge,
-            "mean_change": delta,
-            "first_changed_index": "metric" if delta else "",
-        }
-    )
+    if include_model_efficiency:
+        reference_kge = float(reference_output[2])
+        current_kge = float(current_output[2])
+        delta = current_kge - reference_kge
+        rows.append(
+            {
+                "output": "model_efficiency",
+                "process": "runoff",
+                "variable": "KGE",
+                "status": (
+                    "unchanged" if current_kge == reference_kge else "changed"
+                ),
+                "reference_dtype": type(reference_output[2]).__name__,
+                "current_dtype": type(current_output[2]).__name__,
+                "index_equal": True,
+                "reference_rows": 1,
+                "current_rows": 1,
+                "reference_missing": int(np.isnan(reference_kge)),
+                "current_missing": int(np.isnan(current_kge)),
+                "changed_count": int(current_kge != reference_kge),
+                "max_abs_change": abs(delta),
+                "mean_abs_change": abs(delta),
+                "rmse": abs(delta),
+                "reference_sum": reference_kge,
+                "current_sum": current_kge,
+                "sum_change": delta,
+                "relative_sum_change_percent": (
+                    delta / abs(reference_kge) * 100
+                    if reference_kge != 0
+                    else np.nan
+                ),
+                "reference_mean": reference_kge,
+                "current_mean": current_kge,
+                "mean_change": delta,
+                "first_changed_index": "metric" if delta else "",
+            }
+        )
     return pd.DataFrame(rows)
 
 
-def build_annual_impact_report(current_output, reference_output) -> pd.DataFrame:
+def build_annual_impact_report(
+    current_output,
+    reference_output,
+    frame_outputs=None,
+) -> pd.DataFrame:
     """Summarize pointwise, mean, and total changes for each calendar year."""
+    if frame_outputs is None:
+        frame_outputs = FRAME_OUTPUTS
     rows = []
-    for position, output_name in FRAME_OUTPUTS.items():
+    for position, output_name in frame_outputs.items():
         reference = reference_output[position]
         current = current_output[position]
         if not isinstance(reference.index, pd.DatetimeIndex) or not isinstance(
@@ -304,15 +322,22 @@ def build_annual_impact_report(current_output, reference_output) -> pd.DataFrame
     return pd.DataFrame(rows)
 
 
-def exact_output_errors(current_output, reference_output) -> list[str]:
+def exact_output_errors(
+    current_output,
+    reference_output,
+    frame_outputs=None,
+    include_model_efficiency: bool = True,
+) -> list[str]:
     """Return concise structural or numerical errors for maintained outputs."""
+    if frame_outputs is None:
+        frame_outputs = FRAME_OUTPUTS
     errors = []
     if len(current_output) != len(reference_output):
         errors.append(
             f"public output length: current={len(current_output)}, "
             f"reference={len(reference_output)}"
         )
-    for position, output_name in FRAME_OUTPUTS.items():
+    for position, output_name in frame_outputs.items():
         try:
             assert_frame_equal(
                 current_output[position],
@@ -327,14 +352,16 @@ def exact_output_errors(current_output, reference_output) -> list[str]:
         except AssertionError as error:
             message = "\n".join(str(error).splitlines()[:8])
             errors.append(f"{output_name}: {message}")
-    if not np.array_equal(
-        np.asarray(current_output[2]),
-        np.asarray(reference_output[2]),
-        equal_nan=True,
-    ):
-        errors.append(
-            f"KGE: current={current_output[2]!r}, reference={reference_output[2]!r}"
-        )
+    if include_model_efficiency:
+        if not np.array_equal(
+            np.asarray(current_output[2]),
+            np.asarray(reference_output[2]),
+            equal_nan=True,
+        ):
+            errors.append(
+                f"KGE: current={current_output[2]!r}, "
+                f"reference={reference_output[2]!r}"
+            )
     return errors
 
 
