@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the following metadata."
 title: "MATILDA: Modeling wATer resources In gLacierizeD cAtchments"
-version: "1.0.1"
+version: "1.0.2"
 doi: "10.5281/zenodo.14267360"
 date-released: "2025-06-21"
 authors:
