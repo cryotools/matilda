@@ -2,3 +2,9 @@
 requires = ["setuptools", "wheel"]  # Add required build tools
 build-backend = "setuptools.build_meta"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers -ra"
+markers = [
+    "characterization: full-model comparisons against the maintained numerical reference",
+]
