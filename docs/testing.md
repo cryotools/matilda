@@ -68,7 +68,10 @@ The synthetic tests cover:
 - non-negative stores and fluxes where physically required;
 - calendar completeness, deterministic repetition, and input immutability;
 - glacier loss during the first annual geometry update;
-- model evaluations initiated through `mspot`, including glacier-only sampling.
+- one-day simulation output and the documented saved-file set;
+- the main public call signatures;
+- repeatable model evaluations initiated through `mspot`, including seeded
+  glacier-only sampling.
 
 The runoff series used by the `mspot` test is synthetic and non-constant. Its
 only purpose is to exercise unit conversion, alignment, and objective-function
@@ -94,6 +97,10 @@ change has been assessed and accepted. The explicit command for that step is:
 
 Separate tests are still required for positive cumulative mass-balance
 handling and serial-versus-parallel calibration equivalence.
+
+The current SPOTPY parallel route uses MPI. Parallel-equivalence checks are not
+part of the local test suite because its pinned environment does not include an
+MPI runtime.
 
 The continuous-integration workflow also builds a wheel and verifies that its
 package files are byte-for-byte copies of the maintained sources.
