@@ -68,6 +68,7 @@ For questions or contributions, please contact:
 
 import os
 from datetime import date, datetime
+from functools import lru_cache
 import warnings
 import copy
 import importlib.resources
@@ -86,6 +87,14 @@ from plotly.subplots import make_subplots
 import scienceplots
 
 warnings.filterwarnings(action="ignore", module="HydroErr")
+
+
+@lru_cache(maxsize=1)
+def _load_parameter_data():
+    """Load the packaged parameter definitions once per Python process."""
+    parameters_path = importlib.resources.files("matilda") / "parameters.json"
+    with parameters_path.open("r", encoding="utf-8") as file:
+        return json.load(file)["parameters"]
 
 
 def matilda_parameter(
@@ -247,10 +256,7 @@ def matilda_parameter(
             + " is not supported. Choose either 'D' (daily), 'W' (weekly), 'M' (monthly) or 'Y' (yearly)."
         )
 
-    # Load parameter JSON
-    parameters_path = importlib.resources.files("matilda") / "parameters.json"
-    with parameters_path.open("r", encoding="utf-8") as file:
-        parameter_data = json.load(file)["parameters"]
+    parameter_data = _load_parameter_data()
 
     # Build the parameter dictionary using defaults and passed matilda_param
     parameters = {}

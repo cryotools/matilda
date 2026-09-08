@@ -8,6 +8,7 @@ import pytest
 import xarray as xr
 
 from matilda.core import (
+    _load_parameter_data,
     calculate_glaciermelt,
     matilda_parameter,
     melt_rates,
@@ -31,6 +32,24 @@ def test_parameter_initialization_derives_dependent_values():
     assert parameter.CFMAX_ice == pytest.approx(
         parameter.CFMAX_snow * parameter.CFMAX_rel
     )
+
+
+def test_parameter_definitions_are_reused():
+    forcing = make_synthetic_forcing()
+    settings = model_settings(area_glac=0.0)
+    settings.pop("plots")
+    settings.pop("elev_rescaling")
+    _load_parameter_data.cache_clear()
+
+    try:
+        matilda_parameter(forcing, **settings)
+        matilda_parameter(forcing, **settings)
+        cache_info = _load_parameter_data.cache_info()
+    finally:
+        _load_parameter_data.cache_clear()
+
+    assert cache_info.misses == 1
+    assert cache_info.hits == 1
 
 
 @pytest.mark.parametrize(
