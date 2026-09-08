@@ -2301,6 +2301,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
 
     # resampling the output to the specified frequency
     def plot_data(output_MATILDA, parameter):
+        plot_input = output_MATILDA[0]
         if "observed_runoff" in output_MATILDA[0].columns:
             # obs = output_MATILDA[1]["Qobs"].resample(parameter.freq).agg(pd.DataFrame.sum, skipna=False)
             obs = (
@@ -2340,8 +2341,26 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                 )
             )
         else:
+            plot_input = output_MATILDA[0].rename(
+                columns={
+                    "prec": "prec_off_glaciers",
+                    "rain": "rain_off_glaciers",
+                    "snow": "snow_off_glaciers",
+                    "snowpack": "snowpack_off_glaciers",
+                    "snow_melt": "melt_off_glaciers",
+                    "runoff": "runoff_without_glaciers",
+                }
+            ).copy()
+            plot_input["evap_off_glaciers"] = output_MATILDA[1]["HBV_pe"]
+            plot_input["rain_on_glaciers"] = 0.0
+            plot_input["prec_on_glaciers"] = 0.0
+            plot_input["snow_melt_on_glaciers"] = 0.0
+            plot_input["ice_melt_on_glaciers"] = 0.0
+            plot_input["runoff_from_glaciers"] = 0.0
+            plot_input["total_precipitation"] = plot_input["prec_off_glaciers"]
+            plot_input["total_runoff"] = plot_input["runoff_without_glaciers"]
             plot_data = (
-                output_MATILDA[0]
+                plot_input
                 .resample(parameter.freq)
                 .agg(
                     {
@@ -2349,9 +2368,14 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
                         "rain_off_glaciers": "sum",
                         "rain_on_glaciers": "sum",
                         "prec_off_glaciers": "sum",
+                        "prec_on_glaciers": "sum",
                         "total_precipitation": "sum",
                         "evap_off_glaciers": "sum",
+                        "melt_off_glaciers": "sum",
+                        "ice_melt_on_glaciers": "sum",
+                        "snow_melt_on_glaciers": "sum",
                         "runoff_without_glaciers": "sum",
+                        "runoff_from_glaciers": "sum",
                         "total_runoff": "sum",
                         "actual_evaporation": "sum",
                         "snowpack_off_glaciers": "mean",
@@ -2366,7 +2390,7 @@ def matilda_plots(output_MATILDA, parameter, plot_type="print"):
         if "observed_runoff" in output_MATILDA[0].columns:
             plot_data["observed_runoff"] = obs
 
-        plot_annual_data = output_MATILDA[0].copy()
+        plot_annual_data = plot_input.copy()
         plot_annual_data["month"] = plot_annual_data.index.month
         plot_annual_data["day"] = plot_annual_data.index.day
         plot_annual_data = plot_annual_data.groupby(["month", "day"]).mean()

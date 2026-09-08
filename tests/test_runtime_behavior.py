@@ -8,6 +8,7 @@ import io
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
 
 from matilda.core import matilda_simulation
@@ -72,3 +73,30 @@ def test_print_output_writes_documented_files(tmp_path):
         parse_dates=True,
     )
     assert_frame_equal(saved_output, output[1], check_exact=True, check_freq=False)
+
+
+@pytest.mark.parametrize(
+    ("plot_type", "expected_length"),
+    [("print", 9), ("interactive", 8), ("all", 11)],
+)
+def test_zero_glacier_plot_types_preserve_model_output(plot_type, expected_length):
+    forcing = make_synthetic_forcing()
+    settings = model_settings(area_glac=0.0)
+
+    try:
+        with redirect_stdout(io.StringIO()):
+            expected = matilda_simulation(forcing.copy(deep=True), **settings)
+            actual = matilda_simulation(
+                forcing.copy(deep=True),
+                **{**settings, "plots": True},
+                science_plot=False,
+                plot_type=plot_type,
+            )
+    finally:
+        plt.close("all")
+
+    assert len(actual) == expected_length
+    for position in (0, 1, 3):
+        assert_frame_equal(actual[position], expected[position], check_exact=True)
+    assert actual[2] == expected[2]
+    assert actual[4:6] == expected[4:6]
