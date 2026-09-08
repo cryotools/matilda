@@ -1385,6 +1385,24 @@ def updated_glacier_melt(
     return output_DDM, glacier_change, input_df_catchment
 
 
+def _temperature_adjusted_evaporation(temperature, evaporation, correction_factor):
+    """Apply the HBV temperature correction to potential evapotranspiration."""
+    daily_temperature = (
+        temperature.groupby(temperature.index.dayofyear)
+        .mean()
+        .reindex(range(1, 367))
+        .to_numpy()
+    )
+    return (
+        1
+        + correction_factor
+        * (
+            temperature.to_numpy()
+            - daily_temperature[temperature.index.dayofyear.to_numpy() - 1]
+        )
+    ) * evaporation.to_numpy()
+
+
 def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     """
     Simulates runoff from a catchment using the HBV model. Calculates key hydrological processes, including snowmelt,
@@ -1461,6 +1479,18 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
     print("*-------------------*")
     print("Running HBV routine")
+    cfmax_snow = parameter.CFMAX_snow
+    refreezing_coefficient = parameter.CFR
+    snow_threshold = parameter.TT_snow
+    water_holding_capacity = parameter.CWH
+    field_capacity = parameter.FC
+    soil_shape = parameter.BETA
+    evaporation_limit = parameter.LP
+    percolation_rate = parameter.PERC
+    upper_recession = parameter.K0
+    middle_recession = parameter.K1
+    lower_recession = parameter.K2
+    upper_zone_limit = parameter.UZL
     # 1. new temporary dataframe from input with daily values
     if "PE" in input_df_catchment.columns:
         input_df_hbv = input_df_catchment.resample("D").agg(
@@ -1546,18 +1576,13 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         RAIN_cal = RAIN_cal * (1 - (parameter.area_glac / parameter.area_cat))
         Prec_cal = Prec_cal * (1 - (parameter.area_glac / parameter.area_cat))
 
-    # evaporation correction
-    # a. calculate long-term averages of daily temperature
-    Temp_mean_cal = np.array(
-        [Temp_cal.loc[Temp_cal.index.dayofyear == x].mean() for x in range(1, 367)]
-    )
-    # b. correction of Evaporation daily values
-    Evap_cal = Evap_cal.index.map(
-        lambda x: (1 + parameter.CET * (Temp_cal[x] - Temp_mean_cal[x.dayofyear - 1]))
-        * Evap_cal[x]
-    )
-    # c. control Evaporation
+    # temperature correction of evaporation daily values
+    Evap_cal = _temperature_adjusted_evaporation(Temp_cal, Evap_cal, parameter.CET)
+    # control Evaporation
     Evap_cal = np.where(Evap_cal > 0, Evap_cal, 0)
+    Temp_cal_values = Temp_cal.to_numpy()
+    SNOW_cal_values = SNOW_cal.to_numpy()
+    RAIN_cal_values = RAIN_cal.to_numpy()
 
     # 2.2 Initial parameter calibration
     # snowpack box
@@ -1577,10 +1602,10 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     for t in range(1, len(Prec_cal)):
         # 2.3.1 Snow routine
         # how snowpack forms
-        SNOWPACK_cal[t] = SNOWPACK_cal[t - 1] + SNOW_cal[t]
+        SNOWPACK_cal[t] = SNOWPACK_cal[t - 1] + SNOW_cal_values[t]
 
         # how snowpack melts
-        melt = max(0, parameter.CFMAX_snow * Temp_cal[t])  # control melting
+        melt = max(0, cfmax_snow * Temp_cal_values[t])  # control melting
         melt = min(melt, SNOWPACK_cal[t])  # limit by snowpack
 
         # how meltwater box forms
@@ -1591,7 +1616,9 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
         # refreezing accounting
         refreezing = (
-            parameter.CFR * parameter.CFMAX_snow * (parameter.TT_snow - Temp_cal[t])
+            refreezing_coefficient
+            * cfmax_snow
+            * (snow_threshold - Temp_cal_values[t])
         )
         refreezing = max(0, refreezing)  # control refreezing
         refreezing = min(refreezing, SNOWMELT_cal[t])  # limit by meltwater
@@ -1604,7 +1631,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
         # recharge to soil
         tosoil = max(
-            0, SNOWMELT_cal[t] - (parameter.CWH * SNOWPACK_cal[t])
+            0, SNOWMELT_cal[t] - (water_holding_capacity * SNOWPACK_cal[t])
         )  # control recharge
 
         # meltwater after recharge to soil
@@ -1612,23 +1639,23 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
         # 2.3.1 Soil and evaporation routine
         # soil wetness calculation
-        soil_wetness = (SM_cal[t - 1] / parameter.FC) ** parameter.BETA
+        soil_wetness = (SM_cal[t - 1] / field_capacity) ** soil_shape
         soil_wetness = max(0, min(1, soil_wetness))  # control soil wetness
 
         # soil recharge
-        recharge = (RAIN_cal[t] + tosoil) * soil_wetness
+        recharge = (RAIN_cal_values[t] + tosoil) * soil_wetness
 
         # soil moisture update
-        SM_cal[t] = SM_cal[t - 1] + RAIN_cal[t] + tosoil - recharge
+        SM_cal[t] = SM_cal[t - 1] + RAIN_cal_values[t] + tosoil - recharge
 
         # excess of water calculation
-        excess = max(0, SM_cal[t] - parameter.FC)  # control excess
+        excess = max(0, SM_cal[t] - field_capacity)  # control excess
 
         # soil moisture update
         SM_cal[t] -= excess
 
         # evaporation accounting
-        evapfactor = SM_cal[t] / (parameter.LP * parameter.FC)
+        evapfactor = SM_cal[t] / (evaporation_limit * field_capacity)
         evapfactor = max(0, min(1, evapfactor))  # control evapfactor in range [0, 1]
 
         # calculate actual evaporation
@@ -1675,16 +1702,13 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         )  # Snow off-glacier
         Prec = Prec * (1 - (parameter.area_glac / parameter.area_cat))
 
-    # a. calculate long-term averages of daily temperature
-    Temp_mean = np.array(
-        [Temp.loc[Temp.index.dayofyear == x].mean() for x in range(1, 367)]
-    )
-    # b. correction of Evaporation daily values
-    Evap = Evap.index.map(
-        lambda x: (1 + parameter.CET * (Temp[x] - Temp_mean[x.dayofyear - 1])) * Evap[x]
-    )
-    # c. control Evaporation
+    # temperature correction of evaporation daily values
+    Evap = _temperature_adjusted_evaporation(Temp, Evap, parameter.CET)
+    # control Evaporation
     Evap = np.where(Evap > 0, Evap, 0)
+    Temp_values = Temp.to_numpy()
+    SNOW_values = SNOW.to_numpy()
+    RAIN_values = RAIN.to_numpy()
 
     # 4. initialize boxes and initial conditions after calibration
     # snowpack box
@@ -1719,10 +1743,10 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
     for t in range(1, len(Qsim)):
         # 5.1 Snow routine
         # how snowpack forms
-        SNOWPACK[t] = SNOWPACK[t - 1] + SNOW[t]
+        SNOWPACK[t] = SNOWPACK[t - 1] + SNOW_values[t]
 
         # how snowpack melts
-        melt = max(0, parameter.CFMAX_snow * Temp[t])  # control melting
+        melt = max(0, cfmax_snow * Temp_values[t])  # control melting
         melt = min(melt, SNOWPACK[t])  # limit by snowpack
 
         # how meltwater box forms
@@ -1733,7 +1757,9 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
 
         # refreezing accounting
         refreezing = (
-            parameter.CFR * parameter.CFMAX_snow * (parameter.TT_snow - Temp[t])
+            refreezing_coefficient
+            * cfmax_snow
+            * (snow_threshold - Temp_values[t])
         )
         refreezing = max(0, refreezing)  # control refreezing
         refreezing = min(refreezing, SNOWMELT[t])  # limit by meltwater
@@ -1751,32 +1777,34 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         off_glac[t] = max(melt - refreezing, 0)
 
         # recharge to soil
-        tosoil = max(0, SNOWMELT[t] - (parameter.CWH * SNOWPACK[t]))  # control recharge
+        tosoil = max(
+            0, SNOWMELT[t] - (water_holding_capacity * SNOWPACK[t])
+        )  # control recharge
 
         # meltwater after recharge to soil
         SNOWMELT[t] -= tosoil
 
         # 5.2 Soil and evaporation routine
         # soil wetness calculation
-        soil_wetness = (SM[t - 1] / parameter.FC) ** parameter.BETA
+        soil_wetness = (SM[t - 1] / field_capacity) ** soil_shape
         soil_wetness = max(
             0, min(1, soil_wetness)
         )  # control soil wetness in range [0, 1]
 
         # soil recharge
-        recharge = (RAIN[t] + tosoil) * soil_wetness
+        recharge = (RAIN_values[t] + tosoil) * soil_wetness
 
         # soil moisture update
-        SM[t] = SM[t - 1] + RAIN[t] + tosoil - recharge
+        SM[t] = SM[t - 1] + RAIN_values[t] + tosoil - recharge
 
         # excess of water calculation
-        excess = max(0, SM[t] - parameter.FC)  # control excess
+        excess = max(0, SM[t] - field_capacity)  # control excess
 
         # soil moisture update
         SM[t] -= excess
 
         # evaporation accounting
-        evapfactor = SM[t] / (parameter.LP * parameter.FC)
+        evapfactor = SM[t] / (evaporation_limit * field_capacity)
         evapfactor = max(0, min(1, evapfactor))  # control evapfactor in range [0, 1]
 
         # calculate actual evaporation
@@ -1790,19 +1818,19 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SUZ[t] = SUZ[t - 1] + recharge + excess
 
         # percolation control
-        perc = min(SUZ[t], parameter.PERC)
+        perc = min(SUZ[t], percolation_rate)
 
         # update upper groundwater box
         SUZ[t] -= perc
 
         # runoff from the highest part of upper groundwater box (surface runoff)
-        Q0 = parameter.K0 * max(SUZ[t] - parameter.UZL, 0)
+        Q0 = upper_recession * max(SUZ[t] - upper_zone_limit, 0)
 
         # update upper groundwater box
         SUZ[t] -= Q0
 
         # runoff from the middle part of upper groundwater box
-        Q1 = parameter.K1 * SUZ[t]
+        Q1 = middle_recession * SUZ[t]
 
         # update upper groundwater box
         SUZ[t] -= Q1
@@ -1811,7 +1839,7 @@ def hbv_simulation(input_df_catchment, parameter, glacier_area=None):
         SLZ[t] = SLZ[t - 1] + perc
 
         # runoff from lower groundwater box
-        Q2 = parameter.K2 * SLZ[t]
+        Q2 = lower_recession * SLZ[t]
 
         # update lower groundwater box
         SLZ[t] -= Q2

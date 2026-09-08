@@ -9,6 +9,7 @@ import xarray as xr
 
 from matilda.core import (
     _load_parameter_data,
+    _temperature_adjusted_evaporation,
     calculate_glaciermelt,
     matilda_parameter,
     melt_rates,
@@ -50,6 +51,36 @@ def test_parameter_definitions_are_reused():
 
     assert cache_info.misses == 1
     assert cache_info.hits == 1
+
+
+def test_temperature_adjusted_evaporation_matches_daily_calculation():
+    forcing = make_synthetic_forcing().set_index("TIMESTAMP")
+    temperature = forcing.loc["2000-01-01":"2001-12-31", "T2"]
+    evaporation = forcing.loc[temperature.index, "PE"]
+    correction_factor = 0.15
+    daily_temperature = np.array(
+        [
+            temperature.loc[temperature.index.dayofyear == day].mean()
+            for day in range(1, 367)
+        ]
+    )
+    expected = temperature.index.map(
+        lambda timestamp: (
+            1
+            + correction_factor
+            * (
+                temperature[timestamp]
+                - daily_temperature[timestamp.dayofyear - 1]
+            )
+        )
+        * evaporation[timestamp]
+    )
+
+    actual = _temperature_adjusted_evaporation(
+        temperature, evaporation, correction_factor
+    )
+
+    np.testing.assert_array_equal(actual, expected)
 
 
 @pytest.mark.parametrize(
