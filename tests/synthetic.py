@@ -106,6 +106,30 @@ def make_synthetic_observations() -> pd.DataFrame:
     return pd.DataFrame({"Date": dates, "Qobs": runoff_m3_per_second})
 
 
+def make_synthetic_glacier_profile() -> pd.DataFrame:
+    """Return a small glacier profile covering 20 percent of the catchment."""
+    return pd.DataFrame(
+        {
+            "Elevation": [1400.0, 1600.0, 1800.0],
+            "Area": [0.05, 0.10, 0.05],
+            "WE": [4000.0, 6000.0, 5000.0],
+            "EleZone": [1400, 1600, 1800],
+        }
+    )
+
+
+def make_synthetic_mass_balance_observations() -> pd.DataFrame:
+    """Return annual mass-balance records for a glacier-only smoke test."""
+    return pd.DataFrame(
+        {
+            "YEAR": ["2000-01-01", "2001-01-01"],
+            "BEGIN_PERIOD": ["2000-01-01", "2001-01-01"],
+            "END_PERIOD": ["2000-12-31", "2001-12-31"],
+            "ANNUAL_BALANCE": [-300.0, -350.0],
+        }
+    )
+
+
 def load_synthetic_reference(name: str):
     """Load one maintained synthetic public-API output."""
     manifest = json.loads(REFERENCE_MANIFEST_PATH.read_text(encoding="utf-8"))

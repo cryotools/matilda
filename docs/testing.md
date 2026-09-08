@@ -67,7 +67,8 @@ The synthetic tests cover:
 - zero-glacier and fixed-glacier public simulation paths;
 - non-negative stores and fluxes where physically required;
 - calendar completeness, deterministic repetition, and input immutability;
-- one model evaluation initiated through `mspot`.
+- glacier loss during the first annual geometry update;
+- model evaluations initiated through `mspot`, including glacier-only sampling.
 
 The runoff series used by the `mspot` test is synthetic and non-constant. Its
 only purpose is to exercise unit conversion, alignment, and objective-function
@@ -91,9 +92,8 @@ change has been assessed and accepted. The explicit command for that step is:
 .venv/bin/python -m tests.generate_synthetic_references --replace
 ```
 
-Separate tests are still required for complete glacier loss, positive
-cumulative mass-balance handling, and serial-versus-parallel calibration
-equivalence.
+Separate tests are still required for positive cumulative mass-balance
+handling and serial-versus-parallel calibration equivalence.
 
 The continuous-integration workflow also builds a wheel and verifies that its
 package files are byte-for-byte copies of the maintained sources.
