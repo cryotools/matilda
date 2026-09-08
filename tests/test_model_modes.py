@@ -29,6 +29,7 @@ from tests.synthetic import (
     SYNTHETIC_FRAME_OUTPUTS,
     load_synthetic_reference,
     make_synthetic_forcing,
+    make_synthetic_glacier_profile,
     model_settings,
 )
 
@@ -244,3 +245,100 @@ def test_fixed_glacier_mode_is_exactly_repeatable(fixed_glacier_run):
         )
     assert first_output[2] == second_output[2]
     assert first_output[4:] == second_output[4:]
+
+
+def test_zero_glacier_evolution_matches_standard_zero_glacier_mode(
+    zero_glacier_run,
+):
+    forcing = make_synthetic_forcing()
+    forcing_before = forcing.copy(deep=True)
+    profile = make_synthetic_glacier_profile()
+    profile_before = profile.copy(deep=True)
+    settings = model_settings(area_glac=0.0)
+    settings["elev_rescaling"] = True
+
+    try:
+        with redirect_stdout(io.StringIO()):
+            evolving_output = matilda_simulation(
+                forcing,
+                glacier_profile=profile,
+                **settings,
+            )
+    finally:
+        plt.close("all")
+
+    standard_output = zero_glacier_run[0]
+    assert_frame_equal(forcing, forcing_before, check_exact=True)
+    assert_frame_equal(profile, profile_before, check_exact=True)
+    for position in (0, 1, 3):
+        assert_frame_equal(
+            evolving_output[position],
+            standard_output[position],
+            check_exact=True,
+        )
+    assert evolving_output[2] == standard_output[2]
+    assert evolving_output[4:] == standard_output[4:]
+
+
+def test_one_water_year_glacier_evolution_completes():
+    forcing = make_synthetic_forcing()
+    forcing_before = forcing.copy(deep=True)
+    profile = make_synthetic_glacier_profile()
+    profile_before = profile.copy(deep=True)
+    settings = model_settings(area_glac=20.0)
+    settings.update(
+        {
+            "sim_end": "2000-09-30",
+            "elev_rescaling": True,
+        }
+    )
+
+    try:
+        with redirect_stdout(io.StringIO()):
+            output = matilda_simulation(
+                forcing,
+                glacier_profile=profile,
+                **settings,
+            )
+    finally:
+        plt.close("all")
+
+    assert_frame_equal(forcing, forcing_before, check_exact=True)
+    assert_frame_equal(
+        profile.loc[:, profile_before.columns],
+        profile_before,
+        check_exact=True,
+    )
+    assert len(output[1]) == 274
+    assert np.isfinite(output[1].select_dtypes(include=np.number)).all().all()
+    assert output[5]["glacier_area"].tolist() == [20.0]
+
+
+def test_glacier_evolution_handles_loss_in_first_update():
+    forcing = make_synthetic_forcing()
+    forcing_before = forcing.copy(deep=True)
+    profile = make_synthetic_glacier_profile()
+    profile["WE"] = 1.0
+    profile_before = profile.copy(deep=True)
+    settings = model_settings(area_glac=20.0)
+    settings["elev_rescaling"] = True
+
+    try:
+        with redirect_stdout(io.StringIO()):
+            output = matilda_simulation(
+                forcing,
+                glacier_profile=profile,
+                **settings,
+            )
+    finally:
+        plt.close("all")
+
+    assert_frame_equal(forcing, forcing_before, check_exact=True)
+    assert_frame_equal(
+        profile.loc[:, profile_before.columns],
+        profile_before,
+        check_exact=True,
+    )
+    assert output[5]["glacier_area"].iloc[1] == 0
+    assert np.isfinite(output[5]["glacier_elev"]).all()
+    assert np.isfinite(output[1].select_dtypes(include=np.number)).all().all()

@@ -1630,9 +1630,12 @@ def psample(
             **kwargs,
         )
 
-    psample_setup = setup(
-        df, obs, target_swe, obj_func
-    )  # Define custom objective function using obj_func=
+    if glacier_only:
+        psample_setup = setup(df, obs, obj_func)
+    else:
+        psample_setup = setup(
+            df, obs, target_swe, obj_func
+        )  # Define custom objective function using obj_func=
     alg_selector = {
         "mc": spotpy.algorithms.mc,
         "sceua": spotpy.algorithms.sceua,

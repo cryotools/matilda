@@ -1107,6 +1107,7 @@ def updated_glacier_melt(
 
     # Setup initial variables for main loop
     new_area = parameter.area_glac
+    new_distribution = init_elev
     smb_cum = 0
     surplus = 0
     warn = True
@@ -1171,6 +1172,7 @@ def updated_glacier_melt(
     for i in range(len(data_update.water_year.unique())):
         year = data_update.water_year.unique()[i]
         mask = data_update.water_year == year
+        smb_flag = False
 
         # Use updated glacier area of the previous year
         parameter_updated.area_glac = new_area
@@ -1960,6 +1962,10 @@ def matilda_submodules(
         else:
             lookup_table = str("No lookup table generated")
             glacier_change = str("No glacier changes calculated")
+            if parameter.ele_dat is not None:
+                _, input_df_catchment = input_scaling(df_preproc, parameter)
+            else:
+                input_df_catchment = df_preproc.copy()
 
     else:
         print(
@@ -2002,7 +2008,7 @@ def matilda_submodules(
             glacier_change = str("No glacier changes calculated")
 
     # Execute HBV module:
-    if glacier_profile is not None:
+    if glacier_profile is not None and parameter.area_glac > 0:
         output_HBV = hbv_simulation(
             input_df_catchment, parameter, glacier_area=glacier_change
         )
