@@ -67,6 +67,7 @@ For questions or contributions, please contact:
 """
 
 import os
+from contextlib import nullcontext
 from datetime import date, datetime
 from functools import lru_cache
 import warnings
@@ -3458,15 +3459,16 @@ def matilda_simulation(
         else:
             output_MATILDA = matilda_submodules(df_preproc, parameter, obs=obs_preproc)
 
-    # Option to suppress plots.
-    if plots:
-        if science_plot:
-            plt_style = ["science", "no-latex"]
-            plt.style.use(plt_style)
+    plot_style = (
+        plt.style.context(["science", "no-latex"])
+        if plots and science_plot
+        else nullcontext()
+    )
+    with plot_style:
+        if plots:
+            output_MATILDA = matilda_plots(output_MATILDA, parameter, plot_type)
 
-        output_MATILDA = matilda_plots(output_MATILDA, parameter, plot_type)
-
-    if output is not None:
-        matilda_save_output(output_MATILDA, parameter, output, plot_type)
+        if output is not None:
+            matilda_save_output(output_MATILDA, parameter, output, plot_type)
 
     return output_MATILDA
