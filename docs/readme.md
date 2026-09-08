@@ -47,7 +47,7 @@ The tool's dependencies are set to integrate with [MATILDA-Online](https://matil
 - pyyaml
 ```
 
-The MATILDA package and it's dependencies can be installed on your local machine using pip or a similar package manager. You can either install the package by using the link to this repository:
+The MATILDA package and its dependencies can be installed on your local machine using pip or a similar package manager. You can either install the package from this repository:
 
 ```
 pip install git+https://github.com/cryotools/matilda.git
@@ -63,23 +63,23 @@ pip install .
 
 ## Usage
 
-A detailed walkthrough of the proposed modeling workflow and calibration strategy can be found at the [MATILDA Online Webpage](https://matilda-online.github.io/jbook/). For a quick start to the stand-alone model, see the [application example](https://github.com/cryotools/matilda/tree/styling/Example) and use the following guidelines.
+A detailed walkthrough of the proposed modeling workflow and calibration strategy can be found at the [MATILDA Online Webpage](https://matilda-online.github.io/jbook/). For a quick start to the stand-alone model, see the [application example](https://github.com/cryotools/matilda/blob/master/Example/example_workflow.py) and use the following guidelines.
 
 ### Forcing Data
 
-The minimum input is a CSV file containing time series of air temperature (°C or K), total precipitation (mm), and (if available) evapotranspiration (mm) data in the format shown below. If evapotranspiration is not provided, it is estimated from air temperature according to [Oudin et.al. 2010](https://doi.org/10.1080/02626660903546118). A series of discharge observations (mm) is used to calibrate the model. If no discharge data are provided, the model runs with default parameters. All datasets require daily resolution.
+The minimum input is a daily time series of air temperature (`T2`, °C or K) and total precipitation (`RRR`, mm). Potential evapotranspiration (`PE`, mm) is optional. If it is not provided, MATILDA estimates it from air temperature according to [Oudin et al. (2005)](https://doi.org/10.1016/j.jhydrol.2004.08.026). Optional discharge observations (`Qobs`) are supplied in m³/s and converted internally to catchment-equivalent mm/day. If no discharge data are provided, the model runs without calculating model-efficiency coefficients.
 
-| TIMESTAMP           | T2    | RRR  | PE   |
-| ------------------- | ----- | ---- | ---- |
-| 2011-01-01 00:00:00 | -18.2 | 0.00 | 0.00 |
-| 2011-01-01 01:00:00 | -18.3 | 0.1  | 0.00 |
-| 2011-01-01 02:00:00 | -18.2 | 0.1  | 0.00 |
-| ...                 | ...   | ...  | ...  |
+| TIMESTAMP  | T2    | RRR  | PE   |
+| ---------- | ----- | ---- | ---- |
+| 2011-01-01 | -18.2 | 0.00 | 0.00 |
+| 2011-01-02 | -18.3 | 0.10 | 0.00 |
+| 2011-01-03 | -18.2 | 0.10 | 0.00 |
+| ...        | ...   | ...  | ...  |
 
 | Date       | Qobs |
 | ---------- | ---- |
 | 2011-01-01 | 0.17 |
-| 2011-01-01 | 0.19 |
+| 2011-01-02 | 0.19 |
 | ...        | ...  |
 
 The forcing data are scaled to the mean elevations of the glacierized and ice-free subcatchments, respectively, using linear lapse rates. Reference elevations must be provided for the input data, the entire catchment, and the glacierized fraction. Automated routines for catchment delineation and public data download can be found in the [MATILDA Online](https://matilda-online.github.io/jbook/) workflow.
@@ -130,8 +130,8 @@ MATILDA defines 23 model parameters with default values, most of which are HBV s
 | $\text{PERC}$                | Percolation rate from upper to lower groundwater reservoir | mm day⁻¹      | 1.5               |
 | $\text{UZL}$                 | Threshold for quick flow from upper zone                   | mm            | 120               |
 | $\text{MAXBAS}$              | Length of triangular routing function                      | day           | 3.0               |
-| $\text{hydro\_year}$       | Starting month of the hydrological year                    | month (1–12)  | 10                |
-| $\text{pfilter}$             | Precipitation threshold for elevation scaling              | precipitation unit | 0             |
+| `hydro_year`                  | Starting month of the hydrological year                    | month (1–12)  | 10                |
+| `pfilter`                     | Precipitation threshold for elevation scaling              | precipitation unit | 0             |
 
 ---
 

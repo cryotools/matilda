@@ -55,6 +55,9 @@ def verify_wheel(wheel_path: Path, project_root: Path) -> None:
         )
         assert wheel_metadata["Version"] == source_version(project_root)
         assert wheel_metadata["Requires-Python"] == ">=3.11"
+        assert "MATILDA is a Python-based modeling framework" in (
+            wheel_metadata.get_payload()
+        )
 
 
 def main() -> None:
