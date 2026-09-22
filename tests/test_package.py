@@ -26,7 +26,7 @@ def _assigned_string(path: Path, name: str) -> str:
 
 
 def test_version_metadata_is_consistent():
-    expected = "1.0.2"
+    expected = "1.0.3"
     citation = yaml.safe_load((PROJECT_ROOT / "CITATION.cff").read_text())
     zenodo = json.loads((PROJECT_ROOT / ".zenodo.json").read_text())
 

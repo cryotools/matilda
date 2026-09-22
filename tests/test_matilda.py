@@ -28,12 +28,12 @@ def test_reference_integrity(reference_manifest):
     assert reference_manifest["core_baseline_commit"] == (
         "7a7625c9365e21dfe1b9e267b08139774e37c446"
     )
+    assert reference_manifest["model_version"] == "1.0.2"
 
 
 def test_reference_environment(reference_manifest):
     """Run consistency checks with the recorded scientific dependencies."""
     assert platform.python_version() == reference_manifest["python"]
-    assert metadata.version("matilda") == reference_manifest["model_version"]
     expected_dependencies = {
         **reference_manifest["dependencies"],
         **reference_manifest["transitive_test_dependencies"],

@@ -53,5 +53,5 @@
     "4": "glacier_elevation_distribution",
     "5": "annual_glacier_evolution"
   },
-  "comparison_policy": "Exact values, structure, dtypes, indexes, columns, and missing-value positions"
+  "comparison_policy": "Numerical values use rtol=1e-10 and atol=1e-12; structure, dtypes, indexes, columns, and missing-value positions are exact"
 }

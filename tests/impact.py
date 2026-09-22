@@ -21,6 +21,12 @@ FRAME_OUTPUTS = {
     5: "annual_glacier_evolution",
 }
 
+# Numerical results may differ at machine precision between platforms even when
+# the model equations and inputs are unchanged. Structure and dtypes remain
+# subject to exact comparison.
+ATOL = 1e-12
+RTOL = 1e-10
+
 
 def classify_process(output_name: str, variable: object) -> str:
     """Assign a broad process label for sorting impact reports."""
@@ -69,9 +75,21 @@ def _comparison_mask(
     current: pd.Series,
 ) -> tuple[pd.Series, pd.Series, pd.Series]:
     reference_aligned, current_aligned = reference.align(current, join="outer")
-    same = reference_aligned.eq(current_aligned) | (
-        reference_aligned.isna() & current_aligned.isna()
-    )
+    if is_numeric_dtype(reference_aligned) and is_numeric_dtype(current_aligned):
+        same = pd.Series(
+            np.isclose(
+                current_aligned.to_numpy(dtype=float, na_value=np.nan),
+                reference_aligned.to_numpy(dtype=float, na_value=np.nan),
+                rtol=RTOL,
+                atol=ATOL,
+                equal_nan=True,
+            ),
+            index=reference_aligned.index,
+        )
+    else:
+        same = reference_aligned.eq(current_aligned) | (
+            reference_aligned.isna() & current_aligned.isna()
+        )
     reference_present = pd.Series(
         reference_aligned.index.isin(reference.index), index=reference_aligned.index
     )
@@ -228,14 +246,21 @@ def build_variable_impact_report(
         reference_kge = float(reference_output[2])
         current_kge = float(current_output[2])
         delta = current_kge - reference_kge
+        kge_equal = bool(
+            np.isclose(
+                current_kge,
+                reference_kge,
+                rtol=RTOL,
+                atol=ATOL,
+                equal_nan=True,
+            )
+        )
         rows.append(
             {
                 "output": "model_efficiency",
                 "process": "runoff",
                 "variable": "KGE",
-                "status": (
-                    "unchanged" if current_kge == reference_kge else "changed"
-                ),
+                "status": "unchanged" if kge_equal else "changed",
                 "reference_dtype": type(reference_output[2]).__name__,
                 "current_dtype": type(current_output[2]).__name__,
                 "index_equal": True,
@@ -243,7 +268,7 @@ def build_variable_impact_report(
                 "current_rows": 1,
                 "reference_missing": int(np.isnan(reference_kge)),
                 "current_missing": int(np.isnan(current_kge)),
-                "changed_count": int(current_kge != reference_kge),
+                "changed_count": int(not kge_equal),
                 "max_abs_change": abs(delta),
                 "mean_abs_change": abs(delta),
                 "rmse": abs(delta),
@@ -258,7 +283,7 @@ def build_variable_impact_report(
                 "reference_mean": reference_kge,
                 "current_mean": current_kge,
                 "mean_change": delta,
-                "first_changed_index": "metric" if delta else "",
+                "first_changed_index": "" if kge_equal else "metric",
             }
         )
     return pd.DataFrame(rows)
@@ -328,7 +353,7 @@ def exact_output_errors(
     frame_outputs=None,
     include_model_efficiency: bool = True,
 ) -> list[str]:
-    """Return concise structural or numerical errors for maintained outputs."""
+    """Return structural or above-tolerance numerical output differences."""
     if frame_outputs is None:
         frame_outputs = FRAME_OUTPUTS
     errors = []
@@ -342,20 +367,24 @@ def exact_output_errors(
             assert_frame_equal(
                 current_output[position],
                 reference_output[position],
-                check_exact=True,
+                check_exact=False,
                 check_dtype=True,
                 check_index_type=True,
                 check_column_type=True,
                 check_names=True,
                 check_freq=True,
+                rtol=RTOL,
+                atol=ATOL,
             )
         except AssertionError as error:
             message = "\n".join(str(error).splitlines()[:8])
             errors.append(f"{output_name}: {message}")
     if include_model_efficiency:
-        if not np.array_equal(
-            np.asarray(current_output[2]),
-            np.asarray(reference_output[2]),
+        if not np.allclose(
+            np.asarray(current_output[2], dtype=float),
+            np.asarray(reference_output[2], dtype=float),
+            rtol=RTOL,
+            atol=ATOL,
             equal_nan=True,
         ):
             errors.append(
@@ -406,6 +435,8 @@ def write_impact_reports(
     summary = {
         "python": platform.python_version(),
         "matilda": metadata.version("matilda"),
+        "absolute_tolerance": ATOL,
+        "relative_tolerance": RTOL,
         "compared_variables": int(len(variable_report)),
         "changed_variables": int(len(changed)),
         "changed_processes": sorted(changed["process"].unique().tolist()),

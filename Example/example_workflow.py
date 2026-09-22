@@ -31,13 +31,12 @@ output_matilda = matilda_simulation(df, obs=obs, output=working_directory,
                                     PCORR=1.5,
                                     # For a list of model parameters and default values check the Parameters file
 
-                                    # 2. Add glacier profile (see Readme) to account for glacier change:
-                                    # glacier_profile='glacier_profile.csv'
+                                    # 2. Add a glacier profile DataFrame (see README) to account for glacier change:
+                                    # glacier_profile=pd.read_csv('glacier_profile.csv'),
                                     elev_rescaling=False,
 
                                     # 3. Include interactive plots:
                                     plot_type='all'	# If you receive errors relating to plotly either try a different plotly version or change plot_type to "print"
                                     )
-
 
 

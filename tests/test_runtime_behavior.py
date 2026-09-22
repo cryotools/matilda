@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import redirect_stdout
+from copy import deepcopy
 import io
 
 import matplotlib.pyplot as plt
@@ -100,3 +101,20 @@ def test_zero_glacier_plot_types_preserve_model_output(plot_type, expected_lengt
         assert_frame_equal(actual[position], expected[position], check_exact=True)
     assert actual[2] == expected[2]
     assert actual[4:6] == expected[4:6]
+
+
+def test_science_plot_style_does_not_change_global_settings():
+    forcing = make_synthetic_forcing()
+    settings = model_settings(area_glac=0.0)
+    settings.update({"plots": True, "science_plot": True})
+
+    with plt.rc_context():
+        style_before = deepcopy(dict(plt.rcParams))
+        try:
+            with redirect_stdout(io.StringIO()):
+                matilda_simulation(forcing, **settings)
+        finally:
+            plt.close("all")
+        style_after = dict(plt.rcParams)
+
+        assert style_after == style_before

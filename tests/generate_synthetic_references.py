@@ -79,8 +79,8 @@ def main() -> None:
         "setup_period": f"{SETUP_START}/{SETUP_END}",
         "simulation_period": f"{SIMULATION_START}/{SIMULATION_END}",
         "comparison_policy": (
-            "Exact values, structure, dtypes, indexes, columns, and "
-            "missing-value positions"
+            "Numerical values use rtol=1e-10 and atol=1e-12; structure, "
+            "dtypes, indexes, columns, and missing-value positions are exact"
         ),
         "references": references,
     }
