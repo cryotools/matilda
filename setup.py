@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="matilda",
-    version="1.0.2",
+    version="1.0.3",
     author="Phillip Schuster, Ana-Lena Tappe & Alexander Georgi",
     author_email="phillip.schuster@geo.hu-berlin.de",
     packages=["matilda"],
