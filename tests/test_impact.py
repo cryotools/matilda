@@ -96,4 +96,38 @@ def test_impact_reports_quantify_controlled_changes(tmp_path):
     assert (tmp_path / "variable_impact.csv").is_file()
     assert (tmp_path / "annual_impact.csv").is_file()
     summary = json.loads((tmp_path / "summary.json").read_text())
+    assert summary["absolute_tolerance"] == 1e-12
+    assert summary["relative_tolerance"] == 1e-10
     assert summary["changed_variables"] == 5
+
+
+def test_numerical_tolerance_ignores_roundoff_but_detects_larger_changes():
+    index = pd.date_range("2000-01-01", periods=2, freq="D")
+    reference_frame = pd.DataFrame(
+        {"near_zero": [0.0, 0.0], "large": [1_000_000.0, 1_000_000.0]},
+        index=index,
+    )
+    current_frame = reference_frame.copy()
+    current_frame.loc[index[0], "near_zero"] = 5e-13
+    current_frame.loc[index[0], "large"] += 5e-5
+
+    reference = [reference_frame.copy() for _ in range(6)]
+    current = [current_frame.copy() for _ in range(6)]
+    reference[2] = np.float64(0.5)
+    current[2] = np.float64(0.5 + 5e-13)
+
+    report = build_variable_impact_report(current, reference)
+    assert (report["status"] == "unchanged").all()
+    assert exact_output_errors(current, reference) == []
+
+    current[0].loc[index[0], "near_zero"] = 1e-9
+    report = build_variable_impact_report(current, reference)
+    near_zero = report.query(
+        "output == 'compact_daily' and variable == 'near_zero'"
+    ).iloc[0]
+    assert near_zero["status"] == "changed"
+    assert near_zero["changed_count"] == 1
+    assert any(
+        error.startswith("compact_daily:")
+        for error in exact_output_errors(current, reference)
+    )
