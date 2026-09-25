@@ -1133,7 +1133,8 @@ def updated_glacier_melt(
     smb_cum = 0
     surplus = 0
     warn = True
-    output_DDM = pd.DataFrame()
+    output_DDM_years = []
+    last_smb_flag_year = None
     parameter_updated = copy.deepcopy(parameter)
     parameter_updated.ele_glac = init_elev
     parameter_updated.ele_non_glac = ele_non_glac
@@ -1184,6 +1185,7 @@ def updated_glacier_melt(
             "glacier_elev": init_elev,
         }
     )
+    glacier_change_rows = []
 
     # Loop through simulation period annually updating catchment fractions and scaling elevations
     if parameter.ele_dat is None:
@@ -1368,9 +1370,9 @@ def updated_glacier_melt(
                     }
                 )
 
-            # Create the DataFrame and concatenate
+            # Keep annual rows until the simulation is complete.
             new_row = pd.DataFrame(data, index=[i])
-            glacier_change = pd.concat([glacier_change, new_row], ignore_index=True)
+            glacier_change_rows.append(new_row)
 
         # Scale DDM output to new glacierized fraction
         for col in up_cols:
@@ -1379,14 +1381,25 @@ def updated_glacier_melt(
                 output_DDM_year[col] * (new_area / parameter.area_cat),
                 output_DDM_year[col + "_updated_scaled"],
             )
-        # Append year to full dataset
-        output_DDM = pd.concat([output_DDM, output_DDM_year])
+        output_DDM_years.append(output_DDM_year)
 
         if smb_flag:
-            output_DDM["smb_flag"] = 1
-            output_DDM["DDM_smb"] = (
+            last_smb_flag_year = i
+
+    if glacier_change_rows:
+        glacier_change = pd.concat(
+            [glacier_change, *glacier_change_rows], ignore_index=True
+        )
+
+    if last_smb_flag_year is not None:
+        for output_DDM_year in output_DDM_years[: last_smb_flag_year + 1]:
+            output_DDM_year["smb_flag"] = 1
+            output_DDM_year["DDM_smb"] = (
                 9999  # To exclude run from parameter optimization of glacial parameters
             )
+    output_DDM = (
+        pd.concat(output_DDM_years) if output_DDM_years else pd.DataFrame()
+    )
 
     glacier_change["time"] = pd.to_datetime(glacier_change["time"], format="%Y")
     glacier_change.set_index("time", inplace=True, drop=False)
