@@ -817,10 +817,7 @@ def create_lookup_table(glacier_profile, parameter):
         "Area"
     ]  # ai is the glacier area of each elevation zone, starts with initial values
 
-    lookup_table = pd.DataFrame()
-    lookup_table = pd.concat(
-        [lookup_table, initial_area.to_frame().T], ignore_index=True
-    )
+    lookup_rows = [initial_area.to_frame().T]
 
     # Pre-simulation
     # 1. calculate total glacier mass in mm water equivalent: M = sum(ai * hi)
@@ -880,9 +877,7 @@ def create_lookup_table(glacier_profile, parameter):
         # 7. create lookup table
         # glacier area for each elevation band for 101 different mass situations (100 percent to 0 in 1 percent steps)
 
-        lookup_table = pd.concat(
-            [lookup_table, ai_scaled.to_frame().T], ignore_index=True
-        )
+        lookup_rows.append(ai_scaled.to_frame().T)
 
         if (
             sum(
@@ -899,7 +894,7 @@ def create_lookup_table(glacier_profile, parameter):
                 * glacier_profile["delta_h"]
             )
 
-    lookup_table = lookup_table.fillna(0)
+    lookup_table = pd.concat(lookup_rows, ignore_index=True).fillna(0)
 
     lookup_table.columns = glacier_profile["EleZone"]
     lookup_table = lookup_table.groupby(level=0, axis=1).sum()
