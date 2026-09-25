@@ -614,12 +614,19 @@ def melt_rates(snow, pdd, parameter):
         - `ice_melt`: Ice melt rates (mm/day), proportional to excess PDD energy beyond snow melt.
     """
 
+    return _melt_rates_from_factors(
+        snow, pdd, parameter.CFMAX_snow, parameter.CFMAX_ice
+    )
+
+
+def _melt_rates_from_factors(snow, pdd, cfmax_snow, cfmax_ice):
+    """Calculate melt with factors already read from the parameter set."""
     # compute a potential snow melt
-    pot_snow_melt = parameter.CFMAX_snow * pdd
+    pot_snow_melt = cfmax_snow * pdd
     # effective snow melt can't exceed amount of snow
     snow_melt = np.minimum(snow, pot_snow_melt)
     # ice melt is proportional to excess snow melt
-    ice_melt = (pot_snow_melt - snow_melt) * parameter.CFMAX_ice / parameter.CFMAX_snow
+    ice_melt = (pot_snow_melt - snow_melt) * cfmax_ice / cfmax_snow
     # return melt rates
     return (snow_melt, ice_melt)
 
@@ -694,6 +701,8 @@ def calculate_glaciermelt(ds, parameter, prints=True):
     glacier_reservoir = []
 
     accu_rate = snow
+    cfmax_snow = parameter.CFMAX_snow
+    cfmax_ice = parameter.CFMAX_ice
 
     # compute snow depth and melt rates
     for i in range(len(temp)):
@@ -702,7 +711,9 @@ def calculate_glaciermelt(ds, parameter, prints=True):
             snow_depth[i] += accu_rate[i]
         else:
             snow_depth.append(accu_rate[i])
-        snow_melt_tmp, ice_melt_tmp = melt_rates(snow_depth[i], pdd[i], parameter)
+        snow_melt_tmp, ice_melt_tmp = _melt_rates_from_factors(
+            snow_depth[i], pdd[i], cfmax_snow, cfmax_ice
+        )
         snow_melt.append(snow_melt_tmp)
         ice_melt.append(ice_melt_tmp)
         snow_depth[i] -= snow_melt_tmp
