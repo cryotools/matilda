@@ -46,6 +46,18 @@ def test_daily_observation_aggregation_preserves_missing_values(
     assert_frame_equal(actual, expected, check_exact=True)
 
 
+def test_daily_observation_aggregation_retains_extra_columns():
+    observations = pd.DataFrame(
+        {"Qobs": [1.0, 2.0], "quality": ["good", "poor"]},
+        index=pd.to_datetime(["2000-01-01", "2000-01-03"]),
+    )
+    expected = observations.resample("D").agg(pd.Series.sum, skipna=False)
+
+    actual = _resample_observations_daily(observations)
+
+    assert_frame_equal(actual, expected, check_exact=True)
+
+
 def test_parameter_initialization_derives_dependent_values():
     forcing = make_synthetic_forcing()
     settings = model_settings(area_glac=0.0)

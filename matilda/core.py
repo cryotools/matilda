@@ -75,6 +75,7 @@ import copy
 import importlib.resources
 import json
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 import numpy as np
 import xarray as xr
 import scipy.signal as ss
@@ -309,8 +310,10 @@ def matilda_parameter(
 
 
 def _resample_observations_daily(observations):
-    """Sum daily observations while retaining missing-value behavior."""
-    if observations.index.normalize().is_unique:
+    """Sum daily observations, using a fast path for unique numeric days."""
+    if observations.index.normalize().is_unique and all(
+        is_numeric_dtype(dtype) for dtype in observations.dtypes
+    ):
         daily = observations.resample("D")
         totals = daily.sum(min_count=0)
         return totals.where(daily.count().eq(daily.size(), axis=0))
