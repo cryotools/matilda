@@ -308,6 +308,15 @@ def matilda_parameter(
     return all_param
 
 
+def _resample_observations_daily(observations):
+    """Sum daily observations while retaining missing-value behavior."""
+    if observations.index.normalize().is_unique:
+        daily = observations.resample("D")
+        totals = daily.sum(min_count=0)
+        return totals.where(daily.count().eq(daily.size(), axis=0))
+    return observations.resample("D").agg(pd.Series.sum, skipna=False)
+
+
 def matilda_preproc(input_df, parameter, obs=None):
     """
     Processes and prepares input climate data and optional observation data for MATILDA simulations.
@@ -379,7 +388,7 @@ def matilda_preproc(input_df, parameter, obs=None):
         obs_preproc["Qobs"] = (
             obs_preproc["Qobs"] * 86400 / (parameter.area_cat * 1000000) * 1000
         )
-        obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
+        obs_preproc = _resample_observations_daily(obs_preproc)
         # Expanding the observation period to full years filling up with NAs
         idx_first = obs_preproc.index.year[1]
         idx_last = obs_preproc.index.year[-1]

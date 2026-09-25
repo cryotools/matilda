@@ -75,6 +75,7 @@ from spotpy.parameter import Uniform
 from spotpy.objectivefunctions import mae
 
 from matilda.core import (
+    _resample_observations_daily,
     matilda_simulation,
     matilda_parameter,
     matilda_preproc,
@@ -792,7 +793,7 @@ def spot_setup(
                 obs_preproc["Qobs"] * 86400 / (area_cat * 1000000) * 1000
             )
             # To daily resolution
-            obs_preproc = obs_preproc.resample("D").agg(pd.Series.sum, skipna=False)
+            obs_preproc = _resample_observations_daily(obs_preproc)
             # Expanding the observation period full years filling up with NAs
             idx_first = obs_preproc.index.year[1]
             idx_last = obs_preproc.index.year[-1]

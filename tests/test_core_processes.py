@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_frame_equal
 import pytest
 import xarray as xr
 
 from matilda.core import (
     _load_parameter_data,
+    _resample_observations_daily,
     _temperature_adjusted_evaporation,
     calculate_glaciermelt,
     matilda_parameter,
@@ -16,6 +18,32 @@ from matilda.core import (
     phase_separation,
 )
 from tests.synthetic import make_synthetic_forcing, model_settings
+
+
+@pytest.mark.parametrize(
+    "timestamps,runoff",
+    [
+        (
+            ["2000-01-01", "2000-01-03", "2000-01-04"],
+            [1.25, np.nan, 2.5],
+        ),
+        (
+            ["2000-01-01 06:00", "2000-01-01 18:00", "2000-01-03 00:00"],
+            [0.1, np.nan, 2.5],
+        ),
+    ],
+)
+def test_daily_observation_aggregation_preserves_missing_values(
+    timestamps, runoff
+):
+    observations = pd.DataFrame(
+        {"Qobs": runoff}, index=pd.to_datetime(timestamps)
+    )
+    expected = observations.resample("D").agg(pd.Series.sum, skipna=False)
+
+    actual = _resample_observations_daily(observations)
+
+    assert_frame_equal(actual, expected, check_exact=True)
 
 
 def test_parameter_initialization_derives_dependent_values():
